@@ -6,6 +6,7 @@ use reqwest::Client;
 
 use urlparse::urlparse;
 
+use crate::command::Command;
 use crate::constant::SELENIUM_VERSION;
 
 pub enum RemoteConnectionError {
