@@ -126,9 +126,9 @@ pub enum RequestMethod {
 }
 
 pub struct RequestData {
-    method: RequestMethod,
-    url: String,
-    body: serde_json::Value,
+    pub method: RequestMethod,
+    pub url: String,
+    pub body: serde_json::Value,
 }
 
 impl RequestData {
