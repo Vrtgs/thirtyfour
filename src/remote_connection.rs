@@ -79,7 +79,7 @@ impl RemoteConnectionAsync {
     pub fn new(remote_server_addr: &str) -> Result<Self, RemoteConnectionError> {
         let headers = build_headers(remote_server_addr)?;
         Ok(RemoteConnectionAsync {
-            url: remote_server_addr.to_owned(),
+            url: remote_server_addr.trim_end_matches('/').to_owned(),
             client: reqwest::Client::builder()
                 .default_headers(headers)
                 .build()?,
@@ -93,8 +93,9 @@ impl RemoteConnectionAsync {
         T: DeserializeOwned,
     {
         let request_data = command.format_request();
+        let url = self.url.clone() + &request_data.url;
         let resp_result = match request_data.method {
-            RequestMethod::Get => self.client.get(&request_data.url).send().await,
+            RequestMethod::Get => self.client.get(&url).send().await,
             RequestMethod::Post => self
                 .client
                 .post(&request_data.url)
@@ -138,7 +139,7 @@ impl RemoteConnectionSync {
     pub fn new(remote_server_addr: &str) -> Result<Self, RemoteConnectionError> {
         let headers = build_headers(remote_server_addr)?;
         Ok(RemoteConnectionSync {
-            url: remote_server_addr.to_owned(),
+            url: remote_server_addr.trim_end_matches('/').to_owned(),
             client: reqwest::blocking::Client::builder().default_headers(headers).build()?,
         })
     }
@@ -150,8 +151,9 @@ impl RemoteConnectionSync {
         T: DeserializeOwned,
     {
         let request_data = command.format_request();
+        let url = self.url.clone() + &request_data.url;
         let resp_result = match request_data.method {
-            RequestMethod::Get => self.client.get(&request_data.url).send(),
+            RequestMethod::Get => self.client.get(&url).send(),
             RequestMethod::Post => self
                 .client
                 .post(&request_data.url)
