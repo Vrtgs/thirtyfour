@@ -110,20 +110,19 @@ impl RemoteConnectionAsync {
         let resp = resp_result.map_err(|e| CommandError::WebDriverError(e.to_string()))?;
 
         match resp.status().as_u16() {
-            200..=399 => {}
+            200..=399 => {
+                Ok(resp
+                    .json().await
+                    .map_err(|e| CommandError::JsonError(e.to_string()))?)
+            }
             400..=599 => {
                 // TODO: capture error data into CommandError::WebDriverError.
-                return Err(CommandError::WebDriverError(
+                Err(CommandError::WebDriverError(
                     "something bad happened".to_owned(),
-                ));
+                ))
             }
-            _ => return Err(CommandError::WebDriverError("unknown result".to_owned())),
+            _ => Err(CommandError::WebDriverError("unknown result".to_owned())),
         }
-
-        let resp_data: T = resp
-            .json().await
-            .map_err(|e| CommandError::JsonError(e.to_string()))?;
-        Ok(resp_data)
     }
 }
 
@@ -168,19 +167,18 @@ impl RemoteConnectionSync {
         let resp = resp_result.map_err(|e| CommandError::WebDriverError(e.to_string()))?;
 
         match resp.status().as_u16() {
-            200..=399 => {}
+            200..=399 => {
+                Ok(resp
+                    .json()
+                    .map_err(|e| CommandError::JsonError(e.to_string()))?)
+            }
             400..=599 => {
                 // TODO: capture error data into CommandError::WebDriverError.
-                return Err(CommandError::WebDriverError(
+                Err(CommandError::WebDriverError(
                     "something bad happened".to_owned(),
-                ));
+                ))
             }
-            _ => return Err(CommandError::WebDriverError("unknown result".to_owned())),
+            _ => Err(CommandError::WebDriverError("unknown result".to_owned())),
         }
-
-        let resp_data: T = resp
-            .json()
-            .map_err(|e| CommandError::JsonError(e.to_string()))?;
-        Ok(resp_data)
     }
 }
