@@ -82,11 +82,11 @@ mod tests {
         let session_id = SessionId::from(v["sessionId"].as_str().unwrap());
         conn.execute(Command::NavigateTo(
             &session_id,
-            "http://google.com.au".to_owned(),
+            "https://google.com.au".to_owned(),
         ))?;
         conn.execute(Command::Status)?;
         thread::sleep(Duration::new(3, 0));
-        conn.execute(Command::DeleteSession(session_id))?;
+        conn.execute(Command::DeleteSession(&session_id))?;
 
         Ok(())
     }
