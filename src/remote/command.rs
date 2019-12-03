@@ -4,10 +4,20 @@ use std::time::Duration;
 use serde::Serialize;
 use serde_json::json;
 
-use crate::keys::TypingData;
+use crate::common::capabilities::make_w3c_caps;
+use crate::common::keys::TypingData;
 
 pub struct SessionId {
     _id: String,
+}
+
+impl<S> From<S> for SessionId
+where
+    S: Into<String>,
+{
+    fn from(value: S) -> Self {
+        SessionId { _id: value.into() }
+    }
 }
 
 impl fmt::Display for SessionId {
@@ -144,10 +154,13 @@ impl RequestData {
         self.body = body;
         self
     }
+
+    pub fn has_body(&self) -> bool {
+        self.body != serde_json::Value::Null
+    }
 }
 
 // TODO: These can become actual types later.
-type W3CCapabilities = serde_json::Value;
 type DesiredCapabilities = serde_json::Value;
 type CookieData = serde_json::Value;
 type Actions = serde_json::Value;
@@ -178,13 +191,13 @@ impl By {
     }
 }
 
-pub enum Command {
-    NewSession(W3CCapabilities, DesiredCapabilities),
+pub enum Command<'a> {
+    NewSession(DesiredCapabilities),
     DeleteSession(SessionId),
     Status,
     GetTimeouts(SessionId),
     SetTimeouts(SessionId, TimeoutConfiguration),
-    NavigateTo(SessionId, String),
+    NavigateTo(&'a SessionId, String),
     GetCurrentUrl(SessionId),
     Back(SessionId),
     Forward(SessionId),
@@ -194,7 +207,6 @@ pub enum Command {
     CloseWindow(SessionId),
     SwitchToWindow(SessionId, WindowHandle),
     GetWindowHandles(SessionId),
-    NewWindow(SessionId, Option<WindowType>),
     SwitchToFrame(SessionId, ElementId),
     SwitchToParentFrame(SessionId),
     GetWindowRect(SessionId),
@@ -236,10 +248,11 @@ pub enum Command {
     TakeElementScreenshot(SessionId, ElementId),
 }
 
-impl Command {
+impl<'a> Command<'a> {
     pub fn format_request(&self) -> RequestData {
         match self {
-            Command::NewSession(w3c_caps, caps) => {
+            Command::NewSession(caps) => {
+                let w3c_caps = make_w3c_caps(caps.clone());
                 RequestData::new(RequestMethod::Post, "/session").add_body(json!({
                     "capabilties": w3c_caps,
                     "desiredCapabilities": caps
@@ -296,13 +309,6 @@ impl Command {
                 RequestMethod::Get,
                 format!("/session/{}/window/handles", session_id),
             ),
-            Command::NewWindow(session_id, type_hint) => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/window/new", session_id),
-            )
-            .add_body(json!({
-                "type": type_hint.clone().map(|x| x.to_string())
-            })),
             Command::SwitchToFrame(session_id, element_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/frame", session_id),

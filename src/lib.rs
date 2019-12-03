@@ -2,10 +2,17 @@
 //!
 //! This project is still WIP.
 
-mod command;
-mod constant;
-mod keys;
-mod remote_connection;
+pub mod common {
+    pub mod capabilities;
+    pub mod constant;
+    pub mod keys;
+}
+pub mod remote {
+    pub mod command;
+    pub mod connection_async;
+    pub mod connection_common;
+    pub mod connection_sync;
+}
 
 #[cfg(test)]
 mod tests {
