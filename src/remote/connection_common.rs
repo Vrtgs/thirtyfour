@@ -1,53 +1,12 @@
 use base64::encode;
 use reqwest;
-use reqwest::header::{
-    HeaderMap, InvalidHeaderValue, ACCEPT, AUTHORIZATION, CONNECTION, CONTENT_TYPE, USER_AGENT,
-};
+use reqwest::header::{HeaderMap, ACCEPT, AUTHORIZATION, CONNECTION, CONTENT_TYPE, USER_AGENT};
 
 use urlparse::urlparse;
 
-use crate::remote::command::{RequestMethod, SessionId};
+use crate::error::RemoteConnectionError;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-
-/// CommandError is the main error type returned from all selenium requests.
-#[derive(Debug)]
-pub enum CommandError {
-    ConnectionError(RemoteConnectionError),
-    RequestError(String),
-    WebDriverError(String),
-    JsonError(String),
-}
-
-impl From<serde_json::error::Error> for CommandError {
-    fn from(value: serde_json::error::Error) -> Self {
-        CommandError::JsonError(value.to_string())
-    }
-}
-
-impl From<RemoteConnectionError> for CommandError {
-    fn from(value: RemoteConnectionError) -> Self {
-        CommandError::ConnectionError(value)
-    }
-}
-
-#[derive(Debug)]
-pub enum RemoteConnectionError {
-    InvalidUrl(String),
-    ClientError(String),
-}
-
-impl From<InvalidHeaderValue> for RemoteConnectionError {
-    fn from(value: InvalidHeaderValue) -> Self {
-        RemoteConnectionError::InvalidUrl(value.to_string())
-    }
-}
-
-impl From<reqwest::Error> for RemoteConnectionError {
-    fn from(value: reqwest::Error) -> Self {
-        RemoteConnectionError::ClientError(value.to_string())
-    }
-}
 
 /// Construct the request headers used for every WebDriver request.
 pub fn build_headers(remote_server_addr: &str) -> Result<HeaderMap, RemoteConnectionError> {

@@ -1,5 +1,6 @@
 use crate::remote::command::{Command, RequestMethod};
-use crate::remote::connection_common::{build_headers, CommandError, RemoteConnectionError};
+use crate::remote::connection_common::{build_headers};
+use crate::error::{WebDriverError, RemoteConnectionError};
 
 /// Asynchronous remote with the Remote WebDriver server.
 #[derive(Debug)]
@@ -22,7 +23,7 @@ impl RemoteConnectionAsync {
 
     /// Execute the specified command and return the deserialized data.
     /// The return type must implement DeserializeOwned.
-    pub async fn execute<'a>(&self, command: Command<'a>) -> Result<serde_json::Value, CommandError>
+    pub async fn execute<'a>(&self, command: Command<'a>) -> Result<serde_json::Value, WebDriverError>
     {
         let request_data = command.format_request();
         let url = self.url.clone() + &request_data.url;
@@ -35,21 +36,27 @@ impl RemoteConnectionAsync {
             request = request.json(&request_data.body);
         }
 
-        let resp = request.send().await.map_err(|e| CommandError::WebDriverError(e.to_string()))?;
+        let resp = request
+            .send().await
+            .map_err(|e| WebDriverError::RequestFailed(e.to_string()))?;
 
         match resp.status().as_u16() {
             200..=399 => Ok(resp
-                .json()
-                .await
-                .map_err(|e| CommandError::JsonError(e.to_string()))?),
+                .json().await
+                .map_err(|e| WebDriverError::JsonError(e.to_string()))?),
             400..=599 => {
-                // TODO: capture error data into CommandError::WebDriverError.
-                Err(CommandError::WebDriverError(format!(
-                    "something bad happened: {:?}",
-                    resp
-                )))
+                let status = resp.status().as_u16();
+                let body: serde_json::Value = resp
+                    .json().await
+                    .map_err(|e| WebDriverError::JsonError(e.to_string()))?;
+
+                Err(WebDriverError::parse(status, body))
             }
-            _ => Err(CommandError::WebDriverError("unknown result".to_owned())),
+            _ => Err(WebDriverError::RequestFailed(format!(
+                "Unknown response: {:?}",
+                resp.json().await
+                    .map_err(|e| WebDriverError::JsonError(e.to_string()))?
+            ))),
         }
     }
 }

@@ -10,9 +10,11 @@ pub mod common {
 pub mod remote {
     pub mod command;
     pub mod connection_async;
-    pub mod connection_common;
+    mod connection_common;
     pub mod connection_sync;
 }
+pub mod error;
+pub mod webdriver;
 
 #[cfg(test)]
 mod tests {

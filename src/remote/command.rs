@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops::Deref;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -7,8 +8,17 @@ use serde_json::json;
 use crate::common::capabilities::make_w3c_caps;
 use crate::common::keys::TypingData;
 
+#[derive(Debug, Clone)]
 pub struct SessionId {
     _id: String,
+}
+
+impl Deref for SessionId {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self._id
+    }
 }
 
 impl<S> From<S> for SessionId
@@ -26,6 +36,7 @@ impl fmt::Display for SessionId {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ElementId {
     _id: String,
 }
@@ -36,6 +47,7 @@ impl fmt::Display for ElementId {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct WindowHandle {
     _handle: String,
 }
@@ -113,6 +125,7 @@ impl OptionRect {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct TimeoutConfiguration {
     pub script: Option<Duration>,
     pub page_load: Option<Duration>,
@@ -129,12 +142,14 @@ impl TimeoutConfiguration {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum RequestMethod {
     Get,
     Post,
     Delete,
 }
 
+#[derive(Debug, Clone)]
 pub struct RequestData {
     pub method: RequestMethod,
     pub url: String,
@@ -161,7 +176,7 @@ impl RequestData {
 }
 
 // TODO: These can become actual types later.
-type DesiredCapabilities = serde_json::Value;
+pub type DesiredCapabilities = serde_json::Value;
 type CookieData = serde_json::Value;
 type Actions = serde_json::Value;
 
