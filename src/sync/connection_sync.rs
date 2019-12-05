@@ -1,6 +1,6 @@
+use crate::common::command::{Command, RequestMethod};
+use crate::common::connection_common::build_headers;
 use crate::error::{RemoteConnectionError, WebDriverError};
-use crate::remote::command::{Command, RequestMethod};
-use crate::remote::connection_common::build_headers;
 
 /// Synchronous remote with the Remote WebDriver server.
 #[derive(Debug)]
@@ -64,8 +64,8 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
+    use crate::common::command::SessionId;
     use crate::error::WebDriverError;
-    use crate::remote::command::SessionId;
 
     use super::*;
 

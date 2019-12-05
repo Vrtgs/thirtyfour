@@ -1,6 +1,6 @@
-use crate::remote::command::{Command, RequestMethod};
-use crate::remote::connection_common::{build_headers};
-use crate::error::{WebDriverError, RemoteConnectionError};
+use crate::common::command::{Command, RequestMethod};
+use crate::common::connection_common::build_headers;
+use crate::error::{RemoteConnectionError, WebDriverError};
 
 /// Asynchronous remote with the Remote WebDriver server.
 #[derive(Debug)]

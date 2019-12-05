@@ -6,6 +6,7 @@ use serde::Serialize;
 use serde_json::json;
 
 use crate::common::capabilities::make_w3c_caps;
+use crate::common::constant::MAGIC_ELEMENTID;
 use crate::common::keys::TypingData;
 
 #[derive(Debug, Clone)]
@@ -41,6 +42,15 @@ pub struct ElementId {
     _id: String,
 }
 
+impl<S> From<S> for ElementId
+where
+    S: Into<String>,
+{
+    fn from(value: S) -> Self {
+        ElementId { _id: value.into() }
+    }
+}
+
 impl fmt::Display for ElementId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self._id)
@@ -50,6 +60,17 @@ impl fmt::Display for ElementId {
 #[derive(Debug, Clone)]
 pub struct WindowHandle {
     _handle: String,
+}
+
+impl<S> From<S> for WindowHandle
+where
+    S: Into<String>,
+{
+    fn from(value: S) -> Self {
+        WindowHandle {
+            _handle: value.into(),
+        }
+    }
 }
 
 impl fmt::Display for WindowHandle {
@@ -133,6 +154,18 @@ pub struct TimeoutConfiguration {
 }
 
 impl TimeoutConfiguration {
+    pub fn new(
+        script: Option<Duration>,
+        page_load: Option<Duration>,
+        implicit: Option<Duration>,
+    ) -> Self {
+        TimeoutConfiguration {
+            script,
+            page_load,
+            implicit,
+        }
+    }
+
     pub fn to_json(&self) -> serde_json::Value {
         json!({
             "script": self.script.map(|x| x.as_millis()),
@@ -180,28 +213,28 @@ pub type DesiredCapabilities = serde_json::Value;
 type CookieData = serde_json::Value;
 type Actions = serde_json::Value;
 
-pub enum By {
-    Id(String),
-    XPath(String),
-    LinkText(String),
-    PartialLinkText(String),
-    Name(String),
-    Tag(String),
-    ClassName(String),
-    Css(String),
+pub enum By<'a> {
+    Id(&'a str),
+    XPath(&'a str),
+    LinkText(&'a str),
+    PartialLinkText(&'a str),
+    Name(&'a str),
+    Tag(&'a str),
+    ClassName(&'a str),
+    Css(&'a str),
 }
 
-impl By {
+impl<'a> By<'a> {
     pub fn get_w3c_selector(&self) -> (String, String) {
         match self {
             By::Id(x) => (String::from("css selector"), format!("[id=\"{}\"]", x)),
-            By::XPath(x) => (String::from("xpath"), x.clone()),
-            By::LinkText(x) => (String::from("link text"), x.clone()),
-            By::PartialLinkText(x) => (String::from("partial link text"), x.clone()),
+            By::XPath(x) => (String::from("xpath"), x.to_string()),
+            By::LinkText(x) => (String::from("link text"), x.to_string()),
+            By::PartialLinkText(x) => (String::from("partial link text"), x.to_string()),
             By::Name(x) => (String::from("css selector"), format!("[name=\"{}\"]", x)),
-            By::Tag(x) => (String::from("css selector"), x.clone()),
+            By::Tag(x) => (String::from("css selector"), x.to_string()),
             By::ClassName(x) => (String::from("css selector"), format!(".{}", x)),
-            By::Css(x) => (String::from("css selector"), x.clone()),
+            By::Css(x) => (String::from("css selector"), x.to_string()),
         }
     }
 }
@@ -230,10 +263,10 @@ pub enum Command<'a> {
     MinimizeWindow(&'a SessionId),
     FullscreenWindow(&'a SessionId),
     GetActiveElement(&'a SessionId),
-    FindElement(&'a SessionId, By),
-    FindElements(&'a SessionId, By),
-    FindElementFromElement(&'a SessionId, ElementId, By),
-    FindElementsFromElement(&'a SessionId, ElementId, By),
+    FindElement(&'a SessionId, By<'a>),
+    FindElements(&'a SessionId, By<'a>),
+    FindElementFromElement(&'a SessionId, ElementId, By<'a>),
+    FindElementsFromElement(&'a SessionId, ElementId, By<'a>),
     IsElementSelected(&'a SessionId, ElementId),
     GetElementAttribute(&'a SessionId, ElementId, String),
     GetElementProperty(&'a SessionId, ElementId, String),
@@ -246,8 +279,8 @@ pub enum Command<'a> {
     ElementClear(&'a SessionId, ElementId),
     ElementSendKeys(&'a SessionId, ElementId, TypingData),
     GetPageSource(&'a SessionId),
-    ExecuteScript(&'a SessionId, String, Vec<String>),
-    ExecuteAsyncScript(&'a SessionId, String, Vec<String>),
+    ExecuteScript(&'a SessionId, String, Vec<serde_json::Value>),
+    ExecuteAsyncScript(&'a SessionId, String, Vec<serde_json::Value>),
     GetAllCookies(&'a SessionId),
     GetNamedCookie(&'a SessionId, String),
     AddCookie(&'a SessionId, CookieData),
@@ -330,7 +363,7 @@ impl<'a> Command<'a> {
             )
             .add_body(json!({
                 "ELEMENT": element_id.to_string(),
-                "element-6066-11e4-a52e-4f735466cecf": element_id.to_string()
+                MAGIC_ELEMENTID: element_id.to_string()
             })),
             Command::SwitchToParentFrame(session_id) => RequestData::new(
                 RequestMethod::Post,
@@ -461,7 +494,7 @@ impl<'a> Command<'a> {
             .add_body(json!({"script": script, "args": args})),
             Command::ExecuteAsyncScript(session_id, script, args) => RequestData::new(
                 RequestMethod::Post,
-                format!("/session/{}/execute/async", session_id),
+                format!("/session/{}/execute/libasync", session_id),
             )
             .add_body(json!({"script": script, "args": args})),
             Command::GetAllCookies(session_id) => RequestData::new(

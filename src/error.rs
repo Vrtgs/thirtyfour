@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+pub type WebDriverResult<T> = Result<T, WebDriverError>;
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct WebDriverErrorValue {
     message: String,

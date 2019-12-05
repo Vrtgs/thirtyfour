@@ -8,7 +8,7 @@ Named after the atomic number for the Selenium chemical element (Se).
 
 ### Example
 
-Here's what it looks like right now:
+Here's what it looks like right now (synchronous version):
 
 ```rust 
 let caps = serde_json::json!({
@@ -20,6 +20,7 @@ let caps = serde_json::json!({
 let driver = WebDriverSync::new("http://localhost:4444/wd/hub", caps)?;
 driver.get("https://mozilla.org");
 println!("Title: {}", driver.title()?);
+let elem = driver.find_element(By::Tag("input"))?;
 ```
 
-Both sync and async versions will be supported.
+Both sync and async versions are supported.
