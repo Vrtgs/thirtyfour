@@ -5,12 +5,13 @@ use log::error;
 use serde::Deserialize;
 
 use crate::common::command::{
-    By, Command, DesiredCapabilities, ElementId, SessionId, TimeoutConfiguration, WindowHandle,
+    By, Command, DesiredCapabilities, SessionId, TimeoutConfiguration, WindowHandle,
 };
-use crate::common::constant::MAGIC_ELEMENTID;
-use crate::error::{WebDriverError, WebDriverResult};
+use crate::common::connection_common::{unwrap_string, unwrap_strings};
+use crate::error::WebDriverResult;
 use crate::RemoteConnectionAsync;
 use crate::WebElement;
+use crate::webelement::{unwrap_element_async, unwrap_elements_async};
 
 pub struct WebDriver {
     session_id: SessionId,
@@ -43,42 +44,6 @@ impl WebDriver {
         })
     }
 
-    fn unwrap_string(&self, value: &serde_json::Value) -> WebDriverResult<String> {
-        value
-            .as_str()
-            .ok_or(WebDriverError::JsonError(format!(
-                "Value is not a string: {:?}",
-                value
-            )))
-            .map(|x| x.to_owned())
-    }
-
-    fn unwrap_strings(&self, value: &serde_json::Value) -> WebDriverResult<Vec<String>> {
-        let values = value.as_array().ok_or(WebDriverError::JsonError(format!(
-            "String array not found in value: {:?}",
-            value
-        )))?;
-        values.iter().map(|x| self.unwrap_string(x)).collect()
-    }
-
-    fn unwrap_element(&self, value: &serde_json::Value) -> WebDriverResult<WebElement> {
-        let id_str = value[MAGIC_ELEMENTID]
-            .as_str()
-            .ok_or(WebDriverError::JsonError(format!(
-                "ElementId not found in value: {:?}",
-                value
-            )))?;
-        Ok(WebElement::new(self.conn.clone(), ElementId::from(id_str)))
-    }
-
-    fn unwrap_elements(&self, value: &serde_json::Value) -> WebDriverResult<Vec<WebElement>> {
-        let values = value.as_array().ok_or(WebDriverError::JsonError(format!(
-            "ElementId array not found in value: {:?}",
-            value
-        )))?;
-        values.iter().map(|x| self.unwrap_element(x)).collect()
-    }
-
     pub fn capabilities(&self) -> &DesiredCapabilities {
         &self.capabilities
     }
@@ -105,14 +70,14 @@ impl WebDriver {
         let v = self
             .conn
             .execute(Command::GetCurrentUrl(&self.session_id)).await?;
-        self.unwrap_string(&v["value"])
+        unwrap_string(&v["value"])
     }
 
     pub async fn page_source(&self) -> WebDriverResult<String> {
         let v = self
             .conn
             .execute(Command::GetPageSource(&self.session_id)).await?;
-        self.unwrap_string(&v["value"])
+        unwrap_string(&v["value"])
     }
 
     pub async fn title(&self) -> WebDriverResult<String> {
@@ -124,14 +89,14 @@ impl WebDriver {
         let v = self
             .conn
             .execute(Command::FindElement(&self.session_id, by)).await?;
-        self.unwrap_element(&v["value"])
+        unwrap_element_async(self.conn.clone(), self.session_id.clone(),&v["value"])
     }
 
     pub async fn find_elements<'a>(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement>> {
         let v = self
             .conn
             .execute(Command::FindElements(&self.session_id, by)).await?;
-        self.unwrap_elements(&v["value"])
+        unwrap_elements_async(&self.conn, &self.session_id, &v["value"])
     }
 
     pub async fn execute_script(
@@ -164,7 +129,7 @@ impl WebDriver {
         let v = self
             .conn
             .execute(Command::GetWindowHandle(&self.session_id)).await?;
-        self.unwrap_string(&v["value"])
+        unwrap_string(&v["value"])
             .map(|x| WindowHandle::from(x))
     }
 
@@ -172,7 +137,7 @@ impl WebDriver {
         let v = self
             .conn
             .execute(Command::GetWindowHandles(&self.session_id)).await?;
-        let strings = self.unwrap_strings(&v["value"])?;
+        let strings = unwrap_strings(&v["value"])?;
         Ok(strings.iter().map(|x| WindowHandle::from(x)).collect())
     }
 

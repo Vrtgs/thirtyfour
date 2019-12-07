@@ -1,8 +1,8 @@
 use crate::common::command::{Command, RequestMethod};
 use crate::common::connection_common::build_headers;
-use crate::error::{RemoteConnectionError, WebDriverError};
+use crate::error::{RemoteConnectionError, WebDriverError, WebDriverResult};
 
-/// Synchronous remote with the Remote WebDriver server.
+/// Synchronous remote connection with the Remote WebDriver server.
 #[derive(Debug)]
 pub struct RemoteConnectionSync {
     url: String,
@@ -21,9 +21,8 @@ impl RemoteConnectionSync {
         })
     }
 
-    /// Execute the specified command and return the deserialized data.
-    /// The return type must implement DeserializeOwned.
-    pub fn execute(&self, command: Command) -> Result<serde_json::Value, WebDriverError> {
+    /// Execute the specified command and return the data as serde_json::Value.
+    pub fn execute(&self, command: Command) -> WebDriverResult<serde_json::Value> {
         let request_data = command.format_request();
         let url = self.url.clone() + &request_data.url;
         let mut request = match request_data.method {
@@ -56,39 +55,5 @@ impl RemoteConnectionSync {
                     .map_err(|e| WebDriverError::JsonError(e.to_string()))?
             ))),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::thread;
-    use std::time::Duration;
-
-    use crate::common::command::SessionId;
-    use crate::error::WebDriverError;
-
-    use super::*;
-
-    #[test]
-    fn test_sync() -> Result<(), WebDriverError> {
-        let conn =
-            RemoteConnectionSync::new("http://localhost:4444/wd/hub").expect("Failed to connect");
-        let caps = serde_json::json!({
-            "browserName": "chrome",
-            "version": "",
-            "platform": "any"
-        });
-
-        let v = conn.execute(Command::NewSession(caps))?;
-        let session_id = SessionId::from(v["sessionId"].as_str().unwrap());
-        conn.execute(Command::NavigateTo(
-            &session_id,
-            "https://google.com.au".to_owned(),
-        ))?;
-        conn.execute(Command::Status)?;
-        thread::sleep(Duration::new(3, 0));
-        conn.execute(Command::DeleteSession(&session_id))?;
-
-        Ok(())
     }
 }

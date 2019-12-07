@@ -2,7 +2,7 @@ use crate::common::command::{Command, RequestMethod};
 use crate::common::connection_common::build_headers;
 use crate::error::{RemoteConnectionError, WebDriverError};
 
-/// Asynchronous remote with the Remote WebDriver server.
+/// Asynchronous remote connection with the Remote WebDriver server.
 #[derive(Debug)]
 pub struct RemoteConnectionAsync {
     url: String,
@@ -10,7 +10,7 @@ pub struct RemoteConnectionAsync {
 }
 
 impl RemoteConnectionAsync {
-    /// Create a new RemoteConnectionSync instance.
+    /// Create a new RemoteConnectionAsync instance.
     pub fn new(remote_server_addr: &str) -> Result<Self, RemoteConnectionError> {
         let headers = build_headers(remote_server_addr)?;
         Ok(RemoteConnectionAsync {
@@ -21,8 +21,7 @@ impl RemoteConnectionAsync {
         })
     }
 
-    /// Execute the specified command and return the deserialized data.
-    /// The return type must implement DeserializeOwned.
+    /// Execute the specified command and return the data as serde_json::Value.
     pub async fn execute<'a>(&self, command: Command<'a>) -> Result<serde_json::Value, WebDriverError>
     {
         let request_data = command.format_request();

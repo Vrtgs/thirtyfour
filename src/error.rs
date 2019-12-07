@@ -1,3 +1,4 @@
+use base64::DecodeError;
 use serde::Deserialize;
 
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
@@ -24,6 +25,8 @@ pub struct WebDriverErrorInfo {
 pub enum WebDriverError {
     ConnectionError(RemoteConnectionError),
     JsonError(String),
+    DecodeError(String),
+    IOError(String),
     RequestFailed(String),
     NotInSpec(WebDriverErrorInfo),
     ElementClickIntercepted(WebDriverErrorInfo),
@@ -109,6 +112,18 @@ impl From<serde_json::error::Error> for WebDriverError {
 impl From<RemoteConnectionError> for WebDriverError {
     fn from(value: RemoteConnectionError) -> Self {
         WebDriverError::ConnectionError(value)
+    }
+}
+
+impl From<DecodeError> for WebDriverError {
+    fn from(value: DecodeError) -> Self {
+        WebDriverError::DecodeError(value.to_string())
+    }
+}
+
+impl From<std::io::Error> for WebDriverError {
+    fn from(value: std::io::Error) -> Self {
+        WebDriverError::IOError(value.to_string())
     }
 }
 

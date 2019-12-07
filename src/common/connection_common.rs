@@ -4,7 +4,7 @@ use reqwest::header::{HeaderMap, ACCEPT, AUTHORIZATION, CONNECTION, CONTENT_TYPE
 
 use urlparse::urlparse;
 
-use crate::error::RemoteConnectionError;
+use crate::error::{RemoteConnectionError, WebDriverResult};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -13,10 +13,9 @@ pub fn build_headers(remote_server_addr: &str) -> Result<HeaderMap, RemoteConnec
     let mut headers = HeaderMap::new();
     headers.insert(ACCEPT, "application/json".parse()?);
     headers.insert(CONTENT_TYPE, "application/json;charset=UTF-8".parse()?);
-    let rustc_version = rustc_version_runtime::version().to_string();
     headers.insert(
         USER_AGENT,
-        format!("thirtyfour/{} (rust {})", VERSION, rustc_version).parse()?,
+        format!("thirtyfour/{} (rust)", VERSION).parse()?,
     );
 
     let parsed_url = urlparse(remote_server_addr);
@@ -27,4 +26,19 @@ pub fn build_headers(remote_server_addr: &str) -> Result<HeaderMap, RemoteConnec
     headers.insert(CONNECTION, "keep-alive".parse()?);
 
     Ok(headers)
+}
+
+pub fn unwrap_string(value: &serde_json::Value) -> WebDriverResult<String> {
+    let s: String = serde_json::from_value(value.clone())?;
+    Ok(s)
+}
+
+pub fn unwrap_strings(value: &serde_json::Value) -> WebDriverResult<Vec<String>> {
+    let v: Vec<String> = serde_json::from_value(value.clone())?;
+    Ok(v)
+}
+
+pub fn unwrap_bool(value: &serde_json::Value) -> WebDriverResult<bool> {
+    let b: bool = serde_json::from_value(value.clone())?;
+    Ok(b)
 }

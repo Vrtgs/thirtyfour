@@ -17,7 +17,7 @@ let caps = serde_json::json!({
     "platform": "any"
 });
 
-let driver = WebDriverSync::new("http://localhost:4444/wd/hub", caps)?;
+let driver = WebDriver::new("http://localhost:4444/wd/hub", caps)?;
 driver.get("https://mozilla.org");
 println!("Title: {}", driver.title()?);
 let elem = driver.find_element(By::Tag("input"))?;

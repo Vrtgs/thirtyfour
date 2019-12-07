@@ -145,10 +145,13 @@ impl TypingData {
     }
 }
 
-impl From<String> for TypingData {
-    fn from(value: String) -> Self {
+impl<S> From<S> for TypingData
+where
+    S: Into<String>,
+{
+    fn from(value: S) -> Self {
         TypingData {
-            data: value.chars().collect(),
+            data: value.into().chars().collect(),
         }
     }
 }

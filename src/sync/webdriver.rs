@@ -5,12 +5,12 @@ use log::error;
 use serde::Deserialize;
 
 use crate::common::command::{
-    By, Command, DesiredCapabilities, ElementId, SessionId, TimeoutConfiguration, WindowHandle,
+    By, Command, DesiredCapabilities, SessionId, TimeoutConfiguration, WindowHandle,
 };
-use crate::common::constant::MAGIC_ELEMENTID;
-use crate::error::{WebDriverError, WebDriverResult};
+use crate::common::connection_common::{unwrap_string, unwrap_strings};
+use crate::error::WebDriverResult;
+use crate::sync::webelement::{unwrap_element_sync, unwrap_elements_sync, WebElement};
 use crate::sync::RemoteConnectionSync;
-use crate::sync::WebElement;
 
 #[derive(Debug, Clone)]
 pub struct WebDriver {
@@ -44,42 +44,6 @@ impl WebDriver {
         })
     }
 
-    fn unwrap_string(&self, value: &serde_json::Value) -> WebDriverResult<String> {
-        value
-            .as_str()
-            .ok_or(WebDriverError::JsonError(format!(
-                "Value is not a string: {:?}",
-                value
-            )))
-            .map(|x| x.to_owned())
-    }
-
-    fn unwrap_strings(&self, value: &serde_json::Value) -> WebDriverResult<Vec<String>> {
-        let values = value.as_array().ok_or(WebDriverError::JsonError(format!(
-            "String array not found in value: {:?}",
-            value
-        )))?;
-        values.iter().map(|x| self.unwrap_string(x)).collect()
-    }
-
-    fn unwrap_element(&self, value: &serde_json::Value) -> WebDriverResult<WebElement> {
-        let id_str = value[MAGIC_ELEMENTID]
-            .as_str()
-            .ok_or(WebDriverError::JsonError(format!(
-                "ElementId not found in value: {:?}",
-                value
-            )))?;
-        Ok(WebElement::new(self.conn.clone(), ElementId::from(id_str)))
-    }
-
-    fn unwrap_elements(&self, value: &serde_json::Value) -> WebDriverResult<Vec<WebElement>> {
-        let values = value.as_array().ok_or(WebDriverError::JsonError(format!(
-            "ElementId array not found in value: {:?}",
-            value
-        )))?;
-        values.iter().map(|x| self.unwrap_element(x)).collect()
-    }
-
     pub fn capabilities(&self) -> &DesiredCapabilities {
         &self.capabilities
     }
@@ -106,33 +70,33 @@ impl WebDriver {
         let v = self
             .conn
             .execute(Command::GetCurrentUrl(&self.session_id))?;
-        self.unwrap_string(&v["value"])
+        unwrap_string(&v["value"])
     }
 
     pub fn page_source(&self) -> WebDriverResult<String> {
         let v = self
             .conn
             .execute(Command::GetPageSource(&self.session_id))?;
-        self.unwrap_string(&v["value"])
+        unwrap_string(&v["value"])
     }
 
     pub fn title(&self) -> WebDriverResult<String> {
         let v = self.conn.execute(Command::GetTitle(&self.session_id))?;
-        Ok(v["value"].as_str().unwrap_or_default().to_owned())
+        unwrap_string(&v["value"])
     }
 
     pub fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
         let v = self
             .conn
             .execute(Command::FindElement(&self.session_id, by))?;
-        self.unwrap_element(&v["value"])
+        unwrap_element_sync(self.conn.clone(), self.session_id.clone(), &v["value"])
     }
 
     pub fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         let v = self
             .conn
             .execute(Command::FindElements(&self.session_id, by))?;
-        self.unwrap_elements(&v["value"])
+        unwrap_elements_sync(&self.conn, &self.session_id, &v["value"])
     }
 
     pub fn execute_script(
@@ -165,15 +129,14 @@ impl WebDriver {
         let v = self
             .conn
             .execute(Command::GetWindowHandle(&self.session_id))?;
-        self.unwrap_string(&v["value"])
-            .map(|x| WindowHandle::from(x))
+        unwrap_string(&v["value"]).map(|x| WindowHandle::from(x))
     }
 
     pub fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
         let v = self
             .conn
             .execute(Command::GetWindowHandles(&self.session_id))?;
-        let strings = self.unwrap_strings(&v["value"])?;
+        let strings = unwrap_strings(&v["value"])?;
         Ok(strings.iter().map(|x| WindowHandle::from(x)).collect())
     }
 
@@ -245,28 +208,38 @@ impl Drop for WebDriver {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::error::WebDriverError;
-    use std::thread;
-    use std::time::Duration;
-
-    use super::*;
-
-    #[test]
-    fn test_webdriver_sync() -> Result<(), WebDriverError> {
-        let caps = serde_json::json!({
-            "browserName": "chrome",
-            "version": "",
-            "platform": "any"
-        });
-
-        let driver = WebDriver::new("http://localhost:4444/wd/hub", caps)?;
-        driver.get("https://mozilla.org")?;
-        driver.find_element(By::Tag("div"))?;
-        println!("Title = {}", driver.title()?);
-        thread::sleep(Duration::new(3, 0));
-
-        Ok(())
-    }
-}
+//#[cfg(test)]
+//mod tests {
+//    use std::thread;
+//    use std::time::Duration;
+//
+//    use crate::common::keys::TypingData;
+//    use crate::error::WebDriverError;
+//
+//    use super::*;
+//
+//    #[test]
+//    fn test_webdriver_sync() -> Result<(), WebDriverError> {
+//        let caps = serde_json::json!({
+//            "browserName": "chrome",
+//            "version": "",
+//            "platform": "any"
+//        });
+//
+//        let driver = WebDriver::new("http://localhost:4444/wd/hub", caps)?;
+//        driver.get("https://wikipedia.org")?;
+//        let elem_form = driver.find_element(By::Id("search-form"))?;
+//        let elem_text = elem_form.find_element(By::Id("searchInput"))?;
+//        elem_text.send_keys(TypingData::from("selenium"))?;
+//        let elem_button = elem_form.find_element(By::Css("button[type='submit']"))?;
+//        elem_button.click()?;
+//        driver.find_element(By::ClassName("firstHeading"))?;
+//        assert_eq!(driver.title()?, "Selenium - Wikipedia");
+//
+//        // Sleeping just to allow you to see the browser. Sleeps should generally be avoided
+//        // in selenium tests.
+//        thread::sleep(Duration::new(3, 0));
+//
+//        Ok(())
+//    }
+//}
