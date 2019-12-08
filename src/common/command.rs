@@ -37,7 +37,8 @@ impl fmt::Display for SessionId {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
+#[serde(transparent)]
 pub struct ElementId {
     _id: String,
 }
@@ -522,7 +523,7 @@ impl<'a> Command<'a> {
                 RequestMethod::Post,
                 format!("/session/{}/actions", session_id),
             )
-            .add_body(actions.clone()),
+            .add_body(json!({"actions": actions.clone()})),
             Command::ReleaseActions(session_id) => RequestData::new(
                 RequestMethod::Delete,
                 format!("/session/{}/actions", session_id),

@@ -42,7 +42,7 @@ pub fn unwrap_elements_sync(
 
 #[derive(Debug, Clone)]
 pub struct WebElement {
-    element_id: ElementId,
+    pub element_id: ElementId,
     session_id: SessionId,
     conn: Arc<RemoteConnectionSync>,
 }

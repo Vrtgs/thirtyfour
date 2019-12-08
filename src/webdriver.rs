@@ -4,6 +4,7 @@ use std::time::Duration;
 use log::error;
 use serde::Deserialize;
 
+use crate::action_chain::ActionChain;
 use crate::common::command::{
     By, Command, DesiredCapabilities, SessionId, TimeoutConfiguration, WindowHandle,
 };
@@ -196,6 +197,10 @@ impl WebDriver {
     pub async fn set_page_load_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, Some(time_to_wait), None);
         self.set_timeouts(timeouts).await
+    }
+
+    pub fn action_chain(&self) -> ActionChain {
+        ActionChain::new(self.conn.clone(), self.session_id.clone())
     }
 }
 

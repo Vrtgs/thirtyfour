@@ -9,6 +9,7 @@ use crate::common::command::{
 };
 use crate::common::connection_common::{unwrap_string, unwrap_strings};
 use crate::error::WebDriverResult;
+use crate::sync::action_chain::ActionChain;
 use crate::sync::webelement::{unwrap_element_sync, unwrap_elements_sync, WebElement};
 use crate::sync::RemoteConnectionSync;
 
@@ -196,6 +197,10 @@ impl WebDriver {
         let timeouts = TimeoutConfiguration::new(None, Some(time_to_wait), None);
         self.set_timeouts(timeouts)
     }
+
+    pub fn action_chain(&self) -> ActionChain {
+        ActionChain::new(self.conn.clone(), self.session_id.clone())
+    }
 }
 
 impl Drop for WebDriver {
@@ -207,39 +212,3 @@ impl Drop for WebDriver {
         }
     }
 }
-
-//#[cfg(test)]
-//mod tests {
-//    use std::thread;
-//    use std::time::Duration;
-//
-//    use crate::common::keys::TypingData;
-//    use crate::error::WebDriverError;
-//
-//    use super::*;
-//
-//    #[test]
-//    fn test_webdriver_sync() -> Result<(), WebDriverError> {
-//        let caps = serde_json::json!({
-//            "browserName": "chrome",
-//            "version": "",
-//            "platform": "any"
-//        });
-//
-//        let driver = WebDriver::new("http://localhost:4444/wd/hub", caps)?;
-//        driver.get("https://wikipedia.org")?;
-//        let elem_form = driver.find_element(By::Id("search-form"))?;
-//        let elem_text = elem_form.find_element(By::Id("searchInput"))?;
-//        elem_text.send_keys(TypingData::from("selenium"))?;
-//        let elem_button = elem_form.find_element(By::Css("button[type='submit']"))?;
-//        elem_button.click()?;
-//        driver.find_element(By::ClassName("firstHeading"))?;
-//        assert_eq!(driver.title()?, "Selenium - Wikipedia");
-//
-//        // Sleeping just to allow you to see the browser. Sleeps should generally be avoided
-//        // in selenium tests.
-//        thread::sleep(Duration::new(3, 0));
-//
-//        Ok(())
-//    }
-//}

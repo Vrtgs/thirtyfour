@@ -107,13 +107,14 @@ pub use connection_async::*;
 pub use types::ElementRect;
 pub use webdriver::WebDriver;
 pub use webelement::WebElement;
-
+pub mod action_chain;
 mod connection_async;
 mod types;
 mod webdriver;
 mod webelement;
 
 pub mod common {
+    pub mod action;
     pub mod capabilities;
     pub mod command;
     pub mod connection_common;
@@ -125,6 +126,7 @@ pub mod sync {
     pub use webdriver::WebDriver;
     pub use webelement::WebElement;
 
+    pub mod action_chain;
     mod connection_sync;
     mod webdriver;
     mod webelement;
