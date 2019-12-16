@@ -1,12 +1,13 @@
 [package]
 name = "thirtyfour"
-description = "Selenium webdriver client for Rust, inspired by the python selenium library, and named after the atomic number for Selenium (Se)"
-version = "0.2.2-alpha.1"
+version = "0.2.2"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "Apache-2.0"
+description = "Selenium webdriver client for Rust, inspired by the python selenium library, and named after the atomic number for Selenium (Se)"
 homepage = "https://github.com/stevepryde/thirtyfour"
 repository = "https://github.com/stevepryde/thirtyfour"
+readme = "README.md"
 keywords = ["selenium", "webdriver", "testing", "test"]
 categories = ["development-tools::testing"]
 

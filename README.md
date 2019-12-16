@@ -12,7 +12,7 @@ Here's what it looks like right now (synchronous version):
 
 ```rust 
 let caps = serde_json::json!({
-    "browserName": "chrome",
+    "browserName": "firefox",
     "version": "",
     "platform": "any"
 });
