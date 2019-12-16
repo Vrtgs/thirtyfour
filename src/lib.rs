@@ -107,6 +107,7 @@ pub use connection_async::*;
 pub use types::ElementRect;
 pub use webdriver::WebDriver;
 pub use webelement::WebElement;
+
 pub mod action_chain;
 mod connection_async;
 mod types;

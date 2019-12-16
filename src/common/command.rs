@@ -187,7 +187,7 @@ pub enum RequestMethod {
 pub struct RequestData {
     pub method: RequestMethod,
     pub url: String,
-    pub body: serde_json::Value,
+    pub body: Option<serde_json::Value>,
 }
 
 impl RequestData {
@@ -195,17 +195,13 @@ impl RequestData {
         RequestData {
             method,
             url: url.into(),
-            body: serde_json::Value::Null,
+            body: None,
         }
     }
 
     pub fn add_body(mut self, body: serde_json::Value) -> Self {
-        self.body = body;
+        self.body = Some(body);
         self
-    }
-
-    pub fn has_body(&self) -> bool {
-        self.body != serde_json::Value::Null
     }
 }
 
@@ -303,7 +299,7 @@ impl<'a> Command<'a> {
             Command::NewSession(caps) => {
                 let w3c_caps = make_w3c_caps(caps.clone());
                 RequestData::new(RequestMethod::Post, "/session").add_body(json!({
-                    "capabilties": w3c_caps,
+                    "capabilities": w3c_caps,
                     "desiredCapabilities": caps
                 }))
             }
@@ -474,7 +470,8 @@ impl<'a> Command<'a> {
             Command::ElementClick(session_id, element_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/element/{}/click", session_id, element_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::ElementClear(session_id, element_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/element/{}/clear", session_id, element_id),

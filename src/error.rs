@@ -6,7 +6,7 @@ pub type WebDriverResult<T> = Result<T, WebDriverError>;
 #[derive(Debug, Deserialize, Clone)]
 pub struct WebDriverErrorValue {
     message: String,
-    class: Option<String>,
+    error: Option<String>,
     stacktrace: Option<String>,
     data: Option<serde_json::Value>,
 }
@@ -15,7 +15,7 @@ pub struct WebDriverErrorValue {
 pub struct WebDriverErrorInfo {
     #[serde(skip)]
     status: u16,
-    #[serde(rename(deserialize = "state"))]
+    #[serde(default, rename(deserialize = "state"))]
     error: String,
     value: WebDriverErrorValue,
 }
@@ -66,12 +66,15 @@ impl WebDriverError {
             }
         };
         payload.status = status;
-        let error = payload.error.as_str();
+        let mut error = payload.error.clone();
         if error.is_empty() {
-            return WebDriverError::NotInSpec(payload);
+            error = payload.value.error.clone().unwrap_or_default();
+            if error.is_empty() {
+                return WebDriverError::NotInSpec(payload);
+            }
         }
 
-        match error {
+        match error.as_str() {
             "element click intercepted" => WebDriverError::ElementClickIntercepted(payload),
             "element not interactable" => WebDriverError::ElementNotInteractable(payload),
             "insecure certificate" => WebDriverError::InsecureCertificate(payload),

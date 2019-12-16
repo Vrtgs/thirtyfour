@@ -10,9 +10,9 @@ use crate::common::command::{
 };
 use crate::common::connection_common::{unwrap_string, unwrap_strings};
 use crate::error::WebDriverResult;
+use crate::webelement::{unwrap_element_async, unwrap_elements_async};
 use crate::RemoteConnectionAsync;
 use crate::WebElement;
-use crate::webelement::{unwrap_element_async, unwrap_elements_async};
 
 pub struct WebDriver {
     session_id: SessionId,
@@ -30,14 +30,27 @@ impl WebDriver {
 
         #[derive(Debug, Deserialize)]
         struct ConnectionData {
-            #[serde(rename(deserialize = "sessionId"))]
+            #[serde(default, rename(deserialize = "sessionId"))]
             session_id: String,
-            value: serde_json::Value,
+            #[serde(default)]
+            capabilities: serde_json::Value,
         }
 
-        let data: ConnectionData = serde_json::from_value(v)?;
-        let session_id = SessionId::from(data.session_id);
-        let actual_capabilities = data.value;
+        #[derive(Debug, Deserialize)]
+        struct ConnectionResp {
+            #[serde(default)]
+            session_id: String,
+            value: ConnectionData,
+        }
+
+        let resp: ConnectionResp = serde_json::from_value(v)?;
+        let data = resp.value;
+        let session_id = SessionId::from(if resp.session_id.is_empty() {
+            data.session_id
+        } else {
+            resp.session_id
+        });
+        let actual_capabilities = data.capabilities;
         Ok(WebDriver {
             session_id,
             capabilities: actual_capabilities,
@@ -51,52 +64,62 @@ impl WebDriver {
 
     pub async fn close(&self) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::CloseWindow(&self.session_id)).await
+            .execute(Command::CloseWindow(&self.session_id))
+            .await
             .map(|_| ())
     }
 
     pub async fn quit(&self) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::DeleteSession(&self.session_id)).await
+            .execute(Command::DeleteSession(&self.session_id))
+            .await
             .map(|_| ())
     }
 
     pub async fn get<S: Into<String>>(&self, url: S) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::NavigateTo(&self.session_id, url.into())).await
+            .execute(Command::NavigateTo(&self.session_id, url.into()))
+            .await
             .map(|_| ())
     }
 
     pub async fn current_url(&self) -> WebDriverResult<String> {
         let v = self
             .conn
-            .execute(Command::GetCurrentUrl(&self.session_id)).await?;
+            .execute(Command::GetCurrentUrl(&self.session_id))
+            .await?;
         unwrap_string(&v["value"])
     }
 
     pub async fn page_source(&self) -> WebDriverResult<String> {
         let v = self
             .conn
-            .execute(Command::GetPageSource(&self.session_id)).await?;
+            .execute(Command::GetPageSource(&self.session_id))
+            .await?;
         unwrap_string(&v["value"])
     }
 
     pub async fn title(&self) -> WebDriverResult<String> {
-        let v = self.conn.execute(Command::GetTitle(&self.session_id)).await?;
+        let v = self
+            .conn
+            .execute(Command::GetTitle(&self.session_id))
+            .await?;
         Ok(v["value"].as_str().unwrap_or_default().to_owned())
     }
 
     pub async fn find_element<'a>(&self, by: By<'a>) -> WebDriverResult<WebElement> {
         let v = self
             .conn
-            .execute(Command::FindElement(&self.session_id, by)).await?;
-        unwrap_element_async(self.conn.clone(), self.session_id.clone(),&v["value"])
+            .execute(Command::FindElement(&self.session_id, by))
+            .await?;
+        unwrap_element_async(self.conn.clone(), self.session_id.clone(), &v["value"])
     }
 
     pub async fn find_elements<'a>(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement>> {
         let v = self
             .conn
-            .execute(Command::FindElements(&self.session_id, by)).await?;
+            .execute(Command::FindElements(&self.session_id, by))
+            .await?;
         unwrap_elements_async(&self.conn, &self.session_id, &v["value"])
     }
 
@@ -105,11 +128,14 @@ impl WebDriver {
         script: &str,
         args: Vec<serde_json::Value>,
     ) -> WebDriverResult<serde_json::Value> {
-        let v = self.conn.execute(Command::ExecuteScript(
-            &self.session_id,
-            script.to_owned(),
-            args,
-        )).await?;
+        let v = self
+            .conn
+            .execute(Command::ExecuteScript(
+                &self.session_id,
+                script.to_owned(),
+                args,
+            ))
+            .await?;
         Ok(v["value"].clone())
     }
 
@@ -118,69 +144,80 @@ impl WebDriver {
         script: &str,
         args: Vec<serde_json::Value>,
     ) -> WebDriverResult<serde_json::Value> {
-        let v = self.conn.execute(Command::ExecuteAsyncScript(
-            &self.session_id,
-            script.to_owned(),
-            args,
-        )).await?;
+        let v = self
+            .conn
+            .execute(Command::ExecuteAsyncScript(
+                &self.session_id,
+                script.to_owned(),
+                args,
+            ))
+            .await?;
         Ok(v["value"].clone())
     }
 
     pub async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
         let v = self
             .conn
-            .execute(Command::GetWindowHandle(&self.session_id)).await?;
-        unwrap_string(&v["value"])
-            .map(|x| WindowHandle::from(x))
+            .execute(Command::GetWindowHandle(&self.session_id))
+            .await?;
+        unwrap_string(&v["value"]).map(|x| WindowHandle::from(x))
     }
 
     pub async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
         let v = self
             .conn
-            .execute(Command::GetWindowHandles(&self.session_id)).await?;
+            .execute(Command::GetWindowHandles(&self.session_id))
+            .await?;
         let strings = unwrap_strings(&v["value"])?;
         Ok(strings.iter().map(|x| WindowHandle::from(x)).collect())
     }
 
     pub async fn mazimize_window(&self) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::MaximizeWindow(&self.session_id)).await
+            .execute(Command::MaximizeWindow(&self.session_id))
+            .await
             .map(|_| ())
     }
 
     pub async fn minimize_window(&self) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::MinimizeWindow(&self.session_id)).await
+            .execute(Command::MinimizeWindow(&self.session_id))
+            .await
             .map(|_| ())
     }
 
     pub async fn fullscreen_window(&self) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::FullscreenWindow(&self.session_id)).await
+            .execute(Command::FullscreenWindow(&self.session_id))
+            .await
             .map(|_| ())
     }
 
     pub async fn back(&self) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::Back(&self.session_id)).await
+            .execute(Command::Back(&self.session_id))
+            .await
             .map(|_| ())
     }
 
     pub async fn forward(&self) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::Forward(&self.session_id)).await
+            .execute(Command::Forward(&self.session_id))
+            .await
             .map(|_| ())
     }
 
     pub async fn refresh(&self) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::Refresh(&self.session_id)).await
+            .execute(Command::Refresh(&self.session_id))
+            .await
             .map(|_| ())
     }
 
     pub async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
         self.conn
-            .execute(Command::SetTimeouts(&self.session_id, timeouts)).await
+            .execute(Command::SetTimeouts(&self.session_id, timeouts))
+            .await
             .map(|_| ())
     }
 

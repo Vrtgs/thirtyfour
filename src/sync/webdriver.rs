@@ -30,14 +30,27 @@ impl WebDriver {
 
         #[derive(Debug, Deserialize)]
         struct ConnectionData {
-            #[serde(rename(deserialize = "sessionId"))]
+            #[serde(default, rename(deserialize = "sessionId"))]
             session_id: String,
-            value: serde_json::Value,
+            #[serde(default)]
+            capabilities: serde_json::Value,
         }
 
-        let data: ConnectionData = serde_json::from_value(v)?;
-        let session_id = SessionId::from(data.session_id);
-        let actual_capabilities = data.value;
+        #[derive(Debug, Deserialize)]
+        struct ConnectionResp {
+            #[serde(default)]
+            session_id: String,
+            value: ConnectionData,
+        }
+
+        let resp: ConnectionResp = serde_json::from_value(v)?;
+        let data = resp.value;
+        let session_id = SessionId::from(if resp.session_id.is_empty() {
+            data.session_id
+        } else {
+            resp.session_id
+        });
+        let actual_capabilities = data.capabilities;
         Ok(WebDriver {
             session_id,
             capabilities: actual_capabilities,

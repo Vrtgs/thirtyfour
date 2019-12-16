@@ -82,10 +82,8 @@ pub enum PointerAction {
         #[serde(skip_serializing_if = "Option::is_none")]
         duration: Option<u64>,
         origin: PointerOrigin,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        x: Option<i64>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        y: Option<i64>,
+        x: i64,
+        y: i64,
     },
     PointerCancel,
 }
@@ -184,7 +182,7 @@ impl ActionSource<PointerAction> {
         }
     }
 
-    pub fn move_to(&mut self, x: Option<i64>, y: Option<i64>) {
+    pub fn move_to(&mut self, x: i64, y: i64) {
         self.add_action(PointerAction::PointerMove {
             duration: None,
             origin: PointerOrigin::Viewport,
@@ -193,7 +191,7 @@ impl ActionSource<PointerAction> {
         });
     }
 
-    pub fn move_by(&mut self, x: Option<i64>, y: Option<i64>) {
+    pub fn move_by(&mut self, x: i64, y: i64) {
         self.add_action(PointerAction::PointerMove {
             duration: None,
             origin: PointerOrigin::Pointer,
@@ -202,7 +200,7 @@ impl ActionSource<PointerAction> {
         });
     }
 
-    pub fn move_to_element(&mut self, element_id: ElementId, x: Option<i64>, y: Option<i64>) {
+    pub fn move_to_element(&mut self, element_id: ElementId, x: i64, y: i64) {
         self.add_action(PointerAction::PointerMove {
             duration: None,
             origin: PointerOrigin::WebElement(element_id),
@@ -215,8 +213,8 @@ impl ActionSource<PointerAction> {
         self.add_action(PointerAction::PointerMove {
             duration: None,
             origin: PointerOrigin::WebElement(element_id),
-            x: None,
-            y: None,
+            x: 0,
+            y: 0,
         });
     }
 
@@ -444,44 +442,44 @@ mod tests {
         compare_pointer_action(
             PointerAction::PointerMove {
                 duration: None,
-                x: None,
-                y: None,
+                x: 0,
+                y: 0,
                 origin: PointerOrigin::Viewport,
             },
             json!({
-            "type": "pointerMove", "origin": "viewport"
+            "type": "pointerMove", "origin": "viewport", "x": 0, "y": 0
             }),
         );
 
         compare_pointer_action(
             PointerAction::PointerMove {
                 duration: None,
-                x: None,
-                y: None,
+                x: 0,
+                y: 0,
                 origin: PointerOrigin::Pointer,
             },
             json!({
-            "type": "pointerMove", "origin": "pointer"
+            "type": "pointerMove", "origin": "pointer", "x": 0, "y": 0
             }),
         );
 
         compare_pointer_action(
             PointerAction::PointerMove {
                 duration: None,
-                x: None,
-                y: None,
+                x: 0,
+                y: 0,
                 origin: PointerOrigin::WebElement(ElementId::from("id1234")),
             },
             json!({
-            "type": "pointerMove", "origin": {"element-6066-11e4-a52e-4f735466cecf": "id1234"}
+            "type": "pointerMove", "origin": {"element-6066-11e4-a52e-4f735466cecf": "id1234"}, "x": 0, "y": 0
             }),
         );
 
         compare_pointer_action(
             PointerAction::PointerMove {
                 duration: Some(1),
-                x: Some(100),
-                y: Some(200),
+                x: 100,
+                y: 200,
                 origin: PointerOrigin::Viewport,
             },
             json!({
@@ -496,8 +494,8 @@ mod tests {
         compare_pointer_action(
             PointerAction::PointerMove {
                 duration: Some(1),
-                x: Some(100),
-                y: Some(200),
+                x: 100,
+                y: 200,
                 origin: PointerOrigin::Pointer,
             },
             json!({
@@ -512,8 +510,8 @@ mod tests {
         compare_pointer_action(
             PointerAction::PointerMove {
                 duration: Some(1),
-                x: Some(100),
-                y: Some(200),
+                x: 100,
+                y: 200,
                 origin: PointerOrigin::WebElement(ElementId::from("someid")),
             },
             json!({

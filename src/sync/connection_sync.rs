@@ -30,8 +30,9 @@ impl RemoteConnectionSync {
             RequestMethod::Post => self.client.post(&url),
             RequestMethod::Delete => self.client.delete(&url),
         };
-        if request_data.has_body() {
-            request = request.json(&request_data.body);
+
+        if let Some(x) = request_data.body {
+            request = request.json(&x);
         }
 
         let resp = request

@@ -88,15 +88,15 @@ impl ActionChain {
             .release_on_element(target)
     }
 
-    pub fn drag_and_drop_by_offset(self, x_offset: Option<i64>, y_offset: Option<i64>) -> Self {
+    pub fn drag_and_drop_by_offset(self, x_offset: i64, y_offset: i64) -> Self {
         self.click_and_hold().move_by_offset(x_offset, y_offset)
     }
 
     pub fn drag_and_drop_element_by_offset(
         self,
         element: &WebElement,
-        x_offset: Option<i64>,
-        y_offset: Option<i64>,
+        x_offset: i64,
+        y_offset: i64,
     ) -> Self {
         self.click_and_hold_element(element)
             .move_by_offset(x_offset, y_offset)
@@ -122,7 +122,7 @@ impl ActionChain {
         self.click_element(element).key_up(value)
     }
 
-    pub fn move_by_offset(mut self, x_offset: Option<i64>, y_offset: Option<i64>) -> Self {
+    pub fn move_by_offset(mut self, x_offset: i64, y_offset: i64) -> Self {
         self.pointer_actions.move_by(x_offset, y_offset);
         self.key_actions.pause();
         self
@@ -138,8 +138,8 @@ impl ActionChain {
     pub fn move_to_element_with_offset(
         mut self,
         element: &WebElement,
-        x_offset: Option<i64>,
-        y_offset: Option<i64>,
+        x_offset: i64,
+        y_offset: i64,
     ) -> Self {
         self.pointer_actions
             .move_to_element(element.element_id.clone(), x_offset, y_offset);
