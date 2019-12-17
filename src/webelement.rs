@@ -7,7 +7,7 @@ use async_std::prelude::*;
 use base64::decode;
 
 use crate::common::command::{Command, ElementId, SessionId};
-use crate::common::connection_common::{unwrap_bool, unwrap_string};
+use crate::common::connection_common::unwrap;
 use crate::common::keys::TypingData;
 use crate::error::WebDriverResult;
 use crate::types::{ElementRect, ElementRef};
@@ -75,7 +75,7 @@ impl<'a> WebElement {
                 &self.element_id,
             ))
             .await?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn text(&self) -> WebDriverResult<String> {
@@ -83,7 +83,7 @@ impl<'a> WebElement {
             .conn
             .execute(Command::GetElementText(&self.session_id, &self.element_id))
             .await?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn click(&self) -> WebDriverResult<()> {
@@ -109,7 +109,7 @@ impl<'a> WebElement {
                 name.to_owned(),
             ))
             .await?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn get_attribute(&self, name: &str) -> WebDriverResult<String> {
@@ -121,7 +121,7 @@ impl<'a> WebElement {
                 name.to_owned(),
             ))
             .await?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn get_css_property(&self, name: &str) -> WebDriverResult<String> {
@@ -133,7 +133,7 @@ impl<'a> WebElement {
                 name.to_owned(),
             ))
             .await?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn is_selected(&self) -> WebDriverResult<bool> {
@@ -144,7 +144,7 @@ impl<'a> WebElement {
                 &self.element_id,
             ))
             .await?;
-        unwrap_bool(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn is_enabled(&self) -> WebDriverResult<bool> {
@@ -155,7 +155,7 @@ impl<'a> WebElement {
                 &self.element_id,
             ))
             .await?;
-        unwrap_bool(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement> {
@@ -201,7 +201,7 @@ impl<'a> WebElement {
                 &self.element_id,
             ))
             .await?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {

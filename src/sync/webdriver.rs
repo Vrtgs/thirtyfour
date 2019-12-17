@@ -1,13 +1,19 @@
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use base64::decode;
 use log::error;
 use serde::Deserialize;
 
 use crate::common::command::{
-    By, Command, DesiredCapabilities, SessionId, TimeoutConfiguration, WindowHandle,
+    By, Command, DesiredCapabilities, OptionRect, Rect, SessionId, TimeoutConfiguration,
+    WindowHandle,
 };
-use crate::common::connection_common::{unwrap_string, unwrap_strings};
+use crate::common::connection_common::{unwrap, unwrap_vec};
+use crate::common::cookie::Cookie;
 use crate::error::WebDriverResult;
 use crate::sync::action_chain::ActionChain;
 use crate::sync::webelement::{unwrap_element_sync, unwrap_elements_sync, WebElement};
@@ -84,19 +90,19 @@ impl WebDriver {
         let v = self
             .conn
             .execute(Command::GetCurrentUrl(&self.session_id))?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn page_source(&self) -> WebDriverResult<String> {
         let v = self
             .conn
             .execute(Command::GetPageSource(&self.session_id))?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn title(&self) -> WebDriverResult<String> {
         let v = self.conn.execute(Command::GetTitle(&self.session_id))?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
@@ -143,14 +149,14 @@ impl WebDriver {
         let v = self
             .conn
             .execute(Command::GetWindowHandle(&self.session_id))?;
-        unwrap_string(&v["value"]).map(|x| WindowHandle::from(x))
+        unwrap::<String>(&v["value"]).map(|x| WindowHandle::from(x))
     }
 
     pub fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
         let v = self
             .conn
             .execute(Command::GetWindowHandles(&self.session_id))?;
-        let strings = unwrap_strings(&v["value"])?;
+        let strings: Vec<String> = unwrap_vec(&v["value"])?;
         Ok(strings.iter().map(|x| WindowHandle::from(x)).collect())
     }
 
@@ -169,6 +175,19 @@ impl WebDriver {
     pub fn fullscreen_window(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::FullscreenWindow(&self.session_id))
+            .map(|_| ())
+    }
+
+    pub fn get_window_rect(&self) -> WebDriverResult<Rect> {
+        let v = self
+            .conn
+            .execute(Command::GetWindowRect(&self.session_id))?;
+        unwrap(&v["value"])
+    }
+
+    pub fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
+        self.conn
+            .execute(Command::SetWindowRect(&self.session_id, rect))
             .map(|_| ())
     }
 
@@ -213,6 +232,58 @@ impl WebDriver {
 
     pub fn action_chain(&self) -> ActionChain {
         ActionChain::new(self.conn.clone(), self.session_id.clone())
+    }
+
+    pub fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
+        let v = self
+            .conn
+            .execute(Command::GetAllCookies(&self.session_id))?;
+        unwrap_vec::<Cookie>(&v["value"])
+    }
+
+    pub fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
+        let v = self
+            .conn
+            .execute(Command::GetNamedCookie(&self.session_id, name))?;
+        unwrap::<Cookie>(&v["value"])
+    }
+
+    pub fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
+        self.conn
+            .execute(Command::DeleteCookie(&self.session_id, name))
+            .map(|_| ())
+    }
+
+    pub fn delete_all_cookies(&self) -> WebDriverResult<()> {
+        self.conn
+            .execute(Command::DeleteAllCookies(&self.session_id))
+            .map(|_| ())
+    }
+
+    pub fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
+        self.conn
+            .execute(Command::AddCookie(&self.session_id, cookie))
+            .map(|_| ())
+    }
+
+    pub fn screenshot_as_base64(&self) -> WebDriverResult<String> {
+        let v = self
+            .conn
+            .execute(Command::TakeScreenshot(&self.session_id))?;
+        unwrap(&v["value"])
+    }
+
+    pub fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
+        let s = self.screenshot_as_base64()?;
+        let bytes: Vec<u8> = decode(&s)?;
+        Ok(bytes)
+    }
+
+    pub fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
+        let png = self.screenshot_as_png()?;
+        let mut file = File::create(path)?;
+        file.write_all(&png)?;
+        Ok(())
     }
 }
 

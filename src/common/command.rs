@@ -2,11 +2,12 @@ use std::fmt;
 use std::ops::Deref;
 use std::time::Duration;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::common::capabilities::make_w3c_caps;
 use crate::common::constant::MAGIC_ELEMENTID;
+use crate::common::cookie::Cookie;
 use crate::common::keys::TypingData;
 
 #[derive(Debug, Clone)]
@@ -99,51 +100,84 @@ impl fmt::Display for WindowType {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Rect {
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+}
+
+impl Rect {
+    pub fn new(x: i32, y: i32, width: i32, height: i32) -> Self {
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct OptionRect {
-    _x: Option<i32>,
-    _y: Option<i32>,
-    _width: Option<i32>,
-    _height: Option<i32>,
+    pub x: Option<i32>,
+    pub y: Option<i32>,
+    pub width: Option<i32>,
+    pub height: Option<i32>,
 }
 
 impl OptionRect {
     pub fn new() -> Self {
         OptionRect {
-            _x: None,
-            _y: None,
-            _width: None,
-            _height: None,
+            x: None,
+            y: None,
+            width: None,
+            height: None,
         }
     }
 
-    pub fn x(mut self, value: i32) -> Self {
-        self._x = Some(value);
+    pub fn with_x(mut self, value: i32) -> Self {
+        self.x = Some(value);
         self
     }
 
-    pub fn y(mut self, value: i32) -> Self {
-        self._y = Some(value);
+    pub fn with_y(mut self, value: i32) -> Self {
+        self.y = Some(value);
         self
     }
 
-    pub fn width(mut self, value: i32) -> Self {
-        self._width = Some(value);
+    pub fn with_width(mut self, value: i32) -> Self {
+        self.width = Some(value);
         self
     }
 
-    pub fn height(mut self, value: i32) -> Self {
-        self._height = Some(value);
+    pub fn with_height(mut self, value: i32) -> Self {
+        self.height = Some(value);
         self
     }
 
-    pub fn to_json(&self) -> serde_json::Value {
-        json!({
-            "x": self._x,
-            "y": self._y,
-            "width": self._width,
-            "height": self._height
-        })
+    pub fn with_pos(mut self, x: i32, y: i32) -> Self {
+        self.x = Some(x);
+        self.y = Some(y);
+        self
+    }
+
+    pub fn with_size(mut self, width: i32, height: i32) -> Self {
+        self.width = Some(width);
+        self.height = Some(height);
+        self
+    }
+}
+
+impl From<Rect> for OptionRect {
+    fn from(value: Rect) -> Self {
+        OptionRect {
+            x: Some(value.x),
+            y: Some(value.y),
+            width: Some(value.width),
+            height: Some(value.height),
+        }
     }
 }
 
@@ -207,7 +241,6 @@ impl RequestData {
 
 // TODO: These can become actual types later.
 pub type DesiredCapabilities = serde_json::Value;
-type CookieData = serde_json::Value;
 type Actions = serde_json::Value;
 
 pub enum By<'a> {
@@ -279,9 +312,9 @@ pub enum Command<'a> {
     ExecuteScript(&'a SessionId, String, Vec<serde_json::Value>),
     ExecuteAsyncScript(&'a SessionId, String, Vec<serde_json::Value>),
     GetAllCookies(&'a SessionId),
-    GetNamedCookie(&'a SessionId, String),
-    AddCookie(&'a SessionId, CookieData),
-    DeleteCookie(&'a SessionId, String),
+    GetNamedCookie(&'a SessionId, &'a str),
+    AddCookie(&'a SessionId, Cookie),
+    DeleteCookie(&'a SessionId, &'a str),
     DeleteAllCookies(&'a SessionId),
     PerformActions(&'a SessionId, Actions),
     ReleaseActions(&'a SessionId),
@@ -374,7 +407,7 @@ impl<'a> Command<'a> {
                 RequestMethod::Post,
                 format!("/session/{}/window/rect", session_id),
             )
-            .add_body(option_rect.to_json()),
+            .add_body(json!(option_rect)),
             Command::MaximizeWindow(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/window/maximize", session_id),
@@ -507,7 +540,7 @@ impl<'a> Command<'a> {
                 RequestMethod::Post,
                 format!("/session/{}/cookie", session_id),
             )
-            .add_body(cookie.clone()),
+            .add_body(json!({ "cookie": cookie })),
             Command::DeleteCookie(session_id, cookie_name) => RequestData::new(
                 RequestMethod::Delete,
                 format!("/session/{}/cookie/{}", session_id, cookie_name),

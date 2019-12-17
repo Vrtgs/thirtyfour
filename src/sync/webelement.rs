@@ -8,7 +8,7 @@ use std::write;
 use base64::decode;
 
 use crate::common::command::{Command, ElementId, SessionId};
-use crate::common::connection_common::{unwrap_bool, unwrap_string};
+use crate::common::connection_common::unwrap;
 use crate::common::keys::TypingData;
 use crate::error::WebDriverResult;
 use crate::sync::RemoteConnectionSync;
@@ -73,14 +73,14 @@ impl WebElement {
             &self.session_id,
             &self.element_id,
         ))?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn text(&self) -> WebDriverResult<String> {
         let v = self
             .conn
             .execute(Command::GetElementText(&self.session_id, &self.element_id))?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn click(&self) -> WebDriverResult<()> {
@@ -101,7 +101,7 @@ impl WebElement {
             &self.element_id,
             name.to_owned(),
         ))?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn get_attribute(&self, name: &str) -> WebDriverResult<String> {
@@ -110,7 +110,7 @@ impl WebElement {
             &self.element_id,
             name.to_owned(),
         ))?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn get_css_property(&self, name: &str) -> WebDriverResult<String> {
@@ -119,7 +119,7 @@ impl WebElement {
             &self.element_id,
             name.to_owned(),
         ))?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn is_selected(&self) -> WebDriverResult<bool> {
@@ -127,7 +127,7 @@ impl WebElement {
             &self.session_id,
             &self.element_id,
         ))?;
-        unwrap_bool(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn is_enabled(&self) -> WebDriverResult<bool> {
@@ -135,7 +135,7 @@ impl WebElement {
             &self.session_id,
             &self.element_id,
         ))?;
-        unwrap_bool(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
@@ -170,7 +170,7 @@ impl WebElement {
             &self.session_id,
             &self.element_id,
         ))?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {

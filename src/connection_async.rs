@@ -28,7 +28,6 @@ impl RemoteConnectionAsync {
     ) -> Result<serde_json::Value, WebDriverError> {
         let request_data = command.format_request();
         let url = self.url.clone() + &request_data.url;
-        println!("URL {:?}", url);
         let mut request = match request_data.method {
             RequestMethod::Get => self.client.get(&url),
             RequestMethod::Post => self.client.post(&url),
@@ -54,7 +53,6 @@ impl RemoteConnectionAsync {
                     .json()
                     .await
                     .map_err(|e| WebDriverError::JsonError(e.to_string()))?;
-                println!("RESP {:?}", body.to_string());
                 Err(WebDriverError::parse(status, body))
             }
             _ => Err(WebDriverError::RequestFailed(format!(

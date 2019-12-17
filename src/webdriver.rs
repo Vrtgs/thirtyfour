@@ -1,14 +1,20 @@
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use async_std::fs::File;
+use async_std::prelude::*;
+use base64::decode;
 use log::error;
 use serde::Deserialize;
 
 use crate::action_chain::ActionChain;
 use crate::common::command::{
-    By, Command, DesiredCapabilities, SessionId, TimeoutConfiguration, WindowHandle,
+    By, Command, DesiredCapabilities, OptionRect, Rect, SessionId, TimeoutConfiguration,
+    WindowHandle,
 };
-use crate::common::connection_common::{unwrap_string, unwrap_strings};
+use crate::common::connection_common::{unwrap, unwrap_vec};
+use crate::common::cookie::Cookie;
 use crate::error::WebDriverResult;
 use crate::webelement::{unwrap_element_async, unwrap_elements_async};
 use crate::RemoteConnectionAsync;
@@ -88,7 +94,7 @@ impl WebDriver {
             .conn
             .execute(Command::GetCurrentUrl(&self.session_id))
             .await?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn page_source(&self) -> WebDriverResult<String> {
@@ -96,7 +102,7 @@ impl WebDriver {
             .conn
             .execute(Command::GetPageSource(&self.session_id))
             .await?;
-        unwrap_string(&v["value"])
+        unwrap(&v["value"])
     }
 
     pub async fn title(&self) -> WebDriverResult<String> {
@@ -160,7 +166,7 @@ impl WebDriver {
             .conn
             .execute(Command::GetWindowHandle(&self.session_id))
             .await?;
-        unwrap_string(&v["value"]).map(|x| WindowHandle::from(x))
+        unwrap::<String>(&v["value"]).map(|x| WindowHandle::from(x))
     }
 
     pub async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
@@ -168,7 +174,7 @@ impl WebDriver {
             .conn
             .execute(Command::GetWindowHandles(&self.session_id))
             .await?;
-        let strings = unwrap_strings(&v["value"])?;
+        let strings: Vec<String> = unwrap_vec(&v["value"])?;
         Ok(strings.iter().map(|x| WindowHandle::from(x)).collect())
     }
 
@@ -189,6 +195,21 @@ impl WebDriver {
     pub async fn fullscreen_window(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::FullscreenWindow(&self.session_id))
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn get_window_rect(&self) -> WebDriverResult<Rect> {
+        let v = self
+            .conn
+            .execute(Command::GetWindowRect(&self.session_id))
+            .await?;
+        unwrap(&v["value"])
+    }
+
+    pub async fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
+        self.conn
+            .execute(Command::SetWindowRect(&self.session_id, rect))
             .await
             .map(|_| ())
     }
@@ -239,13 +260,73 @@ impl WebDriver {
     pub fn action_chain(&self) -> ActionChain {
         ActionChain::new(self.conn.clone(), self.session_id.clone())
     }
+
+    pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
+        let v = self
+            .conn
+            .execute(Command::GetAllCookies(&self.session_id))
+            .await?;
+        unwrap_vec::<Cookie>(&v["value"])
+    }
+
+    pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
+        let v = self
+            .conn
+            .execute(Command::GetNamedCookie(&self.session_id, name))
+            .await?;
+        unwrap::<Cookie>(&v["value"])
+    }
+
+    pub async fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
+        self.conn
+            .execute(Command::DeleteCookie(&self.session_id, name))
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn delete_all_cookies(&self) -> WebDriverResult<()> {
+        self.conn
+            .execute(Command::DeleteAllCookies(&self.session_id))
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
+        self.conn
+            .execute(Command::AddCookie(&self.session_id, cookie))
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn screenshot_as_base64(&self) -> WebDriverResult<String> {
+        let v = self
+            .conn
+            .execute(Command::TakeScreenshot(&self.session_id))
+            .await?;
+        unwrap(&v["value"])
+    }
+
+    pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
+        let s = self.screenshot_as_base64().await?;
+        let bytes: Vec<u8> = decode(&s)?;
+        Ok(bytes)
+    }
+
+    pub async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
+        let png = self.screenshot_as_png().await?;
+        let mut file = File::create(path).await?;
+        file.write_all(&png).await?;
+        Ok(())
+    }
 }
 
 impl Drop for WebDriver {
     fn drop(&mut self) {
         if !(*self.session_id).is_empty() {
-            if let Err(_) = async_std::task::block_on(self.quit()) {
-                error!("Failed to close session");
+            // TODO: It's weird to mix tokio and async-std but this works.
+            //       Can we use tokio here?
+            if let Err(e) = async_std::task::block_on(self.quit()) {
+                error!("Error closing session: {:?}", e);
             }
         }
     }

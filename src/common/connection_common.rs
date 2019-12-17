@@ -1,6 +1,7 @@
 use base64::encode;
 use reqwest;
 use reqwest::header::{HeaderMap, ACCEPT, AUTHORIZATION, CONNECTION, CONTENT_TYPE, USER_AGENT};
+use serde::de::DeserializeOwned;
 
 use urlparse::urlparse;
 
@@ -28,17 +29,18 @@ pub fn build_headers(remote_server_addr: &str) -> Result<HeaderMap, RemoteConnec
     Ok(headers)
 }
 
-pub fn unwrap_string(value: &serde_json::Value) -> WebDriverResult<String> {
-    let s: String = serde_json::from_value(value.clone())?;
+pub fn unwrap<T>(value: &serde_json::Value) -> WebDriverResult<T>
+where
+    T: DeserializeOwned,
+{
+    let s: T = serde_json::from_value(value.clone())?;
     Ok(s)
 }
 
-pub fn unwrap_strings(value: &serde_json::Value) -> WebDriverResult<Vec<String>> {
-    let v: Vec<String> = serde_json::from_value(value.clone())?;
+pub fn unwrap_vec<T>(value: &serde_json::Value) -> WebDriverResult<Vec<T>>
+where
+    T: DeserializeOwned,
+{
+    let v: Vec<T> = serde_json::from_value(value.clone())?;
     Ok(v)
-}
-
-pub fn unwrap_bool(value: &serde_json::Value) -> WebDriverResult<bool> {
-    let b: bool = serde_json::from_value(value.clone())?;
-    Ok(b)
 }

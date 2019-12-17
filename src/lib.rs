@@ -120,6 +120,7 @@ pub mod common {
     pub mod command;
     pub mod connection_common;
     pub mod constant;
+    pub mod cookie;
     pub mod keys;
 }
 pub mod sync {
