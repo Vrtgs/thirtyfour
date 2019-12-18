@@ -103,14 +103,14 @@
 //! }
 //! ```
 pub use common::command::By;
+pub use common::cookie::Cookie;
+pub use common::types::*;
 pub use connection_async::*;
-pub use types::ElementRect;
 pub use webdriver::WebDriver;
 pub use webelement::WebElement;
 
 pub mod action_chain;
 mod connection_async;
-mod types;
 mod webdriver;
 mod webelement;
 
@@ -119,9 +119,9 @@ pub mod common {
     pub mod capabilities;
     pub mod command;
     pub mod connection_common;
-    pub mod constant;
     pub mod cookie;
     pub mod keys;
+    pub mod types;
 }
 pub mod sync {
     pub use connection_sync::*;
