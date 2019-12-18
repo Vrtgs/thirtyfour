@@ -28,7 +28,7 @@ pub struct ActionChain {
 impl ActionChain {
     /// Create a new ActionChain struct.
     ///
-    /// See [WebDriver::action_chain()](struct.WebDriver.html#method.action_chain)
+    /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
     pub fn new(conn: Arc<RemoteConnectionAsync>, session_id: SessionId) -> Self {
         ActionChain {
