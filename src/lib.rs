@@ -1,10 +1,26 @@
-//! Selenium client for working with W3C-compatible WebDriver implmentations.
+//! Selenium client for working with W3C-compatible WebDriver implementations.
 //!
-//! **NOTE:** This project is still WIP and not yet ready for production.
+//! Both synchronous and asynchronous APIs are provided (see examples below).
 //!
-//! The API is roughly modeled after the python selenium library.
+//! Currently supported (but may not yet be fully tested):
 //!
-//! Synchronous and asynchronous APIs are provided (see examples below).
+//! - Create remote browser session
+//! - Automatically close browser session on drop
+//! - Most WebDriver and WebElement methods
+//! - Find elements (via all common selectors)
+//! - Send keys to elements, including key-combinations
+//! - Execute Javascript
+//! - Action Chains
+//! - Cookies
+//! - Switch to frame/window/element/alert
+//! - Alert support
+//! - Save screenshot of browser or individual element
+//! - Synchronous support
+//! - Async / await support
+//!
+//! **Any help with testing and creating tickets for any issues found would be greatly appreciated.**
+//!
+//! ## Examples
 //!
 //! The following examples assume you have a selenium server running
 //! at localhost:4444.
@@ -21,7 +37,7 @@
 //! use std::thread;
 //! use std::time::Duration;
 //! use thirtyfour::error::WebDriverResult;
-//! use thirtyfour::{By, WebDriver, common::keys::TypingData};
+//! use thirtyfour::{By, WebDriver};
 //! use tokio;
 //!
 //! #[tokio::main]
@@ -46,7 +62,7 @@
 //!     let elem_text = elem_form.find_element(By::Id("searchInput")).await?;
 //!
 //!     // Type in the search terms.
-//!     elem_text.send_keys(TypingData::from("selenium")).await?;
+//!     elem_text.send_keys("selenium").await?;
 //!
 //!     // Click the search button.
 //!     let elem_button = elem_form.find_element(By::Css("button[type='submit']")).await?;
@@ -66,7 +82,7 @@
 //! use std::thread;
 //! use std::time::Duration;
 //! use thirtyfour::error::WebDriverResult;
-//! use thirtyfour::{By, sync::WebDriver, common::keys::TypingData};
+//! use thirtyfour::{By, sync::WebDriver};
 //!
 //! fn main() {
 //!     webtest().expect("Something went wrong");
@@ -89,7 +105,7 @@
 //!     let elem_text = elem_form.find_element(By::Id("searchInput"))?;
 //!
 //!     // Type in the search terms.
-//!     elem_text.send_keys(TypingData::from("selenium"))?;
+//!     elem_text.send_keys("selenium")?;
 //!
 //!     // Click the search button.
 //!     let elem_button = elem_form.find_element(By::Css("button[type='submit']"))?;
@@ -102,15 +118,19 @@
 //!     Ok(())
 //! }
 //! ```
+pub use alert::Alert;
 pub use common::command::By;
 pub use common::cookie::Cookie;
 pub use common::types::*;
 pub use connection_async::*;
+pub use switch_to::SwitchTo;
 pub use webdriver::WebDriver;
 pub use webelement::WebElement;
 
 pub mod action_chain;
+mod alert;
 mod connection_async;
+mod switch_to;
 mod webdriver;
 mod webelement;
 
@@ -124,12 +144,16 @@ pub mod common {
     pub mod types;
 }
 pub mod sync {
+    pub use alert::Alert;
     pub use connection_sync::*;
+    pub use switch_to::SwitchTo;
     pub use webdriver::WebDriver;
     pub use webelement::WebElement;
 
     pub mod action_chain;
+    mod alert;
     mod connection_sync;
+    mod switch_to;
     mod webdriver;
     mod webelement;
 }

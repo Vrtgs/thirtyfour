@@ -122,12 +122,15 @@ impl Keys {
     }
 }
 
-impl Add for Keys {
+impl<S> Add<S> for Keys
+where
+    S: Into<TypingData>,
+{
     type Output = TypingData;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        let data = vec![self.value(), rhs.value()];
-        Self::Output { data }
+    fn add(self, rhs: S) -> Self::Output {
+        let data = vec![self.value()];
+        Self::Output { data } + rhs
     }
 }
 
@@ -156,22 +159,23 @@ where
     }
 }
 
-impl Add for TypingData {
-    type Output = TypingData;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut data = self.data.clone();
-        data.extend(rhs.data.iter().cloned());
-        Self::Output { data }
+impl From<Keys> for TypingData {
+    fn from(value: Keys) -> Self {
+        TypingData {
+            data: vec![value.value()],
+        }
     }
 }
 
-impl Add<Keys> for TypingData {
+impl<S> Add<S> for TypingData
+where
+    S: Into<TypingData>,
+{
     type Output = TypingData;
 
-    fn add(self, rhs: Keys) -> Self::Output {
+    fn add(self, rhs: S) -> Self::Output {
         let mut data = self.data.clone();
-        data.push(rhs.value());
+        data.extend(rhs.into().data.iter());
         Self::Output { data }
     }
 }

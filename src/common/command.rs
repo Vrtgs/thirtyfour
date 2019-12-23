@@ -80,9 +80,11 @@ pub enum Command<'a> {
     GetTitle(&'a SessionId),
     GetWindowHandle(&'a SessionId),
     CloseWindow(&'a SessionId),
-    SwitchToWindow(&'a SessionId, WindowHandle),
+    SwitchToWindow(&'a SessionId, &'a WindowHandle),
     GetWindowHandles(&'a SessionId),
-    SwitchToFrame(&'a SessionId, &'a ElementId),
+    SwitchToFrameDefault(&'a SessionId),
+    SwitchToFrameNumber(&'a SessionId, u16),
+    SwitchToFrameElement(&'a SessionId, &'a ElementId),
     SwitchToParentFrame(&'a SessionId),
     GetWindowRect(&'a SessionId),
     SetWindowRect(&'a SessionId, OptionRect),
@@ -184,7 +186,17 @@ impl<'a> Command<'a> {
                 RequestMethod::Get,
                 format!("/session/{}/window/handles", session_id),
             ),
-            Command::SwitchToFrame(session_id, element_id) => RequestData::new(
+            Command::SwitchToFrameDefault(session_id) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/frame", session_id),
+            )
+            .add_body(json!({ "id": serde_json::Value::Null })),
+            Command::SwitchToFrameNumber(session_id, frame_number) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/frame", session_id),
+            )
+            .add_body(json!({ "id": frame_number })),
+            Command::SwitchToFrameElement(session_id, element_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/frame", session_id),
             )
@@ -218,7 +230,7 @@ impl<'a> Command<'a> {
                 format!("/session/{}/window/fullscreen", session_id),
             ),
             Command::GetActiveElement(session_id) => RequestData::new(
-                RequestMethod::Post,
+                RequestMethod::Get,
                 format!("/session/{}/element/active", session_id),
             ),
             Command::FindElement(session_id, by) => {

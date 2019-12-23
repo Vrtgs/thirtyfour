@@ -1,30 +1,28 @@
-Selenium webdriver client for Rust, inspired by the python selenium library.
-
-Only the W3C WebDriver spec is supported (including Chrome and Firefox, possibly others).
+Selenium client for working with W3C-compatible WebDriver implementations.
 
 Both synchronous and async / await APIs are provided (see examples below).
 
 ## Status
- 
-**This project is still WIP and has not yet been thoroughly tested.**
+
+**Some functionality has not yet been thoroughly tested.**
 
 Any help with testing and creating tickets for any issues found would be greatly appreciated.
 
-Most basic functionality is already implemented including:
+Currently supported:
 
-- Creating browser session
-- Automatically closing browser session on drop
+- Create browser session
+- Automatically close browser session on drop
 - Most WebDriver and WebElement methods
-- Finding elements (via all common selectors)
-- Sending keys to elements, including key-combinations
-- Executing Javascript
+- Find elements (via all common selectors)
+- Send keys to elements, including key-combinations
+- Execute Javascript
 - Action Chains
 - Cookies
-- Saving screenshots of browser or individual elements
+- Switch to frame/window/element/alert
+- Alert support
+- Save screenshot of browser or individual element
 - Synchronous support
 - Async / await support
-
-More to come...
 
 ## Why 'thirtyfour' ?
 
@@ -72,7 +70,7 @@ async fn webtest() -> WebDriverResult<()> {
      let elem_text = elem_form.find_element(By::Id("searchInput")).await?;
 
      // Type in the search terms.
-     elem_text.send_keys(TypingData::from("selenium")).await?;
+     elem_text.send_keys("selenium").await?;
 
      // Click the search button.
      let elem_button = elem_form.find_element(By::Css("button[type='submit']")).await?;
@@ -115,7 +113,7 @@ fn webtest() -> WebDriverResult<()> {
      let elem_text = elem_form.find_element(By::Id("searchInput"))?;
 
      // Type in the search terms.
-     elem_text.send_keys(TypingData::from("selenium"))?;
+     elem_text.send_keys("selenium")?;
 
      // Click the search button.
      let elem_button = elem_form.find_element(By::Css("button[type='submit']"))?;
@@ -128,3 +126,10 @@ fn webtest() -> WebDriverResult<()> {
      Ok(())
 }
 ```
+
+## LICENSE
+
+This work is dual-licensed under MIT or Apache 2.0.
+You can choose either license if you use this work.
+
+`SPDX-License-Identifier: MIT OR Apache-2.0`

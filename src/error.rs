@@ -24,6 +24,7 @@ pub struct WebDriverErrorInfo {
 #[derive(Debug, Clone)]
 pub enum WebDriverError {
     ConnectionError(RemoteConnectionError),
+    NotFoundError(String),
     JsonError(String),
     DecodeError(String),
     IOError(String),

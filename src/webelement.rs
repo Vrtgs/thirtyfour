@@ -240,12 +240,28 @@ impl<'a> WebElement {
     }
 
     /// Send the specified input.
-    pub async fn send_keys(&self, keys: TypingData) -> WebDriverResult<()> {
+    ///
+    /// # Example:
+    /// You can specify anything that implements `Into<TypingData>`. This
+    /// includes &str and String.
+    /// ```ignore
+    /// elem.send_keys("selenium").await?;
+    /// ```
+    ///
+    /// You can also send special key combinations like this:
+    /// ```ignore
+    /// elem.send_keys(Keys::Control + "a").await?;
+    /// elem.send_keys(TypingData::from("selenium") + Keys::Enter).await?;
+    /// ```
+    pub async fn send_keys<S>(&self, keys: S) -> WebDriverResult<()>
+    where
+        S: Into<TypingData>,
+    {
         self.conn
             .execute(Command::ElementSendKeys(
                 &self.session_id,
                 &self.element_id,
-                keys,
+                keys.into(),
             ))
             .await?;
         Ok(())

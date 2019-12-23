@@ -15,7 +15,7 @@ use crate::common::types::{OptionRect, Rect, SessionId, TimeoutConfiguration, Wi
 use crate::error::WebDriverResult;
 use crate::sync::action_chain::ActionChain;
 use crate::sync::webelement::{unwrap_element_sync, unwrap_elements_sync, WebElement};
-use crate::sync::RemoteConnectionSync;
+use crate::sync::{RemoteConnectionSync, SwitchTo};
 
 /// This WebDriver struct encapsulates a synchronous Selenium WebDriver browser
 /// session. For the async driver, see [WebDriver](../struct.WebDriver.html).
@@ -406,6 +406,11 @@ impl WebDriver {
         let mut file = File::create(path)?;
         file.write_all(&png)?;
         Ok(())
+    }
+
+    /// Return a SwitchTo struct for switching to another window or frame.
+    pub fn switch_to(&self) -> SwitchTo {
+        SwitchTo::new(self.session_id.clone(), self.conn.clone())
     }
 }
 
