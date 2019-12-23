@@ -11,7 +11,7 @@ and named after the atomic number for Selenium (Se).
 homepage = "https://github.com/stevepryde/thirtyfour"
 repository = "https://github.com/stevepryde/thirtyfour"
 readme = "README.md"
-keywords = ["selenium", "webdriver", "testing", "test", "chromedriver", "geckodriver", "automation"]
+keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"]
 categories = ["api-bindings", "development-tools::testing"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
