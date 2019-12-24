@@ -1,4 +1,4 @@
-Selenium client for working with W3C-compatible WebDriver implementations.
+Thirtyfour is a W3C-compliant selenium webdriver client for Rust, inspired by the python selenium library.
 
 Both synchronous and async / await APIs are provided (see examples below).
 
@@ -45,7 +45,7 @@ java -jar selenium-server-standalone-3.141.59.jar
 use std::thread;
 use std::time::Duration;
 use thirtyfour::error::WebDriverResult;
-use thirtyfour::{By, WebDriver, common::keys::TypingData};
+use thirtyfour::{By, DesiredCapabilities, WebDriver};
 use tokio;
 
 #[tokio::main]
@@ -54,13 +54,8 @@ async fn main() {
 }
 
 async fn webtest() -> WebDriverResult<()> {
-     let caps = serde_json::json!({
-         "browserName": "chrome",
-         "version": "",
-         "platform": "any"
-     });
-
-     let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
+     let caps = DesiredCapabilities::chrome();
+     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 
      // Navigate to https://wikipedia.org.
      driver.get("https://wikipedia.org").await?;
@@ -90,20 +85,15 @@ async fn webtest() -> WebDriverResult<()> {
 use std::thread;
 use std::time::Duration;
 use thirtyfour::error::WebDriverResult;
-use thirtyfour::{By, sync::WebDriver, common::keys::TypingData};
+use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
 
 fn main() {
      webtest().expect("Something went wrong");
 }
 
 fn webtest() -> WebDriverResult<()> {
-     let caps = serde_json::json!({
-         "browserName": "chrome",
-         "version": "",
-         "platform": "any"
-     });
-
-     let driver = WebDriver::new("http://localhost:4444/wd/hub", caps)?;
+     let caps = DesiredCapabilities::chrome();
+     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
 
      // Navigate to https://wikipedia.org.
      driver.get("https://wikipedia.org")?;

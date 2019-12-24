@@ -8,14 +8,16 @@ use base64::decode;
 use log::error;
 use serde::Deserialize;
 
-use crate::common::command::{By, Command, DesiredCapabilities};
+use crate::common::command::Command;
 use crate::common::connection_common::{unwrap, unwrap_vec};
-use crate::common::cookie::Cookie;
-use crate::common::types::{OptionRect, Rect, SessionId, TimeoutConfiguration, WindowHandle};
 use crate::error::WebDriverResult;
 use crate::sync::action_chain::ActionChain;
-use crate::sync::webelement::{unwrap_element_sync, unwrap_elements_sync, WebElement};
-use crate::sync::{RemoteConnectionSync, SwitchTo};
+use crate::sync::webelement::{unwrap_element_sync, unwrap_elements_sync};
+use crate::sync::{RemoteConnectionSync, SwitchTo, WebElement};
+use crate::{
+    By, Cookie, DesiredCapabilities, OptionRect, Rect, SessionId, TimeoutConfiguration,
+    WindowHandle,
+};
 
 /// This WebDriver struct encapsulates a synchronous Selenium WebDriver browser
 /// session. For the async driver, see [WebDriver](../struct.WebDriver.html).
@@ -23,12 +25,10 @@ use crate::sync::{RemoteConnectionSync, SwitchTo};
 /// # Example:
 /// ```ignore
 /// use thirtyfour::sync::WebDriver;
-/// let caps = serde_json::json!({
-///     "browserName": "chrome",
-///     "version": "",
-///     "platform": "any"
-/// });
-/// let driver = WebDriver::new("http://localhost:4444/wd/hub", caps)?;
+/// use thirtyfour::DesiredCapabilities;
+///
+/// let caps = DesiredCapabilities::chrome();
+/// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
 ///
 /// // Navigate to mozilla.org.
 /// driver.get("https://mozilla.org")?;
@@ -46,17 +46,14 @@ impl WebDriver {
     /// # Example
     /// ```ignore
     /// use thirtyfour::sync::WebDriver;
+    /// use thirtyfour::DesiredCapabilities;
     ///
-    /// let caps = serde_json::json!({
-    ///     "browserName": "chrome",
-    ///     "version": "",
-    ///     "platform": "any"
-    /// });
-    /// let driver = WebDriver::new("http://localhost:4444/wd/hub", caps)?;
+    /// let caps = DesiredCapabilities::chrome();
+    /// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// ```
     pub fn new(
         remote_server_addr: &str,
-        capabilities: DesiredCapabilities,
+        capabilities: &DesiredCapabilities,
     ) -> WebDriverResult<Self> {
         let conn = Arc::new(RemoteConnectionSync::new(remote_server_addr)?);
         let v = conn.execute(Command::NewSession(capabilities))?;
@@ -92,7 +89,7 @@ impl WebDriver {
     }
 
     /// Return the actual capabilities as returned by Selenium.
-    pub fn capabilities(&self) -> &DesiredCapabilities {
+    pub fn capabilities(&self) -> &serde_json::Value {
         &self.capabilities
     }
 

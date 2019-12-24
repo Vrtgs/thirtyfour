@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.2.5"
+version = "0.3.0"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"

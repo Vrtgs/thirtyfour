@@ -9,13 +9,13 @@ use log::error;
 use serde::Deserialize;
 
 use crate::action_chain::ActionChain;
-use crate::common::command::{By, Command, DesiredCapabilities};
+use crate::common::command::{By, Command};
 use crate::common::connection_common::{unwrap, unwrap_vec};
-use crate::common::cookie::Cookie;
 use crate::error::WebDriverResult;
 use crate::webelement::{unwrap_element_async, unwrap_elements_async};
 use crate::{
-    OptionRect, Rect, RemoteConnectionAsync, SessionId, TimeoutConfiguration, WindowHandle,
+    Cookie, DesiredCapabilities, OptionRect, Rect, RemoteConnectionAsync, SessionId,
+    TimeoutConfiguration, WindowHandle,
 };
 use crate::{SwitchTo, WebElement};
 
@@ -25,13 +25,10 @@ use crate::{SwitchTo, WebElement};
 ///
 /// # Example:
 /// ```ignore
-/// use thirtyfour::WebDriver;
-/// let caps = serde_json::json!({
-///     "browserName": "chrome",
-///     "version": "",
-///     "platform": "any"
-/// });
-/// let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
+/// use thirtyfour::{DesiredCapabilities, WebDriver};
+///
+/// let caps = DesiredCapabilities::chrome();
+/// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 ///
 /// // Navigate to mozilla.org.
 /// driver.get("https://mozilla.org").await?;
@@ -48,18 +45,14 @@ impl WebDriver {
     ///
     /// # Example
     /// ```ignore
-    /// use thirtyfour::WebDriver;
+    /// use thirtyfour::{DesiredCapabilities, WebDriver};
     ///
-    /// let caps = serde_json::json!({
-    ///     "browserName": "chrome",
-    ///     "version": "",
-    ///     "platform": "any"
-    /// });
-    /// let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
+    /// let caps = DesiredCapabilities::chrome();
+    /// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// ```
     pub async fn new(
         remote_server_addr: &str,
-        capabilities: DesiredCapabilities,
+        capabilities: &DesiredCapabilities,
     ) -> WebDriverResult<Self> {
         let conn = Arc::new(RemoteConnectionAsync::new(remote_server_addr)?);
         let v = conn.execute(Command::NewSession(capabilities)).await?;
@@ -95,7 +88,7 @@ impl WebDriver {
     }
 
     /// Return the actual capabilities as returned by Selenium.
-    pub fn capabilities(&self) -> &DesiredCapabilities {
+    pub fn capabilities(&self) -> &serde_json::Value {
         &self.capabilities
     }
 

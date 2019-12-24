@@ -37,7 +37,7 @@
 //! use std::thread;
 //! use std::time::Duration;
 //! use thirtyfour::error::WebDriverResult;
-//! use thirtyfour::{By, WebDriver};
+//! use thirtyfour::{By, DesiredCapabilities, WebDriver};
 //! use tokio;
 //!
 //! #[tokio::main]
@@ -46,13 +46,8 @@
 //! }
 //!
 //! async fn webtest() -> WebDriverResult<()> {
-//!     let caps = serde_json::json!({
-//!         "browserName": "chrome",
-//!         "version": "",
-//!         "platform": "any"
-//!     });
-//!
-//!     let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
+//!     let caps = DesiredCapabilities::chrome();
+//!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 //!
 //!     // Navigate to https://wikipedia.org.
 //!     driver.get("https://wikipedia.org").await?;
@@ -82,20 +77,15 @@
 //! use std::thread;
 //! use std::time::Duration;
 //! use thirtyfour::error::WebDriverResult;
-//! use thirtyfour::{By, sync::WebDriver};
+//! use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
 //!
 //! fn main() {
 //!     webtest().expect("Something went wrong");
 //! }
 //!
 //! fn webtest() -> WebDriverResult<()> {
-//!     let caps = serde_json::json!({
-//!         "browserName": "chrome",
-//!         "version": "",
-//!         "platform": "any"
-//!     });
-//!
-//!     let driver = WebDriver::new("http://localhost:4444/wd/hub", caps)?;
+//!     let caps = DesiredCapabilities::chrome();
+//!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
 //!
 //!     // Navigate to https://wikipedia.org.
 //!     driver.get("https://wikipedia.org")?;
@@ -119,6 +109,7 @@
 //! }
 //! ```
 pub use alert::Alert;
+pub use common::capabilities::DesiredCapabilities;
 pub use common::command::By;
 pub use common::cookie::Cookie;
 pub use common::types::*;

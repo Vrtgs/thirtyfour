@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use crate::common::capabilities::make_w3c_caps;
+use crate::common::capabilities::{make_w3c_caps, DesiredCapabilities};
 use crate::common::cookie::Cookie;
 use crate::common::keys::TypingData;
 use crate::common::types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle};
@@ -36,9 +36,13 @@ impl RequestData {
     }
 }
 
-// TODO: These can become actual types later.
-pub type DesiredCapabilities = serde_json::Value;
-type Actions = serde_json::Value;
+pub struct Actions(serde_json::Value);
+
+impl From<serde_json::Value> for Actions {
+    fn from(value: serde_json::Value) -> Self {
+        Actions(value)
+    }
+}
 
 pub enum By<'a> {
     Id(&'a str),
@@ -67,7 +71,7 @@ impl<'a> By<'a> {
 }
 
 pub enum Command<'a> {
-    NewSession(DesiredCapabilities),
+    NewSession(&'a DesiredCapabilities),
     DeleteSession(&'a SessionId),
     Status,
     GetTimeouts(&'a SessionId),
@@ -129,10 +133,10 @@ impl<'a> Command<'a> {
     pub fn format_request(&self) -> RequestData {
         match self {
             Command::NewSession(caps) => {
-                let w3c_caps = make_w3c_caps(caps.clone());
+                let w3c_caps = make_w3c_caps(&caps.capabilities);
                 RequestData::new(RequestMethod::Post, "/session").add_body(json!({
                     "capabilities": w3c_caps,
-                    "desiredCapabilities": caps
+                    "desiredCapabilities": caps.capabilities
                 }))
             }
             Command::DeleteSession(session_id) => {
@@ -362,7 +366,7 @@ impl<'a> Command<'a> {
                 RequestMethod::Post,
                 format!("/session/{}/actions", session_id),
             )
-            .add_body(json!({"actions": actions.clone()})),
+            .add_body(json!({"actions": actions.0})),
             Command::ReleaseActions(session_id) => RequestData::new(
                 RequestMethod::Delete,
                 format!("/session/{}/actions", session_id),

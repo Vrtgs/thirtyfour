@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::common::action::{ActionSource, KeyAction, PointerAction, PointerActionType};
-use crate::common::command::Command;
+use crate::common::command::{Actions, Command};
 use crate::common::keys::TypingData;
 use crate::common::types::SessionId;
 use crate::error::WebDriverResult;
@@ -45,10 +45,7 @@ impl ActionChain {
     /// Perform the action sequence. No actions are actually performed until
     /// this method is called.
     pub fn perform(&self) -> WebDriverResult<()> {
-        let mut sources: Vec<serde_json::Value> = Vec::new();
-        sources.push(serde_json::to_value(self.key_actions.clone())?);
-        sources.push(serde_json::to_value(self.pointer_actions.clone())?);
-        let actions = serde_json::to_value(sources)?;
+        let actions = Actions::from(serde_json::json!([self.key_actions, self.pointer_actions]));
         self.conn
             .execute(Command::PerformActions(&self.session_id, actions))?;
         Ok(())
