@@ -2,11 +2,10 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use async_std::fs::File;
-use async_std::prelude::*;
 use base64::decode;
 use log::error;
 use serde::Deserialize;
+use tokio::{fs::File, prelude::*};
 
 use crate::action_chain::ActionChain;
 use crate::common::command::{By, Command};
@@ -449,7 +448,10 @@ impl Drop for WebDriver {
         if !(*self.session_id).is_empty() {
             // TODO: It's weird to mix tokio and async-std but this works.
             //       Can we use tokio here?
-            if let Err(e) = async_std::task::block_on(self.quit()) {
+            if let Err(e) = tokio::runtime::Runtime::new()
+                .unwrap()
+                .block_on(self.quit())
+            {
                 error!("Error closing session: {:?}", e);
             }
         }
