@@ -1,13 +1,13 @@
+use crate::error::{RemoteConnectionError, WebDriverResult};
 use base64::encode;
-use reqwest;
-use reqwest::header::{HeaderMap, ACCEPT, AUTHORIZATION, CONNECTION, CONTENT_TYPE, USER_AGENT};
+use reqwest::{
+    self,
+    header::{HeaderMap, ACCEPT, AUTHORIZATION, CONNECTION, CONTENT_TYPE, USER_AGENT},
+};
 use serde::de::DeserializeOwned;
-
 use urlparse::urlparse;
 
-use crate::error::{RemoteConnectionError, WebDriverResult};
-
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Construct the request headers used for every WebDriver request.
 pub fn build_headers(remote_server_addr: &str) -> Result<HeaderMap, RemoteConnectionError> {

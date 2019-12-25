@@ -1,9 +1,11 @@
+use crate::common::{
+    capabilities::{make_w3c_caps, DesiredCapabilities},
+    cookie::Cookie,
+    keys::TypingData,
+    types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
+};
 use serde_json::json;
-
-use crate::common::capabilities::{make_w3c_caps, DesiredCapabilities};
-use crate::common::cookie::Cookie;
-use crate::common::keys::TypingData;
-use crate::common::types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle};
+use std::ops::Deref;
 
 pub const MAGIC_ELEMENTID: &str = "element-6066-11e4-a52e-4f735466cecf";
 
@@ -59,13 +61,13 @@ impl<'a> By<'a> {
     pub fn get_w3c_selector(&self) -> (String, String) {
         match self {
             By::Id(x) => (String::from("css selector"), format!("[id=\"{}\"]", x)),
-            By::XPath(x) => (String::from("xpath"), x.to_string()),
-            By::LinkText(x) => (String::from("link text"), x.to_string()),
-            By::PartialLinkText(x) => (String::from("partial link text"), x.to_string()),
+            By::XPath(x) => (String::from("xpath"), x.deref().to_string()),
+            By::LinkText(x) => (String::from("link text"), x.deref().to_string()),
+            By::PartialLinkText(x) => (String::from("partial link text"), x.deref().to_string()),
             By::Name(x) => (String::from("css selector"), format!("[name=\"{}\"]", x)),
-            By::Tag(x) => (String::from("css selector"), x.to_string()),
+            By::Tag(x) => (String::from("css selector"), x.deref().to_string()),
             By::ClassName(x) => (String::from("css selector"), format!(".{}", x)),
-            By::Css(x) => (String::from("css selector"), x.to_string()),
+            By::Css(x) => (String::from("css selector"), x.deref().to_string()),
         }
     }
 }

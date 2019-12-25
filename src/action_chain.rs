@@ -1,11 +1,14 @@
+use crate::{
+    common::{
+        action::{ActionSource, KeyAction, PointerAction, PointerActionType},
+        command::{Actions, Command},
+        keys::TypingData,
+        types::SessionId,
+    },
+    error::WebDriverResult,
+    RemoteConnectionAsync, WebElement,
+};
 use std::sync::Arc;
-
-use crate::common::action::{ActionSource, KeyAction, PointerAction, PointerActionType};
-use crate::common::command::{Actions, Command};
-use crate::common::keys::TypingData;
-use crate::common::types::SessionId;
-use crate::error::WebDriverResult;
-use crate::{RemoteConnectionAsync, WebElement};
 
 /// The ActionChain struct allows you to perform multiple input actions in
 /// a sequence, including drag-and-drop, send keystrokes to an element, and

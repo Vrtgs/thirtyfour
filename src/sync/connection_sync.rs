@@ -1,6 +1,10 @@
-use crate::common::command::{Command, RequestMethod};
-use crate::common::connection_common::build_headers;
-use crate::error::{RemoteConnectionError, WebDriverError, WebDriverResult};
+use crate::{
+    common::{
+        command::{Command, RequestMethod},
+        connection_common::build_headers,
+    },
+    error::{RemoteConnectionError, WebDriverError, WebDriverResult},
+};
 
 /// Synchronous remote connection with the Remote WebDriver server.
 #[derive(Debug)]

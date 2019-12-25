@@ -1,4 +1,7 @@
-use std::ops::Add;
+use std::{
+    fmt::{self, Display},
+    ops::Add,
+};
 
 pub enum Keys {
     Null,
@@ -139,12 +142,14 @@ pub struct TypingData {
 }
 
 impl TypingData {
-    pub fn to_string(&self) -> String {
-        self.data.iter().collect()
-    }
-
     pub fn as_vec(&self) -> Vec<char> {
         self.data.clone()
+    }
+}
+
+impl Display for TypingData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.data.iter().collect::<String>())
     }
 }
 
@@ -174,7 +179,7 @@ where
     type Output = TypingData;
 
     fn add(self, rhs: S) -> Self::Output {
-        let mut data = self.data.clone();
+        let mut data = self.data;
         data.extend(rhs.into().data.iter());
         Self::Output { data }
     }

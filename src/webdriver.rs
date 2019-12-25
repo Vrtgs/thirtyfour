@@ -1,22 +1,19 @@
-use std::path::Path;
-use std::sync::Arc;
-use std::time::Duration;
-
+use crate::{
+    action_chain::ActionChain,
+    common::{
+        command::{By, Command},
+        connection_common::{unwrap, unwrap_vec},
+    },
+    error::WebDriverResult,
+    webelement::{unwrap_element_async, unwrap_elements_async},
+    Cookie, DesiredCapabilities, OptionRect, Rect, RemoteConnectionAsync, SessionId, SwitchTo,
+    TimeoutConfiguration, WebElement, WindowHandle,
+};
 use base64::decode;
 use log::error;
 use serde::Deserialize;
+use std::{path::Path, sync::Arc, time::Duration};
 use tokio::{fs::File, prelude::*};
-
-use crate::action_chain::ActionChain;
-use crate::common::command::{By, Command};
-use crate::common::connection_common::{unwrap, unwrap_vec};
-use crate::error::WebDriverResult;
-use crate::webelement::{unwrap_element_async, unwrap_elements_async};
-use crate::{
-    Cookie, DesiredCapabilities, OptionRect, Rect, RemoteConnectionAsync, SessionId,
-    TimeoutConfiguration, WindowHandle,
-};
-use crate::{SwitchTo, WebElement};
 
 /// The WebDriver struct encapsulates an async Selenium WebDriver browser
 /// session. For the async driver, see
@@ -150,7 +147,7 @@ impl WebDriver {
     ///
     /// let elem = driver.find_element(By::Id("theElementId")).await?;
     /// ```
-    pub async fn find_element<'a>(&self, by: By<'a>) -> WebDriverResult<WebElement> {
+    pub async fn find_element(&self, by: By<'_>) -> WebDriverResult<WebElement> {
         let v = self
             .conn
             .execute(Command::FindElement(&self.session_id, by))
@@ -168,7 +165,7 @@ impl WebDriver {
     ///     println!("Found element: {}", elem);
     /// }
     /// ```
-    pub async fn find_elements<'a>(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement>> {
+    pub async fn find_elements(&self, by: By<'_>) -> WebDriverResult<Vec<WebElement>> {
         let v = self
             .conn
             .execute(Command::FindElements(&self.session_id, by))
@@ -218,7 +215,7 @@ impl WebDriver {
             .conn
             .execute(Command::GetWindowHandle(&self.session_id))
             .await?;
-        unwrap::<String>(&v["value"]).map(|x| WindowHandle::from(x))
+        unwrap::<String>(&v["value"]).map(WindowHandle::from)
     }
 
     /// Get all window handles for the current session.
@@ -228,7 +225,7 @@ impl WebDriver {
             .execute(Command::GetWindowHandles(&self.session_id))
             .await?;
         let strings: Vec<String> = unwrap_vec(&v["value"])?;
-        Ok(strings.iter().map(|x| WindowHandle::from(x)).collect())
+        Ok(strings.iter().map(WindowHandle::from).collect())
     }
 
     /// Maximize the current window.

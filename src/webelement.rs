@@ -1,16 +1,18 @@
-use std::fmt;
-use std::path::Path;
-use std::sync::Arc;
+use std::{fmt, path::Path, sync::Arc};
 
 use base64::decode;
 use tokio::{fs::File, prelude::*};
 
-use crate::common::command::Command;
-use crate::common::connection_common::unwrap;
-use crate::common::keys::TypingData;
-use crate::common::types::{ElementRect, ElementRef};
-use crate::error::WebDriverResult;
-use crate::{By, ElementId, RemoteConnectionAsync, SessionId};
+use crate::{
+    common::{
+        command::Command,
+        connection_common::unwrap,
+        keys::TypingData,
+        types::{ElementRect, ElementRef},
+    },
+    error::WebDriverResult,
+    By, ElementId, RemoteConnectionAsync, SessionId,
+};
 
 /// Unwrap the raw JSON into a WebElement struct.
 pub fn unwrap_element_async(

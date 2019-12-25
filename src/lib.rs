@@ -108,11 +108,11 @@
 //!     Ok(())
 //! }
 //! ```
+
+#![allow(clippy::needless_doctest_main)]
+
 pub use alert::Alert;
-pub use common::capabilities::DesiredCapabilities;
-pub use common::command::By;
-pub use common::cookie::Cookie;
-pub use common::types::*;
+pub use common::{capabilities::DesiredCapabilities, command::By, cookie::Cookie, types::*};
 pub use connection_async::*;
 pub use switch_to::SwitchTo;
 pub use webdriver::WebDriver;

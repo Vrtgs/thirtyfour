@@ -1,6 +1,5 @@
-use serde_json::{json, to_value, Value};
-
 use crate::error::WebDriverResult;
+use serde_json::{json, to_value, Value};
 
 const W3C_CAPABILITY_NAMES: &[&str] = &[
     "acceptInsecureCerts",
@@ -34,7 +33,7 @@ pub fn make_w3c_caps(caps: &serde_json::Value) -> serde_json::Value {
             }
         }
 
-        if W3C_CAPABILITY_NAMES.contains(&k.as_str()) || k.contains(":") {
+        if W3C_CAPABILITY_NAMES.contains(&k.as_str()) || k.contains(':') {
             always_match[k] = v.clone();
         }
     }
