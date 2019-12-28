@@ -1,3 +1,7 @@
+[![Crates.io](https://img.shields.io/crates/v/thirtyfour.svg)](https://crates.io/crates/thirtyfour)
+[![Documentation](https://docs.rs/thirtyfour/badge.svg)](https://docs.rs/thirtyfour/)
+![Build Status](https://github.com/stevepryde/thirtyfour/workflows/build/badge.svg)
+
 Thirtyfour is a W3C-compliant selenium webdriver client for Rust, inspired by the python selenium library.
 
 Both synchronous and async / await APIs are provided (see examples below).
