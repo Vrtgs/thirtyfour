@@ -1,11 +1,13 @@
+use crate::{
+    common::{
+        command::Command,
+        connection_common::{unwrap, unwrap_vec},
+    },
+    error::{WebDriverError, WebDriverResult},
+    webelement::unwrap_element_async,
+    Alert, By, RemoteConnectionAsync, SessionId, WebElement, WindowHandle,
+};
 use std::sync::Arc;
-
-use crate::common::command::Command;
-use crate::common::connection_common::{unwrap, unwrap_vec};
-use crate::error::{WebDriverError, WebDriverResult};
-use crate::webelement::unwrap_element_async;
-use crate::{Alert, RemoteConnectionAsync, WebElement};
-use crate::{By, SessionId, WindowHandle};
 
 /// Struct for switching between frames/windows/alerts.
 pub struct SwitchTo {

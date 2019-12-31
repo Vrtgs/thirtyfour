@@ -1,19 +1,16 @@
-use std::fmt;
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
-use std::sync::Arc;
-use std::write;
-
+use crate::{
+    common::{
+        command::Command,
+        connection_common::unwrap,
+        keys::TypingData,
+        types::{ElementId, ElementRect, ElementRef, SessionId},
+    },
+    error::WebDriverResult,
+    sync::RemoteConnectionSync,
+    By,
+};
 use base64::decode;
-
-use crate::common::command::Command;
-use crate::common::connection_common::unwrap;
-use crate::common::keys::TypingData;
-use crate::common::types::{ElementId, ElementRect, ElementRef, SessionId};
-use crate::error::WebDriverResult;
-use crate::sync::RemoteConnectionSync;
-use crate::By;
+use std::{fmt, fs::File, io::Write, path::Path, sync::Arc, write};
 
 /// Unwrap the raw JSON into a WebElement struct.
 pub fn unwrap_element_sync(

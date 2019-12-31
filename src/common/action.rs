@@ -1,8 +1,6 @@
+use crate::common::{keys::TypingData, types::ElementId};
 use serde::Serialize;
 use serde_repr::Serialize_repr;
-
-use crate::common::keys::TypingData;
-use crate::common::types::ElementId;
 
 pub trait Action {
     fn get_pause(duration_seconds: Option<u64>) -> Self;

@@ -1,23 +1,21 @@
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
-use std::sync::Arc;
-use std::time::Duration;
-
-use base64::decode;
-use log::error;
-use serde::Deserialize;
-
-use crate::common::command::Command;
-use crate::common::connection_common::{unwrap, unwrap_vec};
-use crate::error::WebDriverResult;
-use crate::sync::action_chain::ActionChain;
-use crate::sync::webelement::{unwrap_element_sync, unwrap_elements_sync};
-use crate::sync::{RemoteConnectionSync, SwitchTo, WebElement};
 use crate::{
+    common::{
+        command::Command,
+        connection_common::{unwrap, unwrap_vec},
+    },
+    error::WebDriverResult,
+    sync::{
+        action_chain::ActionChain,
+        webelement::{unwrap_element_sync, unwrap_elements_sync},
+        RemoteConnectionSync, SwitchTo, WebElement,
+    },
     By, Cookie, DesiredCapabilities, OptionRect, Rect, SessionId, TimeoutConfiguration,
     WindowHandle,
 };
+use base64::decode;
+use log::error;
+use serde::Deserialize;
+use std::{fs::File, io::Write, path::Path, sync::Arc, time::Duration};
 
 /// This WebDriver struct encapsulates a synchronous Selenium WebDriver browser
 /// session. For the async driver, see [WebDriver](../struct.WebDriver.html).
@@ -203,7 +201,7 @@ impl WebDriver {
         let v = self
             .conn
             .execute(Command::GetWindowHandle(&self.session_id))?;
-        unwrap::<String>(&v["value"]).map(|x| WindowHandle::from(x))
+        unwrap::<String>(&v["value"]).map(WindowHandle::from)
     }
 
     /// Get all window handles for the current session.
@@ -212,7 +210,7 @@ impl WebDriver {
             .conn
             .execute(Command::GetWindowHandles(&self.session_id))?;
         let strings: Vec<String> = unwrap_vec(&v["value"])?;
-        Ok(strings.iter().map(|x| WindowHandle::from(x)).collect())
+        Ok(strings.iter().map(WindowHandle::from).collect())
     }
 
     /// Maximize the current window.
@@ -415,8 +413,8 @@ impl Drop for WebDriver {
     /// Close the current session when the WebDriver struct goes out of scope.
     fn drop(&mut self) {
         if !(*self.session_id).is_empty() {
-            if let Err(_) = self.quit() {
-                error!("Failed to close session");
+            if let Err(e) = self.quit() {
+                error!("Failed to close session: {:?}", e);
             }
         }
     }

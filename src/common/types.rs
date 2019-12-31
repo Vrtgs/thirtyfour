@@ -1,8 +1,5 @@
-use std::fmt;
-use std::ops::Deref;
-use std::time::Duration;
-
 use serde::{Deserialize, Serialize};
+use std::{fmt, ops::Deref, time::Duration};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ElementRect {
@@ -127,7 +124,7 @@ impl Rect {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct OptionRect {
     pub x: Option<i32>,
     pub y: Option<i32>,
@@ -137,12 +134,7 @@ pub struct OptionRect {
 
 impl OptionRect {
     pub fn new() -> Self {
-        OptionRect {
-            x: None,
-            y: None,
-            width: None,
-            height: None,
-        }
+        Default::default()
     }
 
     pub fn with_x(mut self, value: i32) -> Self {

@@ -1,10 +1,9 @@
+use crate::{
+    common::{command::Command, connection_common::unwrap, keys::TypingData},
+    error::WebDriverResult,
+    RemoteConnectionAsync, SessionId,
+};
 use std::sync::Arc;
-
-use crate::common::command::Command;
-use crate::common::connection_common::unwrap;
-use crate::common::keys::TypingData;
-use crate::error::WebDriverResult;
-use crate::{RemoteConnectionAsync, SessionId};
 
 /// Struct for managing alerts.
 pub struct Alert {

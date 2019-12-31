@@ -1,23 +1,20 @@
-use std::path::Path;
-use std::sync::Arc;
-use std::time::Duration;
-
-use async_std::fs::File;
-use async_std::prelude::*;
+use crate::{
+    action_chain::ActionChain,
+    common::{
+        command::{By, Command},
+        connection_common::{unwrap, unwrap_vec},
+    },
+    error::WebDriverResult,
+    webelement::{unwrap_element_async, unwrap_elements_async},
+    Cookie, DesiredCapabilities, OptionRect, Rect, RemoteConnectionAsync, SessionId, SwitchTo,
+    TimeoutConfiguration, WebElement, WindowHandle,
+};
 use base64::decode;
+use futures::executor::block_on;
 use log::error;
 use serde::Deserialize;
-
-use crate::action_chain::ActionChain;
-use crate::common::command::{By, Command};
-use crate::common::connection_common::{unwrap, unwrap_vec};
-use crate::error::WebDriverResult;
-use crate::webelement::{unwrap_element_async, unwrap_elements_async};
-use crate::{
-    Cookie, DesiredCapabilities, OptionRect, Rect, RemoteConnectionAsync, SessionId,
-    TimeoutConfiguration, WindowHandle,
-};
-use crate::{SwitchTo, WebElement};
+use std::{path::Path, sync::Arc, time::Duration};
+use tokio::{fs::File, io::AsyncWriteExt};
 
 /// The WebDriver struct encapsulates an async Selenium WebDriver browser
 /// session. For the async driver, see
@@ -151,7 +148,7 @@ impl WebDriver {
     ///
     /// let elem = driver.find_element(By::Id("theElementId")).await?;
     /// ```
-    pub async fn find_element<'a>(&self, by: By<'a>) -> WebDriverResult<WebElement> {
+    pub async fn find_element(&self, by: By<'_>) -> WebDriverResult<WebElement> {
         let v = self
             .conn
             .execute(Command::FindElement(&self.session_id, by))
@@ -169,7 +166,7 @@ impl WebDriver {
     ///     println!("Found element: {}", elem);
     /// }
     /// ```
-    pub async fn find_elements<'a>(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement>> {
+    pub async fn find_elements(&self, by: By<'_>) -> WebDriverResult<Vec<WebElement>> {
         let v = self
             .conn
             .execute(Command::FindElements(&self.session_id, by))
@@ -219,7 +216,7 @@ impl WebDriver {
             .conn
             .execute(Command::GetWindowHandle(&self.session_id))
             .await?;
-        unwrap::<String>(&v["value"]).map(|x| WindowHandle::from(x))
+        unwrap::<String>(&v["value"]).map(WindowHandle::from)
     }
 
     /// Get all window handles for the current session.
@@ -229,7 +226,7 @@ impl WebDriver {
             .execute(Command::GetWindowHandles(&self.session_id))
             .await?;
         let strings: Vec<String> = unwrap_vec(&v["value"])?;
-        Ok(strings.iter().map(|x| WindowHandle::from(x)).collect())
+        Ok(strings.iter().map(WindowHandle::from).collect())
     }
 
     /// Maximize the current window.
@@ -447,10 +444,8 @@ impl Drop for WebDriver {
     /// Close the current session when the WebDriver struct goes out of scope.
     fn drop(&mut self) {
         if !(*self.session_id).is_empty() {
-            // TODO: It's weird to mix tokio and async-std but this works.
-            //       Can we use tokio here?
-            if let Err(e) = async_std::task::block_on(self.quit()) {
-                error!("Error closing session: {:?}", e);
+            if let Err(e) = block_on(self.quit()) {
+                error!("Failed to close session: {:?}", e);
             }
         }
     }

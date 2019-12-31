@@ -1,6 +1,10 @@
-use crate::common::command::{Command, RequestMethod};
-use crate::common::connection_common::build_headers;
-use crate::error::{RemoteConnectionError, WebDriverError};
+use crate::{
+    common::{
+        command::{Command, RequestMethod},
+        connection_common::build_headers,
+    },
+    error::{RemoteConnectionError, WebDriverError},
+};
 
 /// Asynchronous remote connection with the Remote WebDriver server.
 #[derive(Debug)]
@@ -22,10 +26,7 @@ impl RemoteConnectionAsync {
     }
 
     /// Execute the specified command and return the data as serde_json::Value.
-    pub async fn execute<'a>(
-        &self,
-        command: Command<'a>,
-    ) -> Result<serde_json::Value, WebDriverError> {
+    pub async fn execute(&self, command: Command<'_>) -> Result<serde_json::Value, WebDriverError> {
         let request_data = command.format_request();
         let url = self.url.clone() + &request_data.url;
         let mut request = match request_data.method {
