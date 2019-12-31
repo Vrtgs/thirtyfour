@@ -1,12 +1,19 @@
-//! Selenium client for working with W3C-compatible WebDriver implementations.
+//! Thirtyfour is a full-featured Selenium library for Rust,
+//! inspired by the Python Selenium library.
+//!
+//! It supports the W3C Webdriver spec.
+//! Tested with Chrome and Firefox although any W3C-compatible WebDriver
+//! should work.
 //!
 //! Both synchronous and asynchronous APIs are provided (see examples below).
 //!
-//! Currently supported (but may not yet be fully tested):
+//! ## Features
 //!
-//! - Create remote browser session
+//! - Async / await support
+//! - Synchronous support
+//! - Create new browser session via Selenium Standalone or Grid
 //! - Automatically close browser session on drop
-//! - Most WebDriver and WebElement methods
+//! - All W3C WebDriver and WebElement methods supported
 //! - Find elements (via all common selectors)
 //! - Send keys to elements, including key-combinations
 //! - Execute Javascript
@@ -14,11 +21,7 @@
 //! - Cookies
 //! - Switch to frame/window/element/alert
 //! - Alert support
-//! - Save screenshot of browser or individual element
-//! - Synchronous support
-//! - Async / await support
-//!
-//! **Any help with testing and creating tickets for any issues found would be greatly appreciated.**
+//! - Capture / Save screenshot of browser or individual element
 //!
 //! ## Examples
 //!
@@ -41,11 +44,7 @@
 //! use tokio;
 //!
 //! #[tokio::main]
-//! async fn main() {
-//!     webtest().await.expect("Something went wrong");
-//! }
-//!
-//! async fn webtest() -> WebDriverResult<()> {
+//! async fn main() -> WebDriverResult<()> {
 //!     let caps = DesiredCapabilities::chrome();
 //!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 //!
@@ -79,11 +78,7 @@
 //! use thirtyfour::error::WebDriverResult;
 //! use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
 //!
-//! fn main() {
-//!     webtest().expect("Something went wrong");
-//! }
-//!
-//! fn webtest() -> WebDriverResult<()> {
+//! fn main() -> WebDriverResult<()> {
 //!     let caps = DesiredCapabilities::chrome();
 //!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
 //!

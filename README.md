@@ -2,21 +2,19 @@
 [![Documentation](https://docs.rs/thirtyfour/badge.svg)](https://docs.rs/thirtyfour/)
 ![Build Status](https://github.com/stevepryde/thirtyfour/workflows/build/badge.svg)
 
-Thirtyfour is a W3C-compliant selenium webdriver client for Rust, inspired by the python selenium library.
+Thirtyfour is a full-featured Selenium library for Rust, inspired by the Python Selenium library.
+
+It supports the W3C Webdriver spec. Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
 
 Both synchronous and async / await APIs are provided (see examples below).
 
-## Status
+## Features
 
-**Some functionality has not yet been thoroughly tested.**
-
-Any help with testing and creating tickets for any issues found would be greatly appreciated.
-
-Currently supported:
-
-- Create browser session
+- Async / await support
+- Synchronous support
+- Create new browser session via Selenium Standalone or Grid
 - Automatically close browser session on drop
-- Most WebDriver and WebElement methods
+- All W3C WebDriver and WebElement methods supported
 - Find elements (via all common selectors)
 - Send keys to elements, including key-combinations
 - Execute Javascript
@@ -24,9 +22,7 @@ Currently supported:
 - Cookies
 - Switch to frame/window/element/alert
 - Alert support
-- Save screenshot of browser or individual element
-- Synchronous support
-- Async / await support
+- Capture / Save screenshot of browser or individual element
 
 ## Why 'thirtyfour' ?
 
@@ -53,11 +49,7 @@ use thirtyfour::{By, DesiredCapabilities, WebDriver};
 use tokio;
 
 #[tokio::main]
-async fn main() {
-     webtest().await.expect("Something went wrong");
-}
-
-async fn webtest() -> WebDriverResult<()> {
+async fn main() -> WebDriverResult<()> {
      let caps = DesiredCapabilities::chrome();
      let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 
@@ -91,11 +83,7 @@ use std::time::Duration;
 use thirtyfour::error::WebDriverResult;
 use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
 
-fn main() {
-     webtest().expect("Something went wrong");
-}
-
-fn webtest() -> WebDriverResult<()> {
+fn main() -> WebDriverResult<()> {
      let caps = DesiredCapabilities::chrome();
      let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
 
