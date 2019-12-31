@@ -1,7 +1,7 @@
 //! Thirtyfour is a full-featured Selenium library for Rust,
 //! inspired by the Python Selenium library.
 //!
-//! It supports the W3C Webdriver spec.
+//! It supports the W3C WebDriver spec.
 //! Tested with Chrome and Firefox although any W3C-compatible WebDriver
 //! should work.
 //!
@@ -37,8 +37,6 @@
 //! ### Async example:
 //!
 //! ```rust
-//! use std::thread;
-//! use std::time::Duration;
 //! use thirtyfour::error::WebDriverResult;
 //! use thirtyfour::{By, DesiredCapabilities, WebDriver};
 //! use tokio;
@@ -73,8 +71,6 @@
 //! ### Sync example:
 //!
 //! ```rust
-//! use std::thread;
-//! use std::time::Duration;
 //! use thirtyfour::error::WebDriverResult;
 //! use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
 //!
