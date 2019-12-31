@@ -15,7 +15,7 @@ keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"
 categories = ["api-bindings", "development-tools::testing"]
 
 [dependencies]
-reqwest = { git = "https://github.com/seanmonstar/reqwest", features = ["blocking", "json"] }
+reqwest = { version = "0.10.0", features = ["blocking", "json"] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
@@ -23,4 +23,5 @@ log = "0.4"
 urlparse = "0.7.3"
 base64 = "0.11.0"
 chrono = { version = "0.4", features = ["serde"] }
-tokio = { version = "0.2", features = ["fs", "rt-threaded"] }
+tokio = { version = "0.2", features = ["fs", "macros", "rt-threaded"] }
+futures = "0.3"

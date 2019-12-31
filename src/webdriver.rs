@@ -10,10 +10,11 @@ use crate::{
     TimeoutConfiguration, WebElement, WindowHandle,
 };
 use base64::decode;
+use futures::executor::block_on;
 use log::error;
 use serde::Deserialize;
 use std::{path::Path, sync::Arc, time::Duration};
-use tokio::{fs::File, prelude::*};
+use tokio::{fs::File, io::AsyncWriteExt};
 
 /// The WebDriver struct encapsulates an async Selenium WebDriver browser
 /// session. For the async driver, see
@@ -443,13 +444,8 @@ impl Drop for WebDriver {
     /// Close the current session when the WebDriver struct goes out of scope.
     fn drop(&mut self) {
         if !(*self.session_id).is_empty() {
-            // TODO: It's weird to mix tokio and async-std but this works.
-            //       Can we use tokio here?
-            if let Err(e) = tokio::runtime::Runtime::new()
-                .unwrap()
-                .block_on(self.quit())
-            {
-                error!("Error closing session: {:?}", e);
+            if let Err(e) = block_on(self.quit()) {
+                error!("Failed to close session: {:?}", e);
             }
         }
     }
