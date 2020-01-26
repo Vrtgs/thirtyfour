@@ -33,11 +33,13 @@ It is named after the atomic number for the Selenium chemical element (Se).
 The following examples assume you have a selenium server running
 at localhost:4444.
 
-i.e.
+You can set this up using docker, as follows:
 
-```ignore
-java -jar selenium-server-standalone-3.141.59.jar
-```
+    docker run --rm -d --network host --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome:3.141.59-zinc
+
+Alternatively you can download selenium from the web ([https://selenium.dev/downloads](https://selenium.dev/downloads)) and run it manually:
+
+    java -jar selenium-server-standalone-3.141.59.jar
 
 ### Async example:
 
