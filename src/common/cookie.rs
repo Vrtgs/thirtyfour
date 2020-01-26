@@ -5,9 +5,13 @@ use serde::{Deserialize, Serialize};
 pub struct Cookie {
     name: String,
     value: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
     path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     secure: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiry: Option<i64>,
 }
 
@@ -27,5 +31,10 @@ impl Cookie {
     /// Get the cookie expiry date/time.
     pub fn expiry(&self) -> Option<DateTime<Utc>> {
         self.expiry.map(|x| Utc.timestamp(x, 0))
+    }
+
+    /// Get the cookie value.
+    pub fn value(&self) -> &serde_json::Value {
+        &self.value
     }
 }

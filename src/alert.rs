@@ -1,9 +1,10 @@
+use std::sync::Arc;
+
 use crate::{
     common::{command::Command, connection_common::unwrap, keys::TypingData},
     error::WebDriverResult,
     RemoteConnectionAsync, SessionId,
 };
-use std::sync::Arc;
 
 /// Struct for managing alerts.
 pub struct Alert {
@@ -19,6 +20,26 @@ impl Alert {
     }
 
     /// Get the active alert text.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.find_element(By::Id("alertbutton1")).await?.click().await?;
+    /// let alert = driver.switch_to().alert();
+    /// let text = alert.text().await?;
+    /// #     assert_eq!(text, "Alert 1 showing");
+    /// #     alert.dismiss().await?;
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn text(&self) -> WebDriverResult<String> {
         let v = self
             .conn
@@ -28,6 +49,25 @@ impl Alert {
     }
 
     /// Dismiss the active alert.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.find_element(By::Id("alertbutton2")).await?.click().await?;
+    /// driver.switch_to().alert().dismiss().await?;
+    /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #     assert_eq!(elem.text().await?, "Alert 2 clicked false");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn dismiss(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::DismissAlert(&self.session_id))
@@ -36,6 +76,25 @@ impl Alert {
     }
 
     /// Accept the active alert.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.find_element(By::Id("alertbutton2")).await?.click().await?;
+    /// driver.switch_to().alert().accept().await?;
+    /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #     assert_eq!(elem.text().await?, "Alert 2 clicked true");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn accept(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::AcceptAlert(&self.session_id))
@@ -48,15 +107,47 @@ impl Alert {
     /// # Example:
     /// You can specify anything that implements `Into<TypingData>`. This
     /// includes &str and String.
-    /// ```ignore
-    /// driver.switch_to().alert().send_keys("username").await?;
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.find_element(By::Id("alertbutton3")).await?.click().await?;
+    /// let alert = driver.switch_to().alert();
+    /// alert.send_keys("selenium").await?;
+    /// alert.accept().await?;
+    /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #     assert_eq!(elem.text().await?, "selenium");
+    /// #     Ok(())
+    /// # }
     /// ```
     ///
     /// You can also send special key combinations like this:
-    /// ```ignore
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, Keys, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.find_element(By::Id("alertbutton3")).await?.click().await?;
     /// let alert = driver.switch_to().alert();
+    /// alert.send_keys("selenium").await?;
     /// alert.send_keys(Keys::Control + "a").await?;
-    /// alert.send_keys(TypingData::from("selenium") + Keys::Enter).await?;
+    /// alert.send_keys("thirtyfour").await?;
+    /// #     alert.accept().await?;
+    /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #     assert_eq!(elem.text().await?, "thirtyfour");
+    /// #     Ok(())
+    /// # }
     /// ```
     pub async fn send_keys<S>(&self, keys: S) -> WebDriverResult<()>
     where

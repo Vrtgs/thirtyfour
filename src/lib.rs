@@ -46,23 +46,25 @@
 //!     let caps = DesiredCapabilities::chrome();
 //!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 //!
-//!     // Navigate to https://wikipedia.org.
-//!     driver.get("https://wikipedia.org").await?;
-//!     let elem_form = driver.find_element(By::Id("search-form")).await?;
+//!     // Navigate to URL.
+//!     driver.get("http://localhost:8000").await?;
+//!
+//!     // Find element.
+//!     let elem_div = driver.find_element(By::Css("div[data-section='section-input']")).await?;
 //!
 //!     // Find element from element.
-//!     let elem_text = elem_form.find_element(By::Id("searchInput")).await?;
+//!     let elem_text = elem_div.find_element(By::Name("input1")).await?;
 //!
 //!     // Type in the search terms.
 //!     elem_text.send_keys("selenium").await?;
 //!
-//!     // Click the search button.
-//!     let elem_button = elem_form.find_element(By::Css("button[type='submit']")).await?;
+//!     // Click the button.
+//!     let elem_button = elem_div.find_element(By::Tag("button")).await?;
 //!     elem_button.click().await?;
 //!
-//!     // Look for header to implicitly wait for the page to load.
-//!     driver.find_element(By::ClassName("firstHeading")).await?;
-//!     assert_eq!(driver.title().await?, "Selenium - Wikipedia");
+//!     // Get text value of element.
+//!     let elem_result = driver.find_element(By::Name("input-result")).await?;
+//!     assert_eq!(elem_result.text().await?, "selenium");
 //!
 //!     Ok(())
 //! }
@@ -78,23 +80,25 @@
 //!     let caps = DesiredCapabilities::chrome();
 //!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
 //!
-//!     // Navigate to https://wikipedia.org.
-//!     driver.get("https://wikipedia.org")?;
-//!     let elem_form = driver.find_element(By::Id("search-form"))?;
+//!     // Navigate to URL.
+//!     driver.get("http://localhost:8000")?;
+//!
+//!     // Find element.
+//!     let elem_div = driver.find_element(By::Css("div[data-section='section-input']"))?;
 //!
 //!     // Find element from element.
-//!     let elem_text = elem_form.find_element(By::Id("searchInput"))?;
+//!     let elem_text = elem_div.find_element(By::Name("input1"))?;
 //!
 //!     // Type in the search terms.
 //!     elem_text.send_keys("selenium")?;
 //!
-//!     // Click the search button.
-//!     let elem_button = elem_form.find_element(By::Css("button[type='submit']"))?;
+//!     // Click the button.
+//!     let elem_button = elem_div.find_element(By::Tag("button"))?;
 //!     elem_button.click()?;
 //!
-//!     // Look for header to implicitly wait for the page to load.
-//!     driver.find_element(By::ClassName("firstHeading"))?;
-//!     assert_eq!(driver.title()?, "Selenium - Wikipedia");
+//!     // Get text value of element.
+//!     let elem_result = driver.find_element(By::Name("input-result"))?;
+//!     assert_eq!(elem_result.text()?, "selenium");
 //!
 //!     Ok(())
 //! }
@@ -103,7 +107,13 @@
 #![allow(clippy::needless_doctest_main)]
 
 pub use alert::Alert;
-pub use common::{capabilities::DesiredCapabilities, command::By, cookie::Cookie, types::*};
+pub use common::{
+    capabilities::DesiredCapabilities,
+    command::By,
+    cookie::Cookie,
+    keys::{Keys, TypingData},
+    types::*,
+};
 pub use connection_async::*;
 pub use switch_to::SwitchTo;
 pub use webdriver::WebDriver;

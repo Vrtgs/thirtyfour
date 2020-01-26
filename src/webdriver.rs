@@ -1,3 +1,11 @@
+use std::{path::Path, sync::Arc, time::Duration};
+
+use base64::decode;
+use futures::executor::block_on;
+use log::error;
+use serde::Deserialize;
+use tokio::{fs::File, io::AsyncWriteExt};
+
 use crate::{
     action_chain::ActionChain,
     common::{
@@ -9,26 +17,24 @@ use crate::{
     Cookie, DesiredCapabilities, OptionRect, Rect, RemoteConnectionAsync, SessionId, SwitchTo,
     TimeoutConfiguration, WebElement, WindowHandle,
 };
-use base64::decode;
-use futures::executor::block_on;
-use log::error;
-use serde::Deserialize;
-use std::{path::Path, sync::Arc, time::Duration};
-use tokio::{fs::File, io::AsyncWriteExt};
 
 /// The WebDriver struct encapsulates an async Selenium WebDriver browser
 /// session. For the async driver, see
 /// [sync::WebDriver](sync/struct.WebDriver.html).
 ///
 /// # Example:
-/// ```ignore
+/// ```rust
+/// use thirtyfour::error::WebDriverResult;
 /// use thirtyfour::{DesiredCapabilities, WebDriver};
+/// use tokio;
 ///
-/// let caps = DesiredCapabilities::chrome();
-/// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-///
-/// // Navigate to mozilla.org.
-/// driver.get("https://mozilla.org").await?;
+/// #[tokio::main]
+/// async fn main() -> WebDriverResult<()> {
+///     let caps = DesiredCapabilities::chrome();
+///     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+///     driver.get("http://localhost:8000").await?;
+///     Ok(())
+/// }
 /// ```
 #[derive(Debug, Clone)]
 pub struct WebDriver {
@@ -41,11 +47,17 @@ impl WebDriver {
     /// Create a new async WebDriver struct.
     ///
     /// # Example
-    /// ```ignore
-    /// use thirtyfour::{DesiredCapabilities, WebDriver};
-    ///
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
     /// let caps = DesiredCapabilities::chrome();
     /// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     Ok(())
+    /// # }
     /// ```
     pub async fn new(
         remote_server_addr: &str,
@@ -77,11 +89,21 @@ impl WebDriver {
             resp.session_id
         });
         let actual_capabilities = data.capabilities;
-        Ok(WebDriver {
+
+        let driver = WebDriver {
             session_id,
             capabilities: actual_capabilities,
             conn,
-        })
+        };
+
+        // Set default timeouts.
+        let timeout_config = TimeoutConfiguration::new(
+            Some(Duration::new(60, 0)),
+            Some(Duration::new(60, 0)),
+            Some(Duration::new(30, 0)),
+        );
+        driver.set_timeouts(timeout_config).await?;
+        Ok(driver)
     }
 
     /// Return the actual capabilities as returned by Selenium.
@@ -143,10 +165,21 @@ impl WebDriver {
     /// Search for an element on the current page using the specified selector.
     ///
     /// # Example:
-    /// ```ignore
-    /// use thirtyfour::By;
-    ///
-    /// let elem = driver.find_element(By::Id("theElementId")).await?;
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// let elem_text = driver.find_element(By::Name("input1")).await?;
+    /// let elem_button = driver.find_element(By::Id("button-set")).await?;
+    /// let elem_result = driver.find_element(By::Name("input-result")).await?;
+    /// #     Ok(())
+    /// # }
     /// ```
     pub async fn find_element(&self, by: By<'_>) -> WebDriverResult<WebElement> {
         let v = self
@@ -160,11 +193,22 @@ impl WebDriver {
     /// selector.
     ///
     /// # Example:
-    /// ```ignore
-    /// let elems = driver.find_elements(By::Class("some-class")).await?;
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// let elems = driver.find_elements(By::ClassName("section")).await?;
     /// for elem in elems {
-    ///     println!("Found element: {}", elem);
+    ///     assert!(elem.get_attribute("class").await?.contains("section"));
     /// }
+    /// #     Ok(())
+    /// # }
     /// ```
     pub async fn find_elements(&self, by: By<'_>) -> WebDriverResult<Vec<WebElement>> {
         let v = self
@@ -271,18 +315,39 @@ impl WebDriver {
     /// members are wrapped in Option.
     ///
     /// # Example:
-    /// ```ignore
+    /// ```rust
     /// use thirtyfour::OptionRect;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// let r = OptionRect::new().with_size(1280, 720);
     /// driver.set_window_rect(r).await?;
+    /// #     Ok(())
+    /// # }
     /// ```
     ///
     /// You can also convert from a Rect if you want to get the window size
     /// and modify it before setting it again.
-    /// ```ignore
+    /// ```rust
+    /// use thirtyfour::OptionRect;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// let rect = driver.get_window_rect().await?;
     /// let option_rect = OptionRect::from(rect);
     /// driver.set_window_rect(option_rect.with_width(1024)).await?;
+    /// #     Ok(())
+    /// # }
     /// ```
     pub async fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
         self.conn
@@ -315,14 +380,63 @@ impl WebDriver {
             .map(|_| ())
     }
 
+    /// Get all timeouts for the current session.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// use thirtyfour::TimeoutConfiguration;
+    /// use std::time::Duration;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     let set_timeouts = TimeoutConfiguration::new(
+    /// #         Some(Duration::new(1, 0)),
+    /// #         Some(Duration::new(2, 0)),
+    /// #         Some(Duration::new(3, 0))
+    /// #     );
+    /// #     driver.set_timeouts(set_timeouts.clone()).await?;
+    /// let timeouts = driver.get_timeouts().await?;
+    /// println!("Page load timeout = {:?}", timeouts.page_load());
+    /// #     assert_eq!(timeouts.script(), Some(Duration::new(1, 0)));
+    /// #     assert_eq!(timeouts.page_load(), Some(Duration::new(2, 0)));
+    /// #     assert_eq!(timeouts.implicit(), Some(Duration::new(3, 0)));
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub async fn get_timeouts(&self) -> WebDriverResult<TimeoutConfiguration> {
+        let v = self
+            .conn
+            .execute(Command::GetTimeouts(&self.session_id))
+            .await?;
+        unwrap(&v["value"])
+    }
+
     /// Set all timeouts for the current session.
     ///
     /// # Example:
-    /// ```ignore
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
     /// use thirtyfour::TimeoutConfiguration;
     /// use std::time::Duration;
-    /// let timeouts = TimeoutConfiguration::new(None, Some(Duration::new(30, 0)), None);
-    /// driver.set_timeouts(timeouts).await?;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// // Setting timeouts to None means those timeout values will not be updated.
+    /// let timeouts = TimeoutConfiguration::new(None, Some(Duration::new(11, 0)), None);
+    /// driver.set_timeouts(timeouts.clone()).await?;
+    /// #     let got_timeouts = driver.get_timeouts().await?;
+    /// #     assert_eq!(timeouts.page_load(), Some(Duration::new(11, 0)));
+    /// #     Ok(())
+    /// # }
     /// ```
     pub async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
         self.conn
@@ -352,14 +466,58 @@ impl WebDriver {
     /// Create a new action chain for this session.
     ///
     /// # Example:
-    /// ```ignore
-    /// driver.action_chain().drag_and_drop_element(elem_src, elem_target).perform().await?;
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// let elem_text = driver.find_element(By::Name("input1")).await?;
+    /// let elem_button = driver.find_element(By::Id("button-set")).await?;
+    ///
+    /// driver.action_chain()
+    ///     .send_keys_to_element(&elem_text, "thirtyfour")
+    ///     .move_to_element_center(&elem_button)
+    ///     .click()
+    ///     .perform().await?;
+    /// #     let elem_result = driver.find_element(By::Name("input-result")).await?;
+    /// #     assert_eq!(elem_result.text().await?, "thirtyfour");
+    /// #     Ok(())
+    /// # }
     /// ```
     pub fn action_chain(&self) -> ActionChain {
         ActionChain::new(self.conn.clone(), self.session_id.clone())
     }
 
     /// Get all cookies.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::Cookie;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
+    /// #     driver.add_cookie(set_cookie).await?;
+    /// let cookies = driver.get_cookies().await?;
+    /// for cookie in &cookies {
+    ///     println!("Got cookie: {}", cookie.value());
+    /// }
+    /// #     assert_eq!(
+    /// #         cookies.iter().filter(|x| x.value() == &serde_json::json!("value")).count(), 1);
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
         let v = self
             .conn
@@ -369,6 +527,27 @@ impl WebDriver {
     }
 
     /// Get the specified cookie.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::Cookie;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
+    /// #     driver.add_cookie(set_cookie).await?;
+    /// let cookie = driver.get_cookie("key").await?;
+    /// println!("Got cookie: {}", cookie.value());
+    /// #     assert_eq!(cookie.value(), &serde_json::json!("value"));
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
         let v = self
             .conn
@@ -378,6 +557,27 @@ impl WebDriver {
     }
 
     /// Delete the specified cookie.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::Cookie;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
+    /// #     driver.add_cookie(set_cookie).await?;
+    /// #     assert!(driver.get_cookie("key").await.is_ok());
+    /// driver.delete_cookie("key").await?;
+    /// #     assert!(driver.get_cookie("key").await.is_err());
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
         self.conn
             .execute(Command::DeleteCookie(&self.session_id, name))
@@ -386,6 +586,28 @@ impl WebDriver {
     }
 
     /// Delete all cookies.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::Cookie;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
+    /// #     driver.add_cookie(set_cookie).await?;
+    /// #     assert!(driver.get_cookie("key").await.is_ok());
+    /// driver.delete_all_cookies().await?;
+    /// #     assert!(driver.get_cookie("key").await.is_err());
+    /// #     assert!(driver.get_cookies().await?.is_empty());
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn delete_all_cookies(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::DeleteAllCookies(&self.session_id))
@@ -396,10 +618,23 @@ impl WebDriver {
     /// Add the specified cookie.
     ///
     /// # Example:
-    /// ```ignore
+    /// ```rust
     /// use thirtyfour::Cookie;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
     /// let cookie = Cookie::new("key", serde_json::json!("value"));
     /// driver.add_cookie(cookie).await?;
+    /// #     let got_cookie = driver.get_cookie("key").await?;
+    /// #     assert_eq!(got_cookie.value(), &serde_json::json!("value"));
+    /// #     Ok(())
+    /// # }
     /// ```
     pub async fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
         self.conn

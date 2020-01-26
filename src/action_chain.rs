@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     common::{
         action::{ActionSource, KeyAction, PointerAction, PointerActionType},
@@ -8,7 +10,6 @@ use crate::{
     error::WebDriverResult,
     RemoteConnectionAsync, WebElement,
 };
-use std::sync::Arc;
 
 /// The ActionChain struct allows you to perform multiple input actions in
 /// a sequence, including drag-and-drop, send keystrokes to an element, and
@@ -201,15 +202,22 @@ impl ActionChain {
     }
 
     /// Send the specified keystrokes.
-    pub fn send_keys(mut self, text: TypingData) -> Self {
-        for c in text.as_vec() {
+    pub fn send_keys<S>(mut self, text: S) -> Self
+    where
+        S: Into<TypingData>,
+    {
+        let typing: TypingData = text.into();
+        for c in typing.as_vec() {
             self = self.key_down(c).key_up(c);
         }
         self
     }
 
     /// Click on the specified element and send the specified keystrokes.
-    pub fn send_keys_to_element(self, element: &WebElement, text: TypingData) -> Self {
+    pub fn send_keys_to_element<S>(self, element: &WebElement, text: S) -> Self
+    where
+        S: Into<TypingData>,
+    {
         self.click_element(element).send_keys(text)
     }
 }

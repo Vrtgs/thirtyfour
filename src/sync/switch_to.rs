@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     common::{
         command::Command,
@@ -7,7 +9,6 @@ use crate::{
     sync::{webelement::unwrap_element_sync, Alert, RemoteConnectionSync, WebElement},
     By, SessionId, WindowHandle,
 };
-use std::sync::Arc;
 
 /// Struct for switching between frames/windows/alerts.
 pub struct SwitchTo {

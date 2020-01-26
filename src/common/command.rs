@@ -153,7 +153,7 @@ impl<'a> Command<'a> {
                 RequestMethod::Post,
                 format!("/session/{}/timeouts", session_id),
             )
-            .add_body(timeout_configuration.to_json()),
+            .add_body(json!(timeout_configuration)),
             Command::NavigateTo(session_id, url) => {
                 RequestData::new(RequestMethod::Post, format!("/session/{}/url", session_id))
                     .add_body(json!({ "url": url }))
@@ -163,15 +163,18 @@ impl<'a> Command<'a> {
             }
             Command::Back(session_id) => {
                 RequestData::new(RequestMethod::Post, format!("/session/{}/back", session_id))
+                    .add_body(json!({}))
             }
             Command::Forward(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/forward", session_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::Refresh(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/refresh", session_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::GetTitle(session_id) => {
                 RequestData::new(RequestMethod::Get, format!("/session/{}/title", session_id))
             }
@@ -213,7 +216,8 @@ impl<'a> Command<'a> {
             Command::SwitchToParentFrame(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/frame/parent", session_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::GetWindowRect(session_id) => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/window/rect", session_id),
@@ -226,15 +230,18 @@ impl<'a> Command<'a> {
             Command::MaximizeWindow(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/window/maximize", session_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::MinimizeWindow(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/window/minimize", session_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::FullscreenWindow(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/window/fullscreen", session_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::GetActiveElement(session_id) => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/element/active", session_id),
@@ -323,7 +330,8 @@ impl<'a> Command<'a> {
             Command::ElementClear(session_id, element_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/element/{}/clear", session_id, element_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::ElementSendKeys(session_id, element_id, typing_data) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/element/{}/value", session_id, element_id),
@@ -376,11 +384,13 @@ impl<'a> Command<'a> {
             Command::DismissAlert(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/alert/dismiss", session_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::AcceptAlert(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/alert/accept", session_id),
-            ),
+            )
+            .add_body(json!({})),
             Command::GetAlertText(session_id) => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/alert/text", session_id),

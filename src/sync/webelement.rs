@@ -1,3 +1,7 @@
+use std::{fmt, fs::File, io::Write, path::Path, sync::Arc, write};
+
+use base64::decode;
+
 use crate::{
     common::{
         command::Command,
@@ -9,8 +13,6 @@ use crate::{
     sync::RemoteConnectionSync,
     By,
 };
-use base64::decode;
-use std::{fmt, fs::File, io::Write, path::Path, sync::Arc, write};
 
 /// Unwrap the raw JSON into a WebElement struct.
 pub fn unwrap_element_sync(
@@ -45,16 +47,36 @@ pub fn unwrap_elements_sync(
 /// they are returned from a 'find_element()' operation using a WebDriver.
 ///
 /// # Example:
-/// ```ignore
-/// use thirtyfour::By;
-/// let elem = driver.find_element(By::Name("elementName"))?;
+/// ```rust
+/// # use thirtyfour::error::WebDriverResult;
+/// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+/// #
+/// # fn main() -> WebDriverResult<()> {
+/// #     let caps = DesiredCapabilities::chrome();
+/// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+/// #     driver.get("http://localhost:8000")?;
+/// let elem = driver.find_element(By::Name("input-result"))?;
+/// #     assert_eq!(elem.get_attribute("name")?, "input-result");
+/// #     Ok(())
+/// # }
 /// ```
 ///
 /// You can also search for a child element of another element as follows:
-/// ```ignore
-/// use thirtyfour::By;
-/// let elem = driver.find_element(By::Css("div.myclass"))?;
-/// let child_elem = elem.find_element(By::Name("elementName"))?;
+/// ```rust
+/// # use thirtyfour::error::WebDriverResult;
+/// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+/// #
+/// # fn main() -> WebDriverResult<()> {
+/// #     let caps = DesiredCapabilities::chrome();
+/// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+/// #     driver.get("http://localhost:8000")?;
+/// let elem = driver.find_element(By::Css("div[data-section='section-buttons']"))?;
+/// let child_elem = elem.find_element(By::Tag("button"))?;
+/// #     child_elem.click()?;
+/// #     let result_elem = elem.find_element(By::Id("button-result"))?;
+/// #     assert_eq!(result_elem.text()?, "Button 1 clicked");
+/// #     Ok(())
+/// # }
 /// ```
 ///
 /// Elements can be clicked using the `click()` method, and you can send
@@ -177,10 +199,21 @@ impl WebElement {
     /// selector.
     ///
     /// # Example:
-    /// ```ignore
-    /// use thirtyfour::By;
-    ///
-    /// let child_elem = elem.find_element(By::Id("theElementId"))?;
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://localhost:8000")?;
+    /// let elem = driver.find_element(By::Css("div[data-section='section-buttons']"))?;
+    /// let child_elem = elem.find_element(By::Tag("button"))?;
+    /// #     child_elem.click()?;
+    /// #     let result_elem = elem.find_element(By::Id("button-result"))?;
+    /// #     assert_eq!(result_elem.text()?, "Button 1 clicked");
+    /// #     Ok(())
+    /// # }
     /// ```
     pub fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
         let v = self.conn.execute(Command::FindElementFromElement(
@@ -195,11 +228,22 @@ impl WebElement {
     /// specified selector.
     ///
     /// # Example:
-    /// ```ignore
-    /// let child_elems = elem.find_elements(By::Class("some-class"))?;
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://localhost:8000")?;
+    /// let elem = driver.find_element(By::Css("div[data-section='section-buttons']"))?;
+    /// let child_elems = elem.find_elements(By::Tag("button"))?;
+    /// #     assert_eq!(child_elems.len(), 2);
     /// for child_elem in child_elems {
-    ///     println!("Found child element: {}", child_elem);
+    ///     assert_eq!(child_elem.tag_name()?, "button");
     /// }
+    /// #     Ok(())
+    /// # }
     /// ```
     pub fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         let v = self.conn.execute(Command::FindElementsFromElement(
@@ -215,14 +259,38 @@ impl WebElement {
     /// # Example:
     /// You can specify anything that implements `Into<TypingData>`. This
     /// includes &str and String.
-    /// ```ignore
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://localhost:8000")?;
+    /// #     let elem = driver.find_element(By::Name("input1"))?;
     /// elem.send_keys("selenium")?;
+    /// #     assert_eq!(elem.text()?, "selenium");
+    /// #     Ok(())
+    /// # }
     /// ```
     ///
     /// You can also send special key combinations like this:
-    /// ```ignore
+    /// ```rust
+    /// use thirtyfour::{Keys, TypingData};
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://localhost:8000")?;
+    /// #     let elem = driver.find_element(By::Name("input1"))?;
+    /// elem.send_keys("selenium")?;
     /// elem.send_keys(Keys::Control + "a")?;
-    /// elem.send_keys(TypingData::from("selenium") + Keys::Enter)?;
+    /// elem.send_keys(TypingData::from("thirtyfour") + Keys::Enter)?;
+    /// #     assert_eq!(elem.text()?, "thirtyfour");
+    /// #     Ok(())
+    /// # }
     /// ```
     pub fn send_keys<S>(&self, keys: S) -> WebDriverResult<()>
     where

@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::{fmt, ops::Deref, time::Duration};
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ElementRect {
@@ -181,11 +182,14 @@ impl From<Rect> for OptionRect {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimeoutConfiguration {
-    pub script: Option<Duration>,
-    pub page_load: Option<Duration>,
-    pub implicit: Option<Duration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    script: Option<u64>,
+    #[serde(rename = "pageLoad", skip_serializing_if = "Option::is_none")]
+    page_load: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    implicit: Option<u64>,
 }
 
 impl TimeoutConfiguration {
@@ -195,17 +199,33 @@ impl TimeoutConfiguration {
         implicit: Option<Duration>,
     ) -> Self {
         TimeoutConfiguration {
-            script,
-            page_load,
-            implicit,
+            script: script.map(|x| x.as_millis() as u64),
+            page_load: page_load.map(|x| x.as_millis() as u64),
+            implicit: implicit.map(|x| x.as_millis() as u64),
         }
     }
 
-    pub fn to_json(&self) -> serde_json::Value {
-        serde_json::json!({
-            "script": self.script.map(|x| x.as_millis()),
-            "pageLoad": self.page_load.map(|x| x.as_millis()),
-            "implicit": self.implicit.map(|x| x.as_millis())
-        })
+    pub fn script(&self) -> Option<Duration> {
+        self.script.map(|x| Duration::from_millis(x))
+    }
+
+    pub fn set_script(&mut self, timeout: Option<Duration>) {
+        self.script = timeout.map(|x| x.as_millis() as u64);
+    }
+
+    pub fn page_load(&self) -> Option<Duration> {
+        self.page_load.map(|x| Duration::from_millis(x))
+    }
+
+    pub fn set_page_load(&mut self, timeout: Option<Duration>) {
+        self.page_load = timeout.map(|x| x.as_millis() as u64);
+    }
+
+    pub fn implicit(&self) -> Option<Duration> {
+        self.implicit.map(|x| Duration::from_millis(x))
+    }
+
+    pub fn set_implicit(&mut self, timeout: Option<Duration>) {
+        self.implicit = timeout.map(|x| x.as_millis() as u64);
     }
 }
