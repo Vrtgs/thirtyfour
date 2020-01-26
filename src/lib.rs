@@ -30,8 +30,10 @@
 //!
 //! You can set these up using docker, as follows:
 //!
-//!     docker run --rm -d --network host --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome:3.141.59-zinc
-//!     docker run -d -p 8000:80 stevepryde/webappdemo:v0.2.3
+//! ```ignore
+//! docker run --rm -d --network host --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome:3.141.59-zinc
+//! docker run -d -p 8000:80 stevepryde/webappdemo:v0.2.3
+//! ```
 //!
 //! The web app demo is purely for demonstration / unit testing purposes and
 //! is not required in order to use this library.
