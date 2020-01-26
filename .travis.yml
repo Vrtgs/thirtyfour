@@ -20,3 +20,6 @@ before_install:
 - docker pull stevepryde/webappdemo:latest
 - docker run -d -p 8000:80 stevepryde/webappdemo:latest
 - docker ps -a
+
+script:
+  - cargo test --verbose -- --test-threads=1
