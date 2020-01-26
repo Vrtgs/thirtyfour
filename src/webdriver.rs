@@ -274,7 +274,23 @@ impl WebDriver {
     }
 
     /// Maximize the current window.
-    pub async fn mazimize_window(&self) -> WebDriverResult<()> {
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// driver.maximize_window().await?;
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub async fn maximize_window(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::MaximizeWindow(&self.session_id))
             .await
@@ -290,6 +306,22 @@ impl WebDriver {
     }
 
     /// Make the current window fullscreen.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// driver.fullscreen_window().await?;
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn fullscreen_window(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::FullscreenWindow(&self.session_id))
@@ -357,6 +389,24 @@ impl WebDriver {
     }
 
     /// Go back. This is equivalent to clicking the browser's back button.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     assert_eq!(driver.title().await?, "Demo Web App");
+    /// driver.back().await?;
+    /// #     assert_eq!(driver.title().await?, "");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn back(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::Back(&self.session_id))
@@ -365,6 +415,26 @@ impl WebDriver {
     }
 
     /// Go forward. This is equivalent to clicking the browser's forward button.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     assert_eq!(driver.title().await?, "Demo Web App");
+    /// #     driver.back().await?;
+    /// #     assert_eq!(driver.title().await?, "");
+    /// driver.forward().await?;
+    /// #     assert_eq!(driver.title().await?, "Demo Web App");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn forward(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::Forward(&self.session_id))
@@ -373,6 +443,24 @@ impl WebDriver {
     }
 
     /// Refresh the current page.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://localhost:8000").await?;
+    /// #     assert_eq!(driver.title().await?, "Demo Web App");
+    /// driver.refresh().await?;
+    /// #     assert_eq!(driver.title().await?, "Demo Web App");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub async fn refresh(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::Refresh(&self.session_id))

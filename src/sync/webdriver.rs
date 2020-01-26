@@ -245,7 +245,21 @@ impl WebDriver {
     }
 
     /// Maximize the current window.
-    pub fn mazimize_window(&self) -> WebDriverResult<()> {
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://localhost:8000")?;
+    /// driver.maximize_window()?;
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub fn maximize_window(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::MaximizeWindow(&self.session_id))
             .map(|_| ())
@@ -259,6 +273,20 @@ impl WebDriver {
     }
 
     /// Make the current window fullscreen.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://localhost:8000")?;
+    /// driver.fullscreen_window()?;
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn fullscreen_window(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::FullscreenWindow(&self.session_id))
@@ -317,6 +345,22 @@ impl WebDriver {
     }
 
     /// Go back. This is equivalent to clicking the browser's back button.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://localhost:8000")?;
+    /// #     assert_eq!(driver.title()?, "Demo Web App");
+    /// driver.back()?;
+    /// #     assert_eq!(driver.title()?, "");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn back(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::Back(&self.session_id))
@@ -324,6 +368,24 @@ impl WebDriver {
     }
 
     /// Go forward. This is equivalent to clicking the browser's forward button.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://localhost:8000")?;
+    /// #     assert_eq!(driver.title()?, "Demo Web App");
+    /// #     driver.back()?;
+    /// #     assert_eq!(driver.title()?, "");
+    /// driver.forward()?;
+    /// #     assert_eq!(driver.title()?, "Demo Web App");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn forward(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::Forward(&self.session_id))
@@ -331,6 +393,22 @@ impl WebDriver {
     }
 
     /// Refresh the current page.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://localhost:8000")?;
+    /// #     assert_eq!(driver.title()?, "Demo Web App");
+    /// driver.refresh()?;
+    /// #     assert_eq!(driver.title()?, "Demo Web App");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn refresh(&self) -> WebDriverResult<()> {
         self.conn
             .execute(Command::Refresh(&self.session_id))
