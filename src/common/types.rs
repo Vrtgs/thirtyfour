@@ -206,7 +206,7 @@ impl TimeoutConfiguration {
     }
 
     pub fn script(&self) -> Option<Duration> {
-        self.script.map(|x| Duration::from_millis(x))
+        self.script.map(Duration::from_millis)
     }
 
     pub fn set_script(&mut self, timeout: Option<Duration>) {
@@ -214,7 +214,7 @@ impl TimeoutConfiguration {
     }
 
     pub fn page_load(&self) -> Option<Duration> {
-        self.page_load.map(|x| Duration::from_millis(x))
+        self.page_load.map(Duration::from_millis)
     }
 
     pub fn set_page_load(&mut self, timeout: Option<Duration>) {
@@ -222,7 +222,7 @@ impl TimeoutConfiguration {
     }
 
     pub fn implicit(&self) -> Option<Duration> {
-        self.implicit.map(|x| Duration::from_millis(x))
+        self.implicit.map(Duration::from_millis)
     }
 
     pub fn set_implicit(&mut self, timeout: Option<Duration>) {
