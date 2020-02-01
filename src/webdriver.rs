@@ -32,7 +32,7 @@ use crate::{
 /// async fn main() -> WebDriverResult<()> {
 ///     let caps = DesiredCapabilities::chrome();
 ///     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-///     driver.get("http://localhost:8000").await?;
+///     driver.get("http://webappdemo").await?;
 ///     Ok(())
 /// }
 /// ```
@@ -174,7 +174,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// let elem_text = driver.find_element(By::Name("input1")).await?;
     /// let elem_button = driver.find_element(By::Id("button-set")).await?;
     /// let elem_result = driver.find_element(By::Name("input-result")).await?;
@@ -202,7 +202,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// let elems = driver.find_elements(By::ClassName("section")).await?;
     /// for elem in elems {
     ///     assert!(elem.get_attribute("class").await?.contains("section"));
@@ -285,7 +285,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// driver.maximize_window().await?;
     /// #     Ok(())
     /// # }
@@ -317,7 +317,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// driver.fullscreen_window().await?;
     /// #     Ok(())
     /// # }
@@ -400,7 +400,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// #     assert_eq!(driver.title().await?, "Demo Web App");
     /// driver.back().await?;
     /// #     assert_eq!(driver.title().await?, "");
@@ -426,7 +426,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// #     assert_eq!(driver.title().await?, "Demo Web App");
     /// #     driver.back().await?;
     /// #     assert_eq!(driver.title().await?, "");
@@ -454,7 +454,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// #     assert_eq!(driver.title().await?, "Demo Web App");
     /// driver.refresh().await?;
     /// #     assert_eq!(driver.title().await?, "Demo Web App");
@@ -563,7 +563,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// let elem_text = driver.find_element(By::Name("input1")).await?;
     /// let elem_button = driver.find_element(By::Id("button-set")).await?;
     ///
@@ -594,7 +594,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
     /// #     driver.add_cookie(set_cookie).await?;
     /// let cookies = driver.get_cookies().await?;
@@ -627,7 +627,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
     /// #     driver.add_cookie(set_cookie).await?;
     /// let cookie = driver.get_cookie("key").await?;
@@ -657,7 +657,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
     /// #     driver.add_cookie(set_cookie).await?;
     /// #     assert!(driver.get_cookie("key").await.is_ok());
@@ -686,7 +686,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
     /// #     driver.add_cookie(set_cookie).await?;
     /// #     assert!(driver.get_cookie("key").await.is_ok());
@@ -716,7 +716,7 @@ impl WebDriver {
     /// # async fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://localhost:8000").await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// let cookie = Cookie::new("key", serde_json::json!("value"));
     /// driver.add_cookie(cookie).await?;
     /// #     let got_cookie = driver.get_cookie("key").await?;

@@ -26,7 +26,7 @@
 //! ## Examples
 //!
 //! The following examples assume you have a selenium server running
-//! at localhost:4444, and a demo web app running at localhost:8000.
+//! at localhost:4444, and a demo web app running at webappdemo.
 //!
 //! You can set these up using docker, as follows:
 //!
@@ -51,7 +51,7 @@
 //!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 //!
 //!     // Navigate to URL.
-//!     driver.get("http://localhost:8000").await?;
+//!     driver.get("http://webappdemo").await?;
 //!
 //!     // Find element.
 //!     let elem_div = driver.find_element(By::Css("div[data-section='section-input']")).await?;
@@ -85,7 +85,7 @@
 //!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
 //!
 //!     // Navigate to URL.
-//!     driver.get("http://localhost:8000")?;
+//!     driver.get("http://webappdemo")?;
 //!
 //!     // Find element.
 //!     let elem_div = driver.find_element(By::Css("div[data-section='section-input']"))?;

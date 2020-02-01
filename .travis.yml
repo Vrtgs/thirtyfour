@@ -15,10 +15,7 @@ services:
   - docker
 
 before_install:
-- docker pull selenium/standalone-chrome:3.141.59-zinc
-- docker run --rm -d --network host --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome:3.141.59-zinc
-- docker pull stevepryde/webappdemo:v0.2.3
-- docker run -d -p 8000:80 stevepryde/webappdemo:v0.2.3
+- docker-compose up -d
 - docker ps -a
 
 script:

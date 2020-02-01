@@ -30,7 +30,7 @@ use crate::{
 /// fn main() -> WebDriverResult<()> {
 ///     let caps = DesiredCapabilities::chrome();
 ///     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-///     driver.get("http://localhost:8000")?;
+///     driver.get("http://webappdemo")?;
 ///     Ok(())
 /// }
 /// ```
@@ -157,7 +157,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// let elem_text = driver.find_element(By::Name("input1"))?;
     /// let elem_button = driver.find_element(By::Id("button-set"))?;
     /// let elem_result = driver.find_element(By::Name("input-result"))?;
@@ -182,7 +182,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// let elems = driver.find_elements(By::ClassName("section"))?;
     /// for elem in elems {
     ///     assert!(elem.get_attribute("class")?.contains("section"));
@@ -254,7 +254,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// driver.maximize_window()?;
     /// #     Ok(())
     /// # }
@@ -282,7 +282,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// driver.fullscreen_window()?;
     /// #     Ok(())
     /// # }
@@ -354,7 +354,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// #     assert_eq!(driver.title()?, "Demo Web App");
     /// driver.back()?;
     /// #     assert_eq!(driver.title()?, "");
@@ -377,7 +377,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// #     assert_eq!(driver.title()?, "Demo Web App");
     /// #     driver.back()?;
     /// #     assert_eq!(driver.title()?, "");
@@ -402,7 +402,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// #     assert_eq!(driver.title()?, "Demo Web App");
     /// driver.refresh()?;
     /// #     assert_eq!(driver.title()?, "Demo Web App");
@@ -500,7 +500,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// let elem_text = driver.find_element(By::Name("input1"))?;
     /// let elem_button = driver.find_element(By::Id("button-set"))?;
     ///
@@ -528,7 +528,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
     /// #     driver.add_cookie(set_cookie)?;
     /// let cookies = driver.get_cookies()?;
@@ -557,7 +557,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
     /// #     driver.add_cookie(set_cookie)?;
     /// let cookie = driver.get_cookie("key")?;
@@ -583,7 +583,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
     /// #     driver.add_cookie(set_cookie)?;
     /// #     assert!(driver.get_cookie("key").is_ok());
@@ -608,7 +608,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// #     let set_cookie = Cookie::new("key", serde_json::json!("value"));
     /// #     driver.add_cookie(set_cookie)?;
     /// #     assert!(driver.get_cookie("key").is_ok());
@@ -634,7 +634,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://localhost:8000")?;
+    /// #     driver.get("http://webappdemo")?;
     /// let cookie = Cookie::new("key", serde_json::json!("value"));
     /// driver.add_cookie(cookie)?;
     /// #     let got_cookie = driver.get_cookie("key")?;

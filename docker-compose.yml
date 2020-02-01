@@ -1,0 +1,15 @@
+version: "3"
+services:
+  selenium:
+    image: selenium/standalone-chrome:3.141.59-zinc
+    volumes:
+      - "/dev/shm:/dev/shm"
+    ports:
+      - "4444:4444"
+    environment:
+      - NODE_MAX_INSTANCES=1
+      - NODE_MAX_SESSION=1
+  webappdemo:
+    image: stevepryde/webappdemo:v0.2.3
+    ports:
+      - "8000:80"
