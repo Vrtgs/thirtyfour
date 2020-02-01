@@ -59,7 +59,7 @@ All interactions with selenium involve sending requests to the selenium server, 
 The difference between sync and async for `thirtyfour` essentially comes down to what actually happens (or doesn't happen) while waiting for that response.
 
 With the synchronous version, requests to selenium will block the calling thread until they return. While this is obviously inefficient, the code is often a little bit simpler and easier to follow.
-You can alleviate some of the inefficiency by using multiple threads, but note that threads have some overhead as well. If you're thinking of spawning hundreds (or even tens) of threads, you probably want to use async instead.
+You can alleviate some of the inefficiency by using multiple threads if/when concurrency is required, but note that threads have some overhead as well. If you're thinking of spawning hundreds (or even tens) of threads, you probably want to use async instead.
 
 In contrast, async method calls will immediately return a "future", which is a bit like a task that can be executed later (typically via `.await`), and will eventually complete and return a value.
 While it is `.await`ing a response from selenium, the "future" will yield control of the current thread, allowing other "futures" to run.
