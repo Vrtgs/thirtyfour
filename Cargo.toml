@@ -1,12 +1,12 @@
 [package]
 name = "thirtyfour"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 description = """
-Thirtyfour is a W3C-compliant selenium webdriver client for Rust, inspired by the python selenium library,
-and named after the atomic number for Selenium (Se).
+Thirtyfour is a Selenium WebDriver library for Rust, for automated website UI testing.
+It supports the full W3C WebDriver spec.
 """
 homepage = "https://github.com/stevepryde/thirtyfour"
 repository = "https://github.com/stevepryde/thirtyfour"
