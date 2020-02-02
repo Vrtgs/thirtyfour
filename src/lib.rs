@@ -1,11 +1,10 @@
-//! Thirtyfour is a full-featured Selenium library for Rust,
-//! inspired by the Python Selenium library.
+//! Thirtyfour is a Selenium library for Rust, for automated website UI testing.
 //!
-//! It supports the W3C WebDriver spec.
+//! It supports the full W3C WebDriver spec.
 //! Tested with Chrome and Firefox although any W3C-compatible WebDriver
 //! should work.
 //!
-//! Both synchronous and asynchronous APIs are provided (see examples below).
+//! Both sync and async APIs are provided (see examples below).
 //!
 //! ## Features
 //!
@@ -26,17 +25,16 @@
 //! ## Examples
 //!
 //! The following examples assume you have a selenium server running
-//! at localhost:4444, and a demo web app running at webappdemo.
+//! at localhost:4444, and a demo web app running at http://webappdemo
 //!
-//! You can set these up using docker, as follows:
+//! You can set these up using docker-compose, as follows:
 //!
 //! ```ignore
-//! docker run --rm -d --network host --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome:3.141.59-zinc
-//! docker run -d -p 8000:80 stevepryde/webappdemo:v0.2.3
+//! docker-compose up -d
 //! ```
 //!
-//! The web app demo is purely for demonstration / unit testing purposes and
-//! is not required in order to use this library.
+//! The included web app demo is purely for demonstration / unit testing
+//! purposes and is not required in order to use this library in other projects.
 //!
 //! ### Async example:
 //!
