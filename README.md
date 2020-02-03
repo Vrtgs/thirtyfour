@@ -160,7 +160,7 @@ Both can be run easily using docker-compose. To install docker-compose, see [htt
 
 Once you have docker-compose installed, you can start the required containers, as follows:
 
-    docker-compose up -d
+    docker-compose up -d --build
 
 Then, to run the tests:
 

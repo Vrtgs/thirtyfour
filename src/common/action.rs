@@ -1,6 +1,7 @@
-use crate::common::{keys::TypingData, types::ElementId};
 use serde::Serialize;
 use serde_repr::Serialize_repr;
+
+use crate::common::{keys::TypingData, types::ElementId};
 
 pub trait Action {
     fn get_pause(duration_seconds: Option<u64>) -> Self;
@@ -80,8 +81,8 @@ pub enum PointerAction {
         #[serde(skip_serializing_if = "Option::is_none")]
         duration: Option<u64>,
         origin: PointerOrigin,
-        x: i64,
-        y: i64,
+        x: i32,
+        y: i32,
     },
     PointerCancel,
 }
@@ -180,7 +181,7 @@ impl ActionSource<PointerAction> {
         }
     }
 
-    pub fn move_to(&mut self, x: i64, y: i64) {
+    pub fn move_to(&mut self, x: i32, y: i32) {
         self.add_action(PointerAction::PointerMove {
             duration: None,
             origin: PointerOrigin::Viewport,
@@ -189,7 +190,7 @@ impl ActionSource<PointerAction> {
         });
     }
 
-    pub fn move_by(&mut self, x: i64, y: i64) {
+    pub fn move_by(&mut self, x: i32, y: i32) {
         self.add_action(PointerAction::PointerMove {
             duration: None,
             origin: PointerOrigin::Pointer,
@@ -198,7 +199,7 @@ impl ActionSource<PointerAction> {
         });
     }
 
-    pub fn move_to_element(&mut self, element_id: ElementId, x: i64, y: i64) {
+    pub fn move_to_element(&mut self, element_id: ElementId, x: i32, y: i32) {
         self.add_action(PointerAction::PointerMove {
             duration: None,
             origin: PointerOrigin::WebElement(element_id),

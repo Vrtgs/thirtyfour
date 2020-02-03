@@ -30,7 +30,7 @@
 //! You can set these up using docker-compose, as follows:
 //!
 //! ```ignore
-//! docker-compose up -d
+//! docker-compose up -d --build
 //! ```
 //!
 //! The included web app demo is purely for demonstration / unit testing
@@ -50,6 +50,9 @@
 //!
 //!     // Navigate to URL.
 //!     driver.get("http://webappdemo").await?;
+//!
+//!     // Navigate to page, by chaining futures together and awaiting the result.
+//!     driver.find_element(By::Id("pagetextinput")).then(|elem| elem.click()).await?;
 //!
 //!     // Find element.
 //!     let elem_div = driver.find_element(By::Css("div[data-section='section-input']")).await?;
@@ -84,6 +87,9 @@
 //!
 //!     // Navigate to URL.
 //!     driver.get("http://webappdemo")?;
+//!
+//!     // Navigate to page.
+//!     driver.find_element(By::Id("pagetextinput"))?.click()?;
 //!
 //!     // Find element.
 //!     let elem_div = driver.find_element(By::Css("div[data-section='section-input']"))?;

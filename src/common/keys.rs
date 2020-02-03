@@ -137,6 +137,12 @@ where
     }
 }
 
+impl Into<char> for Keys {
+    fn into(self) -> char {
+        self.value()
+    }
+}
+
 pub struct TypingData {
     data: Vec<char>,
 }

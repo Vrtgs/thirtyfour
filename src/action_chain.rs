@@ -120,7 +120,7 @@ impl ActionChain {
     }
 
     /// Drag the mouse cursor by the specified X and Y offsets.
-    pub fn drag_and_drop_by_offset(self, x_offset: i64, y_offset: i64) -> Self {
+    pub fn drag_and_drop_by_offset(self, x_offset: i32, y_offset: i32) -> Self {
         self.click_and_hold().move_by_offset(x_offset, y_offset)
     }
 
@@ -129,8 +129,8 @@ impl ActionChain {
     pub fn drag_and_drop_element_by_offset(
         self,
         element: &WebElement,
-        x_offset: i64,
-        y_offset: i64,
+        x_offset: i32,
+        y_offset: i32,
     ) -> Self {
         self.click_and_hold_element(element)
             .move_by_offset(x_offset, y_offset)
@@ -161,7 +161,7 @@ impl ActionChain {
     }
 
     /// Move the mouse cursor by the specified X and Y offsets.
-    pub fn move_by_offset(mut self, x_offset: i64, y_offset: i64) -> Self {
+    pub fn move_by_offset(mut self, x_offset: i32, y_offset: i32) -> Self {
         self.pointer_actions.move_by(x_offset, y_offset);
         self.key_actions.pause();
         self
@@ -180,8 +180,8 @@ impl ActionChain {
     pub fn move_to_element_with_offset(
         mut self,
         element: &WebElement,
-        x_offset: i64,
-        y_offset: i64,
+        x_offset: i32,
+        y_offset: i32,
     ) -> Self {
         self.pointer_actions
             .move_to_element(element.element_id.clone(), x_offset, y_offset);

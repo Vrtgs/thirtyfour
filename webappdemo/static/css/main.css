@@ -1,0 +1,24 @@
+body {
+  margin: 20px;
+  font-size: 16px;
+}
+
+a {
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.section {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    padding: 1em;
+    border: 2px solid #999;
+    background-color: #f2f2f2;
+    margin: 20px;
+}
+
+.label {
+    height: 20px;
+    margin-top: 8px;
+}

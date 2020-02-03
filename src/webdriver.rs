@@ -6,6 +6,7 @@ use log::error;
 use serde::Deserialize;
 use tokio::{fs::File, io::AsyncWriteExt};
 
+use crate::error::WebDriverError;
 use crate::{
     action_chain::ActionChain,
     common::{
@@ -64,7 +65,23 @@ impl WebDriver {
         capabilities: &DesiredCapabilities,
     ) -> WebDriverResult<Self> {
         let conn = Arc::new(RemoteConnectionAsync::new(remote_server_addr)?);
-        let v = conn.execute(Command::NewSession(capabilities)).await?;
+        let v = match conn.execute(Command::NewSession(capabilities)).await {
+            Ok(x) => Ok(x),
+            Err(e) => {
+                // Selenium sometimes gives a bogus 500 error "Chrome failed to start".
+                // Retry if we get a 500. If it happens twice in a row then the second error
+                // will be returned.
+                if let WebDriverError::UnknownError(x) = &e {
+                    if x.status == 500 {
+                        conn.execute(Command::NewSession(capabilities)).await
+                    } else {
+                        Err(e)
+                    }
+                } else {
+                    Err(e)
+                }
+            }
+        }?;
 
         #[derive(Debug, Deserialize)]
         struct ConnectionData {
@@ -175,6 +192,7 @@ impl WebDriver {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem_text = driver.find_element(By::Name("input1")).await?;
     /// let elem_button = driver.find_element(By::Id("button-set")).await?;
     /// let elem_result = driver.find_element(By::Name("input-result")).await?;
@@ -564,6 +582,7 @@ impl WebDriver {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem_text = driver.find_element(By::Name("input1")).await?;
     /// let elem_button = driver.find_element(By::Id("button-set")).await?;
     ///

@@ -4,6 +4,7 @@ use base64::decode;
 use log::error;
 use serde::Deserialize;
 
+use crate::error::WebDriverError;
 use crate::{
     common::{
         command::Command,
@@ -57,7 +58,23 @@ impl WebDriver {
         capabilities: &DesiredCapabilities,
     ) -> WebDriverResult<Self> {
         let conn = Arc::new(RemoteConnectionSync::new(remote_server_addr)?);
-        let v = conn.execute(Command::NewSession(capabilities))?;
+        let v = match conn.execute(Command::NewSession(capabilities)) {
+            Ok(x) => Ok(x),
+            Err(e) => {
+                // Selenium sometimes gives a bogus 500 error "Chrome failed to start".
+                // Retry if we get a 500. If it happens twice in a row then the second error
+                // will be returned.
+                if let WebDriverError::UnknownError(x) = &e {
+                    if x.status == 500 {
+                        conn.execute(Command::NewSession(capabilities))
+                    } else {
+                        Err(e)
+                    }
+                } else {
+                    Err(e)
+                }
+            }
+        }?;
 
         #[derive(Debug, Deserialize)]
         struct ConnectionData {
@@ -158,6 +175,7 @@ impl WebDriver {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// let elem_text = driver.find_element(By::Name("input1"))?;
     /// let elem_button = driver.find_element(By::Id("button-set"))?;
     /// let elem_result = driver.find_element(By::Name("input-result"))?;
@@ -501,6 +519,7 @@ impl WebDriver {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// let elem_text = driver.find_element(By::Name("input1"))?;
     /// let elem_button = driver.find_element(By::Id("button-set"))?;
     ///

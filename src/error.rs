@@ -14,10 +14,10 @@ pub struct WebDriverErrorValue {
 #[derive(Debug, Deserialize, Clone)]
 pub struct WebDriverErrorInfo {
     #[serde(skip)]
-    status: u16,
+    pub status: u16,
     #[serde(default, rename(deserialize = "state"))]
-    error: String,
-    value: WebDriverErrorValue,
+    pub error: String,
+    pub value: WebDriverErrorValue,
 }
 
 /// WebDriverError is the main error type

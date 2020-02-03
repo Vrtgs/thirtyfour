@@ -55,6 +55,7 @@ pub fn unwrap_elements_sync(
 /// #     let caps = DesiredCapabilities::chrome();
 /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
 /// #     driver.get("http://webappdemo")?;
+/// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
 /// let elem = driver.find_element(By::Name("input-result"))?;
 /// #     assert_eq!(elem.get_attribute("name")?, "input-result");
 /// #     Ok(())
@@ -267,6 +268,7 @@ impl WebElement {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// #     let elem = driver.find_element(By::Name("input1"))?;
     /// elem.send_keys("selenium")?;
     /// #     assert_eq!(elem.text()?, "selenium");
@@ -284,6 +286,7 @@ impl WebElement {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// #     let elem = driver.find_element(By::Name("input1"))?;
     /// elem.send_keys("selenium")?;
     /// elem.send_keys(Keys::Control + "a")?;

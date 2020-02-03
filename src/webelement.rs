@@ -57,6 +57,7 @@ pub fn unwrap_elements_async(
 /// #     let caps = DesiredCapabilities::chrome();
 /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 /// #     driver.get("http://webappdemo").await?;
+/// #     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
 /// let elem = driver.find_element(By::Name("input-result")).await?;
 /// #     assert_eq!(elem.get_attribute("name").await?, "input-result");
 /// #     Ok(())
@@ -305,6 +306,7 @@ impl<'a> WebElement {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #     let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
     /// #     assert_eq!(elem.text().await?, "selenium");
@@ -324,6 +326,7 @@ impl<'a> WebElement {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #     let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
     /// elem.send_keys(Keys::Control + "a").await?;

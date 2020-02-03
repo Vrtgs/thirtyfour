@@ -10,6 +10,17 @@ pub struct ElementRect {
     pub height: f32,
 }
 
+impl ElementRect {
+    pub fn center(&self) -> (f32, f32) {
+        (self.x + (self.width / 2.0), self.y + (self.height / 2.0))
+    }
+
+    pub fn icenter(&self) -> (i32, i32) {
+        let c = self.center();
+        (c.0 as i32, c.1 as i32)
+    }
+}
+
 #[derive(Deserialize)]
 pub struct ElementRef {
     #[serde(rename(deserialize = "element-6066-11e4-a52e-4f735466cecf"))]

@@ -1,0 +1,12 @@
+[package]
+name = "webappdemo"
+version = "0.3.0"
+authors = ["Steve Pryde <steve@stevepryde.com>"]
+edition = "2018"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+yew = "0.11.0"
+stdweb = "0.4.20"
