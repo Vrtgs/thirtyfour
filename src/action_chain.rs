@@ -305,10 +305,10 @@ impl ActionChain {
     /// Drag the mouse cursor from the center of the source element to the
     /// center of the target element.
     ///
-    /// # This method is not working correctly due to a selenium bug.
+    /// ## This method is not working correctly due to a selenium bug.
     /// It appears selenium has a bug in the drag and drop feature
     /// causing it to start the drag but not perform the drop.
-    /// See https://github.com/SeleniumHQ/selenium/issues/7744
+    /// See [https://github.com/SeleniumHQ/selenium/issues/7744](https://github.com/SeleniumHQ/selenium/issues/7744)
     ///
     /// This method has been confirmed to produce identical JSON output
     /// compared to the python selenium library (which also fails due to
@@ -320,10 +320,10 @@ impl ActionChain {
 
     /// Drag the mouse cursor by the specified X and Y offsets.
     ///
-    /// # This method is not working correctly due to a selenium bug.
+    /// ## This method is not working correctly due to a selenium bug.
     /// It appears selenium has a bug in the drag and drop feature
     /// causing it to start the drag but not perform the drop.
-    /// See https://github.com/SeleniumHQ/selenium/issues/7744
+    /// See [https://github.com/SeleniumHQ/selenium/issues/7744](https://github.com/SeleniumHQ/selenium/issues/7744)
     ///
     /// This method has been confirmed to produce identical JSON output
     /// compared to the python selenium library (which also fails due to
@@ -335,10 +335,10 @@ impl ActionChain {
     /// Drag the mouse cursor by the specified X and Y offsets, starting
     /// from the center of the specified element.
     ///
-    /// # This method is not working correctly due to a selenium bug.
+    /// ## This method is not working correctly due to a selenium bug.
     /// It appears selenium has a bug in the drag and drop feature
     /// causing it to start the drag but not perform the drop.
-    /// See https://github.com/SeleniumHQ/selenium/issues/7744
+    /// See [https://github.com/SeleniumHQ/selenium/issues/7744](https://github.com/SeleniumHQ/selenium/issues/7744)
     ///
     /// This method has been confirmed to produce identical JSON output
     /// compared to the python selenium library (which also fails due to

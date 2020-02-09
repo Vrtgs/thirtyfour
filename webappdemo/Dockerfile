@@ -6,7 +6,6 @@ RUN cargo install cargo-web
 
 # Build dependencies first without source, so that source changes don't cause dependencies to be recompiled.
 COPY Cargo.toml /app/Cargo.toml
-COPY Cargo.lock /app/Cargo.lock
 RUN mkdir src/
 RUN echo "fn main() {println!(\"Temporary main used for building deps.\")}" > src/main.rs
 RUN cargo-web build --release
