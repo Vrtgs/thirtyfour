@@ -4,22 +4,19 @@ use serde_repr::Serialize_repr;
 use crate::common::{keys::TypingData, types::ElementId};
 
 pub trait Action {
-    fn get_pause(duration_seconds: Option<u64>) -> Self;
+    fn get_pause(duration_ms: u64) -> Self;
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum NullAction {
-    Pause {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        duration: Option<u64>,
-    },
+    Pause { duration: u64 },
 }
 
 impl Action for NullAction {
-    fn get_pause(duration_seconds: Option<u64>) -> Self {
+    fn get_pause(duration_ms: u64) -> Self {
         NullAction::Pause {
-            duration: duration_seconds,
+            duration: duration_ms,
         }
     }
 }
@@ -27,22 +24,15 @@ impl Action for NullAction {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum KeyAction {
-    Pause {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        duration: Option<u64>,
-    },
-    KeyUp {
-        value: char,
-    },
-    KeyDown {
-        value: char,
-    },
+    Pause { duration: u64 },
+    KeyUp { value: char },
+    KeyDown { value: char },
 }
 
 impl Action for KeyAction {
-    fn get_pause(duration_seconds: Option<u64>) -> Self {
+    fn get_pause(duration_ms: u64) -> Self {
         KeyAction::Pause {
-            duration: duration_seconds,
+            duration: duration_ms,
         }
     }
 }
@@ -68,18 +58,18 @@ pub enum PointerOrigin {
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum PointerAction {
     Pause {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        duration: Option<u64>,
+        duration: u64,
     },
     PointerDown {
         button: MouseButton,
+        duration: u64,
     },
     PointerUp {
         button: MouseButton,
+        duration: u64,
     },
     PointerMove {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        duration: Option<u64>,
+        duration: u64,
         origin: PointerOrigin,
         x: i32,
         y: i32,
@@ -88,9 +78,9 @@ pub enum PointerAction {
 }
 
 impl Action for PointerAction {
-    fn get_pause(duration_seconds: Option<u64>) -> Self {
+    fn get_pause(duration_ms: u64) -> Self {
         PointerAction::Pause {
-            duration: duration_seconds,
+            duration: duration_ms,
         }
     }
 }
@@ -109,6 +99,8 @@ pub struct ActionSource<T: Action + Clone> {
     #[serde(skip_serializing_if = "Option::is_none")]
     parameters: Option<PointerParameters>,
     actions: Vec<T>,
+    #[serde(skip_serializing)]
+    duration: u64,
 }
 
 impl<T> ActionSource<T>
@@ -120,11 +112,11 @@ where
     }
 
     pub fn pause(&mut self) {
-        self.actions.push(T::get_pause(None));
+        self.actions.push(T::get_pause(0));
     }
 
-    pub fn pause_for(&mut self, duration_seconds: Option<u64>) {
-        self.actions.push(T::get_pause(duration_seconds));
+    pub fn pause_for(&mut self, duration_ms: u64) {
+        self.actions.push(T::get_pause(duration_ms));
     }
 
     pub fn id(&self) -> &str {
@@ -139,6 +131,7 @@ impl ActionSource<KeyAction> {
             action_type: String::from("key"),
             parameters: None,
             actions: Vec::new(),
+            duration: 0,
         }
     }
 
@@ -178,12 +171,13 @@ impl ActionSource<PointerAction> {
                 }),
             }),
             actions: Vec::new(),
+            duration: 250,
         }
     }
 
     pub fn move_to(&mut self, x: i32, y: i32) {
         self.add_action(PointerAction::PointerMove {
-            duration: None,
+            duration: self.duration,
             origin: PointerOrigin::Viewport,
             x,
             y,
@@ -192,7 +186,7 @@ impl ActionSource<PointerAction> {
 
     pub fn move_by(&mut self, x: i32, y: i32) {
         self.add_action(PointerAction::PointerMove {
-            duration: None,
+            duration: self.duration,
             origin: PointerOrigin::Pointer,
             x,
             y,
@@ -201,7 +195,7 @@ impl ActionSource<PointerAction> {
 
     pub fn move_to_element(&mut self, element_id: ElementId, x: i32, y: i32) {
         self.add_action(PointerAction::PointerMove {
-            duration: None,
+            duration: self.duration,
             origin: PointerOrigin::WebElement(element_id),
             x,
             y,
@@ -210,7 +204,7 @@ impl ActionSource<PointerAction> {
 
     pub fn move_to_element_center(&mut self, element_id: ElementId) {
         self.add_action(PointerAction::PointerMove {
-            duration: None,
+            duration: self.duration,
             origin: PointerOrigin::WebElement(element_id),
             x: 0,
             y: 0,
@@ -220,24 +214,29 @@ impl ActionSource<PointerAction> {
     pub fn click(&mut self) {
         self.add_action(PointerAction::PointerDown {
             button: MouseButton::Left,
+            duration: 0,
         });
         self.add_action(PointerAction::PointerUp {
             button: MouseButton::Left,
+            duration: 0,
         });
     }
 
     pub fn context_click(&mut self) {
         self.add_action(PointerAction::PointerDown {
             button: MouseButton::Right,
+            duration: 0,
         });
         self.add_action(PointerAction::PointerUp {
             button: MouseButton::Right,
+            duration: 0,
         });
     }
 
     pub fn click_and_hold(&mut self) {
         self.add_action(PointerAction::PointerDown {
             button: MouseButton::Left,
+            duration: 0,
         });
     }
 
@@ -249,6 +248,7 @@ impl ActionSource<PointerAction> {
     pub fn release(&mut self) {
         self.add_action(PointerAction::PointerUp {
             button: MouseButton::Left,
+            duration: 0,
         });
     }
 
@@ -276,6 +276,7 @@ mod tests {
             id: String::from("null"),
             parameters: None,
             actions,
+            duration: 0,
         };
 
         let value_got = serde_json::to_value(source);
@@ -293,12 +294,12 @@ mod tests {
     #[test]
     fn test_null_action() {
         compare_null_action(
-            NullAction::Pause { duration: None },
-            json!({"type": "pause"}),
+            NullAction::Pause { duration: 0 },
+            json!({"type": "pause", "duration": 0}),
         );
 
         compare_null_action(
-            NullAction::Pause { duration: Some(4) },
+            NullAction::Pause { duration: 4 },
             json!({"type": "pause", "duration": 4}),
         );
     }
@@ -322,12 +323,12 @@ mod tests {
     #[test]
     fn test_key_action_pause() {
         compare_key_action(
-            KeyAction::Pause { duration: None },
-            json!({"type": "pause"}),
+            KeyAction::Pause { duration: 0 },
+            json!({"type": "pause", "duration": 0}),
         );
 
         compare_key_action(
-            KeyAction::Pause { duration: Some(3) },
+            KeyAction::Pause { duration: 3 },
             json!({"type": "pause", "duration": 3}),
         );
     }
@@ -381,12 +382,12 @@ mod tests {
     #[test]
     fn test_pointer_action_pause() {
         compare_pointer_action(
-            PointerAction::Pause { duration: None },
-            json!({"type": "pause"}),
+            PointerAction::Pause { duration: 0 },
+            json!({"type": "pause", "duration": 0}),
         );
 
         compare_pointer_action(
-            PointerAction::Pause { duration: Some(2) },
+            PointerAction::Pause { duration: 2 },
             json!({"type": "pause", "duration": 2}),
         );
     }
@@ -396,43 +397,49 @@ mod tests {
         compare_pointer_action(
             PointerAction::PointerDown {
                 button: MouseButton::Left,
+                duration: 0,
             },
-            json!({"type": "pointerDown", "button": 0}),
+            json!({"type": "pointerDown", "button": 0, "duration": 0}),
         );
 
         compare_pointer_action(
             PointerAction::PointerDown {
                 button: MouseButton::Middle,
+                duration: 0,
             },
-            json!({"type": "pointerDown", "button": 1 }),
+            json!({"type": "pointerDown", "button": 1, "duration": 0}),
         );
 
         compare_pointer_action(
             PointerAction::PointerDown {
                 button: MouseButton::Right,
+                duration: 0,
             },
-            json!({"type": "pointerDown", "button": 2}),
+            json!({"type": "pointerDown", "button": 2, "duration": 0}),
         );
 
         compare_pointer_action(
             PointerAction::PointerUp {
                 button: MouseButton::Left,
+                duration: 0,
             },
-            json!({"type": "pointerUp", "button": 0}),
+            json!({"type": "pointerUp", "button": 0, "duration": 0}),
         );
 
         compare_pointer_action(
             PointerAction::PointerUp {
                 button: MouseButton::Middle,
+                duration: 0,
             },
-            json!({"type": "pointerUp", "button": 1 }),
+            json!({"type": "pointerUp", "button": 1, "duration": 0}),
         );
 
         compare_pointer_action(
             PointerAction::PointerUp {
                 button: MouseButton::Right,
+                duration: 0,
             },
-            json!({"type": "pointerUp", "button": 2}),
+            json!({"type": "pointerUp", "button": 2, "duration": 0}),
         );
     }
 
@@ -440,43 +447,43 @@ mod tests {
     fn test_pointer_action_pointermove() {
         compare_pointer_action(
             PointerAction::PointerMove {
-                duration: None,
+                duration: 0,
                 x: 0,
                 y: 0,
                 origin: PointerOrigin::Viewport,
             },
             json!({
-            "type": "pointerMove", "origin": "viewport", "x": 0, "y": 0
+            "type": "pointerMove", "origin": "viewport", "x": 0, "y": 0, "duration": 0
             }),
         );
 
         compare_pointer_action(
             PointerAction::PointerMove {
-                duration: None,
+                duration: 0,
                 x: 0,
                 y: 0,
                 origin: PointerOrigin::Pointer,
             },
             json!({
-            "type": "pointerMove", "origin": "pointer", "x": 0, "y": 0
+            "type": "pointerMove", "origin": "pointer", "x": 0, "y": 0, "duration": 0
             }),
         );
 
         compare_pointer_action(
             PointerAction::PointerMove {
-                duration: None,
+                duration: 0,
                 x: 0,
                 y: 0,
                 origin: PointerOrigin::WebElement(ElementId::from("id1234")),
             },
             json!({
-            "type": "pointerMove", "origin": {"element-6066-11e4-a52e-4f735466cecf": "id1234"}, "x": 0, "y": 0
+            "type": "pointerMove", "origin": {"element-6066-11e4-a52e-4f735466cecf": "id1234"}, "x": 0, "y": 0, "duration": 0
             }),
         );
 
         compare_pointer_action(
             PointerAction::PointerMove {
-                duration: Some(1),
+                duration: 1,
                 x: 100,
                 y: 200,
                 origin: PointerOrigin::Viewport,
@@ -492,7 +499,7 @@ mod tests {
 
         compare_pointer_action(
             PointerAction::PointerMove {
-                duration: Some(1),
+                duration: 1,
                 x: 100,
                 y: 200,
                 origin: PointerOrigin::Pointer,
@@ -508,7 +515,7 @@ mod tests {
 
         compare_pointer_action(
             PointerAction::PointerMove {
-                duration: Some(1),
+                duration: 1,
                 x: 100,
                 y: 200,
                 origin: PointerOrigin::WebElement(ElementId::from("someid")),

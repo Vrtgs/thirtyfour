@@ -30,6 +30,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagealerts"))?.click()?;
     /// #     driver.find_element(By::Id("alertbutton1"))?.click()?;
     /// let alert = driver.switch_to().alert();
     /// let text = alert.text()?;
@@ -54,6 +55,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagealerts"))?.click()?;
     /// #     driver.find_element(By::Id("alertbutton2"))?.click()?;
     /// driver.switch_to().alert().dismiss()?;
     /// #     let elem = driver.find_element(By::Id("alert-result"))?;
@@ -78,6 +80,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagealerts"))?.click()?;
     /// #     driver.find_element(By::Id("alertbutton2"))?.click()?;
     /// driver.switch_to().alert().accept()?;
     /// #     let elem = driver.find_element(By::Id("alert-result"))?;
@@ -104,6 +107,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagealerts"))?.click()?;
     /// #     driver.find_element(By::Id("alertbutton3"))?.click()?;
     /// let alert = driver.switch_to().alert();
     /// alert.send_keys("selenium")?;
@@ -123,6 +127,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagealerts"))?.click()?;
     /// #     driver.find_element(By::Id("alertbutton3"))?.click()?;
     /// let alert = driver.switch_to().alert();
     /// alert.send_keys("selenium")?;

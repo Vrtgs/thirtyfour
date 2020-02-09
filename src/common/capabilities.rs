@@ -1,5 +1,6 @@
-use crate::error::WebDriverResult;
 use serde_json::{json, to_value, Value};
+
+use crate::error::WebDriverResult;
 
 const W3C_CAPABILITY_NAMES: &[&str] = &[
     "acceptInsecureCerts",
@@ -67,7 +68,7 @@ impl DesiredCapabilities {
         DesiredCapabilities {
             capabilities: json!({
                 "browserName": "firefox",
-                "acceptInsecureCerts": true
+                "acceptInsecureCerts": true,
             }),
         }
     }

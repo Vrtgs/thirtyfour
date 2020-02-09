@@ -1,22 +1,19 @@
 use stdweb::web::event::{IDragEvent, IEvent};
 use yew::{
-    html, Callback, Component, ComponentLink, DragDropEvent, DragOverEvent, DragStartEvent, Html,
+    html, Component, ComponentLink, DragDropEvent, DragOverEvent, DragStartEvent, Html,
     ShouldRender,
 };
 
 pub struct DragDropComponent {
     label: String,
-    ondrag_button1: Callback<DragStartEvent>,
-    ondrag_button2: Callback<DragStartEvent>,
-    ondrop_target: Callback<DragDropEvent>,
-    ondragover: Callback<DragOverEvent>,
+    link: ComponentLink<DragDropComponent>,
 }
 
 pub enum DragDropMsg {
-    DragButton1,
-    DragButton2,
-    DropTarget(String),
-    DragOver(String),
+    DragItem1(DragStartEvent),
+    DragItem2(DragStartEvent),
+    DropTarget(DragDropEvent),
+    DragOver(DragOverEvent),
 }
 
 impl Component for DragDropComponent {
@@ -26,58 +23,37 @@ impl Component for DragDropComponent {
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         DragDropComponent {
             label: String::from("None"),
-            ondrag_button1: link.callback(|e: DragStartEvent| {
-                if let Some(x) = e.data_transfer() {
-                    x.set_data("text", "BUTTON 1");
-                }
-
-                DragDropMsg::DragButton1
-            }),
-            ondrag_button2: link.callback(|e: DragStartEvent| {
-                if let Some(x) = e.data_transfer() {
-                    x.set_data("text", "BUTTON 2");
-                }
-                DragDropMsg::DragButton2
-            }),
-            ondrop_target: link.callback(|e: DragDropEvent| {
-                e.prevent_default();
-                match e.data_transfer() {
-                    Some(x) => {
-                        let text = x.get_data("text");
-                        DragDropMsg::DropTarget(text)
-                    }
-                    None => DragDropMsg::DropTarget(String::from("UNKNOWN")),
-                }
-            }),
-            ondragover: link.callback(|e: DragOverEvent| {
-                e.prevent_default();
-                match e.data_transfer() {
-                    Some(x) => {
-                        let text = x.get_data("text");
-                        DragDropMsg::DragOver(text)
-                    }
-                    None => DragDropMsg::DragOver(String::from("UNKNOWN")),
-                }
-            }),
+            link,
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            DragDropMsg::DragButton1 => {
-                self.label = String::from("Button 1 dragging");
+            DragDropMsg::DragItem1(e) => {
+                self.label = String::from("Dragging ITEM 1");
+                if let Some(x) = e.data_transfer() {
+                    x.set_data("text", "ITEM 1");
+                }
+
                 true
             }
-            DragDropMsg::DragButton2 => {
-                self.label = String::from("Button 2 dragging");
+            DragDropMsg::DragItem2(e) => {
+                self.label = String::from("Dragging ITEM 2");
+                if let Some(x) = e.data_transfer() {
+                    x.set_data("text", "ITEM 2");
+                }
                 true
             }
-            DragDropMsg::DropTarget(x) => {
-                self.label = format!("Dropped {}", x);
+            DragDropMsg::DropTarget(e) => {
+                e.prevent_default();
+                if let Some(x) = e.data_transfer() {
+                    let text = x.get_data("text");
+                    self.label = format!("Dropped {}", text);
+                }
                 true
             }
-            DragDropMsg::DragOver(x) => {
-                self.label = format!("Dragging {}", x);
+            DragDropMsg::DragOver(e) => {
+                e.prevent_default();
                 true
             }
         }
@@ -91,23 +67,27 @@ impl Component for DragDropComponent {
                     <br /><br />
                 </div>
                 <div class="pure-u-1-6">
-                    <button class="pure-button pure-button-primary" id="buttondrag1"
-                        draggable="true"
-                        ondragstart=&self.ondrag_button1>
-                        { "BUTTON 1" }
-                    </button>
+                    <div class="dragitem"
+                        id="dragitem1"
+                        draggable={true}
+                        ondragstart={self.link.callback(|e| DragDropMsg::DragItem1(e))}>
+                        { "ITEM 1" }
+                    </div>
                 </div>
                 <div class="pure-u-1-6">
-                    <button class="pure-button" id="buttondrag2"
-                        draggable="true"
-                        ondragstart=&self.ondrag_button2>
-                        { "BUTTON 2" }
-                    </button>
+                    <div class="dragitem"
+                        id="dragitem2"
+                        draggable={true}
+                        ondragstart={self.link.callback(|e| DragDropMsg::DragItem2(e))}>
+                        { "ITEM 2" }
+                    </div>
                 </div>
-                <div class="pure-u-2-3 label" id="dragdrop-result"
-                    ondrop=&self.ondrop_target
-                    ondragover=&self.ondragover>
+                <div class="pure-u-2-3">
+                    <div class="droptarget" id="dragdrop-result"
+                        ondrop={self.link.callback(|e| DragDropMsg::DropTarget(e))}
+                        ondragover={self.link.callback(|e| DragDropMsg::DragOver(e))}>
                     {&self.label}
+                    </div>
                 </div>
             </div>
         }

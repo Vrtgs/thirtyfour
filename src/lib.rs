@@ -52,7 +52,7 @@
 //!     driver.get("http://webappdemo").await?;
 //!
 //!     // Navigate to page, by chaining futures together and awaiting the result.
-//!     driver.find_element(By::Id("pagetextinput")).then(|elem| elem.click()).await?;
+//!     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
 //!
 //!     // Find element.
 //!     let elem_div = driver.find_element(By::Css("div[data-section='section-input']")).await?;

@@ -32,6 +32,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #     driver.find_element(By::Id("alertbutton1")).await?.click().await?;
     /// let alert = driver.switch_to().alert();
     /// let text = alert.text().await?;
@@ -61,6 +62,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #     driver.find_element(By::Id("alertbutton2")).await?.click().await?;
     /// driver.switch_to().alert().dismiss().await?;
     /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
@@ -88,6 +90,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #     driver.find_element(By::Id("alertbutton2")).await?.click().await?;
     /// driver.switch_to().alert().accept().await?;
     /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
@@ -117,6 +120,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #     driver.find_element(By::Id("alertbutton3")).await?.click().await?;
     /// let alert = driver.switch_to().alert();
     /// alert.send_keys("selenium").await?;
@@ -138,6 +142,7 @@ impl Alert {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #     driver.find_element(By::Id("alertbutton3")).await?.click().await?;
     /// let alert = driver.switch_to().alert();
     /// alert.send_keys("selenium").await?;

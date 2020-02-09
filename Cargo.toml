@@ -15,8 +15,8 @@ keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"
 categories = ["api-bindings", "development-tools::testing"]
 
 [dependencies]
-reqwest = { version = "0.10.0", features = ["blocking", "json"] }
-serde_json = "1.0"
+reqwest = { version = "0.10", features = ["blocking", "json"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
 log = "0.4"

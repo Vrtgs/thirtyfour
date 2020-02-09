@@ -46,6 +46,35 @@ impl ActionChain {
         }
     }
 
+    /// Reset all actions, reverting all input devices back to default states.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// // Hold mouse button down on element.
+    /// let elem = driver.find_element(By::Id("button1"))?;
+    /// driver.action_chain().click_and_hold_element(&elem).perform()?;
+    /// let elem_result = driver.find_element(By::Id("button-result"))?;
+    /// assert_eq!(elem_result.text()?, "Button 1 down");
+    /// // Now reset all actions.
+    /// driver.action_chain().reset_actions()?;
+    /// // Mouse button is now released.
+    /// assert_eq!(elem_result.text()?, "Button 1 clicked");
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub fn reset_actions(&self) -> WebDriverResult<()> {
+        self.conn
+            .execute(Command::ReleaseActions(&self.session_id))?;
+        Ok(())
+    }
+
     /// Perform the action sequence. No actions are actually performed until
     /// this method is called.
     pub fn perform(&self) -> WebDriverResult<()> {
@@ -256,26 +285,14 @@ impl ActionChain {
     /// Drag the mouse cursor from the center of the source element to the
     /// center of the target element.
     ///
-    /// # Example:
+    /// # This method is not working correctly due to a selenium bug.
+    /// It appears selenium has a bug in the drag and drop feature
+    /// causing it to start the drag but not perform the drop.
+    /// See https://github.com/SeleniumHQ/selenium/issues/7744
     ///
-    /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
-    /// #
-    /// # fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://webappdemo")?;
-    /// #     driver.find_element(By::Id("pagedragdrop"))?.click()?;
-    /// let elem_src = driver.find_element(By::Id("buttondrag1"))?;
-    /// let elem_tgt = driver.find_element(By::Id("dragdrop-result"))?;
-    /// driver.action_chain()
-    ///     .drag_and_drop_element(&elem_src, &elem_tgt)
-    ///     .perform()?;
-    /// #     assert_eq!(elem_tgt.text()?, "Dropped BUTTON 1");
-    /// #     Ok(())
-    /// # }
-    /// ```
+    /// This method has been confirmed to produce identical JSON output
+    /// compared to the python selenium library (which also fails due to
+    /// the same bug).
     pub fn drag_and_drop_element(self, source: &WebElement, target: &WebElement) -> Self {
         self.click_and_hold_element(source)
             .release_on_element(target)
@@ -283,29 +300,14 @@ impl ActionChain {
 
     /// Drag the mouse cursor by the specified X and Y offsets.
     ///
-    /// # Example:
+    /// # This method is not working correctly due to a selenium bug.
+    /// It appears selenium has a bug in the drag and drop feature
+    /// causing it to start the drag but not perform the drop.
+    /// See https://github.com/SeleniumHQ/selenium/issues/7744
     ///
-    /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
-    /// #
-    /// # fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://webappdemo")?;
-    /// #     driver.find_element(By::Id("pagedragdrop"))?.click()?;
-    /// // Drag source element by offset.
-    /// let elem_src = driver.find_element(By::Id("buttondrag1"))?;
-    /// let elem_tgt = driver.find_element(By::Id("dragdrop-result"))?;
-    /// let offset = elem_tgt.rect()?.icenter().0 - elem_src.rect()?.icenter().0;
-    /// driver.action_chain()
-    ///     .move_to_element_center(&elem_src)
-    ///     .drag_and_drop_by_offset(offset, 0)
-    ///     .perform()?;
-    /// #     assert_eq!(elem_tgt.text()?, "Dropped BUTTON 1");
-    /// #     Ok(())
-    /// # }
-    /// ```
+    /// This method has been confirmed to produce identical JSON output
+    /// compared to the python selenium library (which also fails due to
+    /// the same bug).
     pub fn drag_and_drop_by_offset(self, x_offset: i32, y_offset: i32) -> Self {
         self.click_and_hold()
             .move_by_offset(x_offset, y_offset)
@@ -315,28 +317,14 @@ impl ActionChain {
     /// Drag the mouse cursor by the specified X and Y offsets, starting
     /// from the center of the specified element.
     ///
-    /// # Example:
+    /// # This method is not working correctly due to a selenium bug.
+    /// It appears selenium has a bug in the drag and drop feature
+    /// causing it to start the drag but not perform the drop.
+    /// See https://github.com/SeleniumHQ/selenium/issues/7744
     ///
-    /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
-    /// #
-    /// # fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-    /// #     driver.get("http://webappdemo")?;
-    /// #     driver.find_element(By::Id("pagedragdrop"))?.click()?;
-    /// // Drag source element by offset.
-    /// let elem_src = driver.find_element(By::Id("buttondrag1"))?;
-    /// let elem_tgt = driver.find_element(By::Id("dragdrop-result"))?;
-    /// let offset = elem_tgt.rect()?.icenter().0 - elem_src.rect()?.icenter().0;
-    /// driver.action_chain()
-    ///     .drag_and_drop_element_by_offset(&elem_src, offset, 0)
-    ///     .perform()?;
-    /// #     assert_eq!(elem_tgt.text()?, "Dropped BUTTON 1");
-    /// #     Ok(())
-    /// # }
-    /// ```
+    /// This method has been confirmed to produce identical JSON output
+    /// compared to the python selenium library (which also fails due to
+    /// the same bug).
     pub fn drag_and_drop_element_by_offset(
         self,
         element: &WebElement,
@@ -345,6 +333,7 @@ impl ActionChain {
     ) -> Self {
         self.click_and_hold_element(element)
             .move_by_offset(x_offset, y_offset)
+            .release()
     }
 
     /// Press the specified key down.
@@ -533,6 +522,8 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
+    /// # use std::thread;
+    /// # use std::time::Duration;
     /// # use thirtyfour::error::WebDriverResult;
     /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
     /// #
@@ -540,17 +531,13 @@ impl ActionChain {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// #     driver.get("http://webappdemo")?;
-    /// #     driver.find_element(By::Id("pagedropdown"))?.click()?;
-    /// // First we will hover over the dropdown parent and then select the
-    /// // second item in the list.
-    /// let elem_dropdown = driver.find_element(By::Id("dropdown-outer"))?;
-    /// let elem_option = driver.find_element(By::Id("option2"))?;
+    /// let elem = driver.find_element(By::Id("button1"))?;
     /// driver.action_chain()
-    ///     .move_to_element_center(&elem_dropdown)
-    ///     .click_element(&elem_option)
+    ///     .move_to_element_center(&elem)
+    ///     .click()
     ///     .perform()?;
-    /// #     let elem_result = driver.find_element(By::Id("dropdown-result"))?;
-    /// #     assert_eq!(elem_result.text()?, "Option 2 selected");
+    /// #     let elem_result = driver.find_element(By::Id("button-result"))?;
+    /// #     assert_eq!(elem_result.text()?, "Button 1 clicked");
     /// #     Ok(())
     /// # }
     /// ```
@@ -607,6 +594,25 @@ impl ActionChain {
     }
 
     /// Release the left mouse button.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     let elem = driver.find_element(By::Id("button1"))?;
+    /// #     driver.action_chain().click_and_hold_element(&elem).perform()?;
+    /// #     let elem_result = driver.find_element(By::Id("button-result"))?;
+    /// #     assert_eq!(elem_result.text()?, "Button 1 down");
+    /// driver.action_chain().release().perform()?;
+    /// #     assert_eq!(elem_result.text()?, "Button 1 clicked");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn release(mut self) -> Self {
         self.pointer_actions.release();
         self.key_actions.pause();
@@ -614,6 +620,25 @@ impl ActionChain {
     }
 
     /// Move the mouse to the specified element and release the mouse button.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     let elem = driver.find_element(By::Id("button1"))?;
+    /// #     driver.action_chain().click_and_hold_element(&elem).perform()?;
+    /// #     let elem_result = driver.find_element(By::Id("button-result"))?;
+    /// #     assert_eq!(elem_result.text()?, "Button 1 down");
+    /// driver.action_chain().release_on_element(&elem).perform()?;
+    /// #     assert_eq!(elem_result.text()?, "Button 1 clicked");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn release_on_element(self, element: &WebElement) -> Self {
         self.move_to_element_center(element).release()
     }
