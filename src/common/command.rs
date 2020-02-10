@@ -1,11 +1,13 @@
+use std::ops::Deref;
+
+use serde_json::json;
+
 use crate::common::{
     capabilities::{make_w3c_caps, DesiredCapabilities},
     cookie::Cookie,
     keys::TypingData,
     types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
 };
-use serde_json::json;
-use std::ops::Deref;
 
 pub const MAGIC_ELEMENTID: &str = "element-6066-11e4-a52e-4f735466cecf";
 
@@ -348,7 +350,7 @@ impl<'a> Command<'a> {
             .add_body(json!({"script": script, "args": args})),
             Command::ExecuteAsyncScript(session_id, script, args) => RequestData::new(
                 RequestMethod::Post,
-                format!("/session/{}/execute/libasync", session_id),
+                format!("/session/{}/execute/async", session_id),
             )
             .add_body(json!({"script": script, "args": args})),
             Command::GetAllCookies(session_id) => RequestData::new(

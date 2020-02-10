@@ -1,8 +1,10 @@
 use std::{fmt, path::Path, sync::Arc};
 
 use base64::decode;
+use serde::ser::{Serialize, SerializeMap, Serializer};
 use tokio::{fs::File, prelude::*};
 
+use crate::common::command::MAGIC_ELEMENTID;
 use crate::{
     common::{
         command::Command,
@@ -386,5 +388,16 @@ impl fmt::Display for WebElement {
             r#"(session="{}", element="{}")"#,
             self.session_id, self.element_id
         )
+    }
+}
+
+impl Serialize for WebElement {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(1))?;
+        map.serialize_entry(MAGIC_ELEMENTID, &self.element_id.to_string())?;
+        map.end()
     }
 }

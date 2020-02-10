@@ -3,6 +3,7 @@ use std::{fs::File, io::Write, path::Path, sync::Arc, time::Duration};
 use base64::decode;
 use log::error;
 use serde::Deserialize;
+use serde_json::Value;
 
 use crate::error::WebDriverError;
 use crate::{
@@ -16,7 +17,7 @@ use crate::{
         webelement::{unwrap_element_sync, unwrap_elements_sync},
         RemoteConnectionSync, SwitchTo, WebElement,
     },
-    By, Cookie, DesiredCapabilities, OptionRect, Rect, SessionId, TimeoutConfiguration,
+    By, Cookie, DesiredCapabilities, OptionRect, Rect, ScriptArgs, SessionId, TimeoutConfiguration,
     WindowHandle,
 };
 
@@ -38,7 +39,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct WebDriver {
     session_id: SessionId,
-    capabilities: serde_json::Value,
+    capabilities: Value,
     conn: Arc<RemoteConnectionSync>,
 }
 
@@ -81,7 +82,7 @@ impl WebDriver {
             #[serde(default, rename(deserialize = "sessionId"))]
             session_id: String,
             #[serde(default)]
-            capabilities: serde_json::Value,
+            capabilities: Value,
         }
 
         #[derive(Debug, Deserialize)]
@@ -117,7 +118,7 @@ impl WebDriver {
     }
 
     /// Return the actual capabilities as returned by Selenium.
-    pub fn capabilities(&self) -> &serde_json::Value {
+    pub fn capabilities(&self) -> &Value {
         &self.capabilities
     }
 
@@ -215,34 +216,97 @@ impl WebDriver {
         unwrap_elements_sync(&self.conn, &self.session_id, &v["value"])
     }
 
-    /// Execute the specified Javascript synchronously and return the result
-    /// as a serde_json::Value.
+    /// Execute the specified Javascript synchronously and return the result.
+    ///
+    /// # Example:
+    /// ```rust
+    /// use thirtyfour::ScriptArgs;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// let elem = driver.find_element(By::Id("button1"))?;
+    /// let mut args = ScriptArgs::new();
+    /// args.push(elem.clone())?;
+    /// args.push("TESTING")?;
+    /// let ret = driver.execute_script(r#"
+    ///     arguments[0].innerHTML = arguments[1];
+    ///     return arguments[0];
+    ///     "#, &args
+    /// )?;
+    /// let elem_out = ret.get_element()?;
+    /// assert_eq!(elem_out.element_id, elem.element_id);
+    /// assert_eq!(elem_out.text()?, "TESTING");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn execute_script(
         &self,
         script: &str,
-        args: Vec<serde_json::Value>,
-    ) -> WebDriverResult<serde_json::Value> {
+        args: &ScriptArgs,
+    ) -> WebDriverResult<ScriptRetSync> {
         let v = self.conn.execute(Command::ExecuteScript(
             &self.session_id,
             script.to_owned(),
-            args,
+            args.get_args(),
         ))?;
-        Ok(v["value"].clone())
+        Ok(ScriptRetSync::new(
+            self.conn.clone(),
+            self.session_id.clone(),
+            v["value"].clone(),
+        ))
     }
 
-    /// Execute the specified Javascrypt asynchronously and return the result
-    /// as a serde_json::Value.
+    /// Execute the specified Javascrypt asynchronously and return the result.
+    ///
+    /// # Example:
+    /// ```rust
+    /// use thirtyfour::ScriptArgs;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// let elem = driver.find_element(By::Id("button1"))?;
+    /// let mut args = ScriptArgs::new();
+    /// args.push(elem.clone())?;
+    /// args.push("TESTING")?;
+    /// let ret = driver.execute_async_script(r#"
+    ///     // Selenium automatically provides an extra argument which is a
+    ///     // function that receives the return value(s).
+    ///     let done = arguments[2];
+    ///     window.setTimeout(() => {
+    ///         arguments[0].innerHTML = arguments[1];
+    ///         done(arguments[0]);
+    ///     }, 1000);
+    ///     "#, &args
+    /// )?;
+    /// let elem_out = ret.get_element()?;
+    /// assert_eq!(elem_out.element_id, elem.element_id);
+    /// assert_eq!(elem_out.text()?, "TESTING");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn execute_async_script(
         &self,
         script: &str,
-        args: Vec<serde_json::Value>,
-    ) -> WebDriverResult<serde_json::Value> {
+        args: &ScriptArgs,
+    ) -> WebDriverResult<ScriptRetSync> {
         let v = self.conn.execute(Command::ExecuteAsyncScript(
             &self.session_id,
             script.to_owned(),
-            args,
+            args.get_args(),
         ))?;
-        Ok(v["value"].clone())
+        Ok(ScriptRetSync::new(
+            self.conn.clone(),
+            self.session_id.clone(),
+            v["value"].clone(),
+        ))
     }
 
     /// Get the current window handle.
@@ -706,5 +770,44 @@ impl Drop for WebDriver {
                 error!("Failed to close session: {:?}", e);
             }
         }
+    }
+}
+
+/// Helper struct for getting return values from scripts.
+/// See the examples for [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
+/// and [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script).
+pub struct ScriptRetSync {
+    conn: Arc<RemoteConnectionSync>,
+    session_id: SessionId,
+    value: Value,
+}
+
+impl ScriptRetSync {
+    /// Create a new ScriptRetSync. This is typically done automatically via
+    /// [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
+    /// or [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script)
+    pub fn new(conn: Arc<RemoteConnectionSync>, session_id: SessionId, value: Value) -> Self {
+        ScriptRetSync {
+            conn,
+            session_id,
+            value,
+        }
+    }
+
+    /// Get the raw JSON value.
+    pub fn value(&self) -> &Value {
+        &self.value
+    }
+
+    /// Get a single WebElement return value.
+    /// Your script must return only a single element for this to work.
+    pub fn get_element(&self) -> WebDriverResult<WebElement> {
+        unwrap_element_sync(self.conn.clone(), self.session_id.clone(), &self.value)
+    }
+
+    /// Get a vec of WebElements from the return value.
+    /// Your script must return an array of elements for this to work.
+    pub fn get_elements(&self) -> WebDriverResult<Vec<WebElement>> {
+        unwrap_elements_sync(&self.conn, &self.session_id, &self.value)
     }
 }

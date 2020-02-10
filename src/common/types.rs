@@ -55,7 +55,7 @@ impl fmt::Display for SessionId {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(transparent)]
 pub struct ElementId {
     _id: String,

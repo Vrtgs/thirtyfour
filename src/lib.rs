@@ -120,11 +120,12 @@ pub use common::{
     command::By,
     cookie::Cookie,
     keys::{Keys, TypingData},
+    scriptargs::ScriptArgs,
     types::*,
 };
 pub use connection_async::*;
 pub use switch_to::SwitchTo;
-pub use webdriver::WebDriver;
+pub use webdriver::{ScriptRet, WebDriver};
 pub use webelement::WebElement;
 
 pub mod action_chain;
@@ -141,13 +142,14 @@ pub mod common {
     pub mod connection_common;
     pub mod cookie;
     pub mod keys;
+    pub mod scriptargs;
     pub mod types;
 }
 pub mod sync {
     pub use alert::Alert;
     pub use connection_sync::*;
     pub use switch_to::SwitchTo;
-    pub use webdriver::WebDriver;
+    pub use webdriver::{ScriptRetSync, WebDriver};
     pub use webelement::WebElement;
 
     pub mod action_chain;
