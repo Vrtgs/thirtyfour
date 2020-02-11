@@ -116,7 +116,11 @@
 
 pub use alert::Alert;
 pub use common::{
-    capabilities::DesiredCapabilities,
+    capabilities::{
+        chrome::ChromeCapabilities, desiredcapabilities::*, edge::EdgeCapabilities,
+        firefox::FirefoxCapabilities, ie::InternetExplorerCapabilities, opera::OperaCapabilities,
+        safari::SafariCapabilities,
+    },
     command::By,
     cookie::Cookie,
     keys::{Keys, TypingData},
@@ -137,7 +141,15 @@ mod webelement;
 
 pub mod common {
     pub mod action;
-    pub mod capabilities;
+    pub mod capabilities {
+        pub mod chrome;
+        pub mod desiredcapabilities;
+        pub mod edge;
+        pub mod firefox;
+        pub mod ie;
+        pub mod opera;
+        pub mod safari;
+    }
     pub mod command;
     pub mod connection_common;
     pub mod cookie;

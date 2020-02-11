@@ -1,9 +1,9 @@
 use std::ops::Deref;
 
-use serde_json::json;
+use serde_json::{json, Value};
 
 use crate::common::{
-    capabilities::{make_w3c_caps, DesiredCapabilities},
+    capabilities::desiredcapabilities::make_w3c_caps,
     cookie::Cookie,
     keys::TypingData,
     types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
@@ -75,7 +75,7 @@ impl<'a> By<'a> {
 }
 
 pub enum Command<'a> {
-    NewSession(&'a DesiredCapabilities),
+    NewSession(&'a Value),
     DeleteSession(&'a SessionId),
     Status,
     GetTimeouts(&'a SessionId),
@@ -137,10 +137,10 @@ impl<'a> Command<'a> {
     pub fn format_request(&self) -> RequestData {
         match self {
             Command::NewSession(caps) => {
-                let w3c_caps = make_w3c_caps(&caps.capabilities);
+                let w3c_caps = make_w3c_caps(&caps);
                 RequestData::new(RequestMethod::Post, "/session").add_body(json!({
                     "capabilities": w3c_caps,
-                    "desiredCapabilities": caps.capabilities
+                    "desiredCapabilities": caps
                 }))
             }
             Command::DeleteSession(session_id) => {

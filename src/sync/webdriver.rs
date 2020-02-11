@@ -2,8 +2,8 @@ use std::{fs::File, io::Write, path::Path, sync::Arc, time::Duration};
 
 use base64::decode;
 use log::error;
-use serde::Deserialize;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
+use serde_json::{to_value, Value};
 
 use crate::error::WebDriverError;
 use crate::{
@@ -54,12 +54,13 @@ impl WebDriver {
     /// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)
     ///     .expect("Error starting browser");
     /// ```
-    pub fn new(
-        remote_server_addr: &str,
-        capabilities: &DesiredCapabilities,
-    ) -> WebDriverResult<Self> {
+    pub fn new<T>(remote_server_addr: &str, capabilities: T) -> WebDriverResult<Self>
+    where
+        T: Serialize,
+    {
         let conn = Arc::new(RemoteConnectionSync::new(remote_server_addr)?);
-        let v = match conn.execute(Command::NewSession(capabilities)) {
+        let caps = to_value(capabilities)?;
+        let v = match conn.execute(Command::NewSession(&caps)) {
             Ok(x) => Ok(x),
             Err(e) => {
                 // Selenium sometimes gives a bogus 500 error "Chrome failed to start".
@@ -67,7 +68,7 @@ impl WebDriver {
                 // will be returned.
                 if let WebDriverError::UnknownError(x) = &e {
                     if x.status == 500 {
-                        conn.execute(Command::NewSession(capabilities))
+                        conn.execute(Command::NewSession(&caps))
                     } else {
                         Err(e)
                     }
@@ -117,9 +118,9 @@ impl WebDriver {
         Ok(driver)
     }
 
-    /// Return the actual capabilities as returned by Selenium.
-    pub fn capabilities(&self) -> &Value {
-        &self.capabilities
+    /// Return a clone of the capabilities as returned by Selenium.
+    pub fn capabilities(&self) -> DesiredCapabilities {
+        DesiredCapabilities::new(self.capabilities.clone())
     }
 
     /// Close the current window.
