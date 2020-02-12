@@ -23,10 +23,12 @@ impl Default for ChromeCapabilities {
 }
 
 impl ChromeCapabilities {
+    /// Create a new ChromeCapabilities struct.
     pub fn new() -> Self {
         ChromeCapabilities::default()
     }
 
+    /// Add the specified chrome option. This is a helper method for `add_arg()`.
     pub fn add_chrome_option<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
     where
         T: Serialize,
@@ -34,10 +36,14 @@ impl ChromeCapabilities {
         self.add_subkey("goog:chromeOptions", key, value)
     }
 
+    /// Get the current list of command-line arguments to `chromedriver` as a vec.
     pub fn get_args(&self) -> Vec<String> {
         from_value(self.capabilities["goog:chromeOptions"]["args"].clone()).unwrap_or_default()
     }
 
+    /// Add the specified command-line argument to `chromedriver`.
+    /// The full list of switches can be found here:
+    /// [https://chromium.googlesource.com/chromium/src/+/master/chrome/common/chrome_switches.cc](https://chromium.googlesource.com/chromium/src/+/master/chrome/common/chrome_switches.cc)
     pub fn add_arg(&mut self, arg: &str) -> WebDriverResult<()> {
         let mut args = self.get_args();
         let arg_string = arg.to_string();
@@ -47,10 +53,12 @@ impl ChromeCapabilities {
         self.add_chrome_option("args", to_value(args)?)
     }
 
+    /// Set the browser to run headless.
     pub fn set_headless(&mut self) -> WebDriverResult<()> {
         self.add_arg("--headless")
     }
 
+    /// Disable web security.
     pub fn set_disable_web_security(&mut self) -> WebDriverResult<()> {
         self.add_arg("--disable-web-security")
     }

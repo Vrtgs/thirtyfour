@@ -5,6 +5,7 @@ use serde_json::{json, Value};
 
 use crate::common::capabilities::desiredcapabilities::Capabilities;
 use crate::error::WebDriverResult;
+use crate::PageLoadStrategy;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
@@ -29,6 +30,8 @@ impl FirefoxCapabilities {
         FirefoxCapabilities::default()
     }
 
+    /// Add the specified firefox option. This is a helper method for the various
+    /// specific option methods.
     pub fn add_firefox_option<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
     where
         T: Serialize,
@@ -36,22 +39,29 @@ impl FirefoxCapabilities {
         self.add_subkey("moz:firefoxOptions", key, value)
     }
 
+    /// Set the selenium logging preferences. To set the `geckodriver` log level,
+    /// use `set_log_level()` instead.
     pub fn set_logging_prefs(&mut self, component: String, log_level: LoggingPrefsLogLevel) {
         self.update(json!({"loggingPrefs": {component: log_level}}));
     }
 
+    /// Set the `geckodriver` log level.
     pub fn set_log_level(&mut self, log_level: LogLevel) -> WebDriverResult<()> {
         self.add_firefox_option("log", json!({ "level": log_level }))
     }
 
+    /// Set the path to the firefox binary.
     pub fn set_firefox_binary(&mut self, path: &Path) -> WebDriverResult<()> {
         self.add("firefox_binary", path.to_string_lossy().to_string())
     }
 
-    pub fn set_page_load_strategy(&mut self, strategy: &str) -> WebDriverResult<()> {
+    /// Set the page load strategy to use.
+    /// Valid values are: `normal` (the default)
+    pub fn set_page_load_strategy(&mut self, strategy: PageLoadStrategy) -> WebDriverResult<()> {
         self.add("pageLoadingStrategy", strategy)
     }
 
+    /// Set the firefox profile settings to use.
     pub fn set_profile(&mut self, profile: FirefoxProfile) -> WebDriverResult<()> {
         self.add_firefox_option("profile", profile)
     }

@@ -74,30 +74,40 @@ pub struct DesiredCapabilities {
 }
 
 impl DesiredCapabilities {
+    /// Create a new custom DesiredCapabilities struct. Generally you should use the
+    /// browser-specific functions instead, such as `DesiredCapabilities::firefox()`,
+    /// but you can use `DesiredCapabilities::new` if you need to create capabilities
+    /// for a browser not listed here.
     pub fn new(capabilities: Value) -> Self {
         DesiredCapabilities { capabilities }
     }
 
+    /// Create a FirefoxCapabilities struct.
     pub fn firefox() -> FirefoxCapabilities {
         FirefoxCapabilities::new()
     }
 
+    /// Create an InternetExplorerCapabilities struct.
     pub fn internet_explorer() -> InternetExplorerCapabilities {
         InternetExplorerCapabilities::new()
     }
 
+    /// Create an EdgeCapabilities struct.
     pub fn edge() -> EdgeCapabilities {
         EdgeCapabilities::new()
     }
 
+    /// Create a ChromeCapabilities struct.
     pub fn chrome() -> ChromeCapabilities {
         ChromeCapabilities::new()
     }
 
+    /// Create an OperaCapabilities struct.
     pub fn opera() -> OperaCapabilities {
         OperaCapabilities::new()
     }
 
+    /// Create a SafariCapabilities struct.
     pub fn safari() -> SafariCapabilities {
         SafariCapabilities::new()
     }
@@ -105,7 +115,7 @@ impl DesiredCapabilities {
 
 /// Add generic Capabilities implementation. This can be used as a convenient way to
 /// interact with the returned capabilities from a WebDriver instance, or as a way
-/// to construct a custom capabilities JSON object.
+/// to construct a custom capabilities JSON struct.
 impl Capabilities for DesiredCapabilities {
     fn get(&self) -> &Value {
         &self.capabilities
@@ -117,9 +127,13 @@ impl Capabilities for DesiredCapabilities {
 }
 
 pub trait Capabilities {
+    /// Get an immutable reference to the underlying serde_json::Value.
     fn get(&self) -> &Value;
+
+    /// Get a mutable reference to the underlying serde_json::Value.
     fn get_mut(&mut self) -> &mut Value;
 
+    /// Add any Serialize-able object to the capabilities under the specified key.
     fn add<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
     where
         T: Serialize,
@@ -128,6 +142,7 @@ pub trait Capabilities {
         Ok(())
     }
 
+    /// Add any Serialize-able object to the capabilities under the specified key and subkey.
     fn add_subkey<T>(&mut self, key: &str, subkey: &str, value: T) -> WebDriverResult<()>
     where
         T: Serialize,
@@ -141,70 +156,91 @@ pub trait Capabilities {
         Ok(())
     }
 
+    /// Add all keys of the specified object into the capabilities, overwriting any
+    /// matching keys that already exist.
     fn update(&mut self, value: Value) {
+        assert!(value.is_object());
         merge(&mut self.get_mut(), value);
     }
 
+    /// Set the desired browser version.
     fn set_version(&mut self, version: &str) -> WebDriverResult<()> {
         self.add("version", version)
     }
 
+    /// Set the desired browser platform.
     fn set_platform(&mut self, platform: &str) -> WebDriverResult<()> {
         self.add("platform", platform)
     }
 
+    /// Set whether the session supports executing user-supplied Javascript.
     fn set_javascript_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.add("javascriptEnabled", enabled)
     }
 
+    /// Set whether the session can interact with database storage.
     fn set_database_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.add("databaseEnabled", enabled)
     }
 
+    /// Set whether the session can set and query the browser's location context.
     fn set_location_context_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.add("locationContextEnabled", enabled)
     }
 
+    /// Set whether the session can interact with the application cache.
     fn set_application_cache_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.add("applicationCacheEnabled", enabled)
     }
 
+    /// Set whether the session can query for the browser's connectivity and disable it if desired.
     fn set_browser_connection_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.add("browserConnectionEnabled", enabled)
     }
 
+    /// Set whether the session supports interactions with local storage.
     fn set_web_storage_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.add("webStorageEnabled", enabled)
     }
 
+    /// Set whether the session should accept all SSL certificates by default.
     fn accept_ssl_certs(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.add("acceptSslCerts", enabled)
     }
 
+    /// Set whether the session can rotate the current page's layout between portrait and landscape
+    /// orientations. Only applies to mobile platforms.
     fn set_rotatable(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.add("rotatable", enabled)
     }
 
+    /// Set whether the session is capable of generating native events when simulating user input.
     fn set_native_events(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.add("nativeEvents", enabled)
     }
 
+    /// Set the proxy to use.
     fn set_proxy(&mut self, proxy: Proxy) -> WebDriverResult<()> {
         self.add("proxy", proxy)
     }
 
+    /// Set the behaviour to be followed when an unexpected alert is encountered.
     fn set_unexpected_alert_behaviour(&mut self, behaviour: AlertBehaviour) -> WebDriverResult<()> {
         self.add("unexpectedAlertBehaviour", behaviour)
     }
 
+    /// Set whether elements are scrolled into the viewport for interation to align with the top
+    /// or the bottom of the viewport. The default is to align with the top.
     fn set_element_scroll_behaviour(&mut self, behaviour: ScrollBehaviour) -> WebDriverResult<()> {
         self.add("elementScrollBehavior", behaviour)
     }
 
+    /// Get whether the session can interact with modal popups such as `window.alert`.
     fn handles_alerts(&self) -> Option<bool> {
         self.get()["handlesAlerts"].as_bool()
     }
 
+    /// Get whether the session supports CSS selectors when searching for elements.
     fn css_selectors_enabled(&self) -> Option<bool> {
         self.get()["cssSelectorsEnabled"].as_bool()
     }
@@ -246,4 +282,16 @@ pub enum AlertBehaviour {
 pub enum ScrollBehaviour {
     Top = 0,
     Bottom = 1,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PageLoadStrategy {
+    /// Wait for full page loading (the default).
+    Normal,
+    /// Wait for the DOMContentLoaded event (html content downloaded and parsed only).
+    Eager,
+    /// Return immediately after the initial page content is fully received
+    /// (html content downloaded).
+    None,
 }
