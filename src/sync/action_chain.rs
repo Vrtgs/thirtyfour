@@ -1,14 +1,12 @@
-use std::sync::Arc;
-
+use crate::sync::WebDriver;
 use crate::{
     common::{
         action::{ActionSource, KeyAction, PointerAction, PointerActionType},
         command::{Actions, Command},
         keys::TypingData,
-        types::SessionId,
     },
     error::WebDriverResult,
-    sync::{RemoteConnectionSync, WebElement},
+    sync::WebElement,
 };
 
 /// The ActionChain struct allows you to perform multiple input actions in
@@ -23,8 +21,7 @@ use crate::{
 /// driver.action_chain().drag_and_drop_element(elem_src, elem_target).perform()?;
 /// ```
 pub struct ActionChain {
-    conn: Arc<RemoteConnectionSync>,
-    session_id: SessionId,
+    driver: WebDriver,
     key_actions: ActionSource<KeyAction>,
     pointer_actions: ActionSource<PointerAction>,
 }
@@ -34,16 +31,20 @@ impl ActionChain {
     ///
     /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
-    pub fn new(conn: Arc<RemoteConnectionSync>, session_id: SessionId) -> Self {
+    pub fn new(driver: WebDriver) -> Self {
         ActionChain {
-            conn,
-            session_id,
+            driver,
             key_actions: ActionSource::<KeyAction>::new("key"),
             pointer_actions: ActionSource::<PointerAction>::new(
                 "pointer",
                 PointerActionType::Mouse,
             ),
         }
+    }
+
+    ///Convenience wrapper for executing a WebDriver command.
+    fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+        self.driver.cmd(command)
     }
 
     /// Reset all actions, reverting all input devices back to default states.
@@ -70,8 +71,7 @@ impl ActionChain {
     /// # }
     /// ```
     pub fn reset_actions(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::ReleaseActions(&self.session_id))?;
+        self.cmd(Command::ReleaseActions)?;
         Ok(())
     }
 
@@ -79,8 +79,7 @@ impl ActionChain {
     /// this method is called.
     pub fn perform(&self) -> WebDriverResult<()> {
         let actions = Actions::from(serde_json::json!([self.key_actions, self.pointer_actions]));
-        self.conn
-            .execute(Command::PerformActions(&self.session_id, actions))?;
+        self.cmd(Command::PerformActions(actions))?;
         Ok(())
     }
 

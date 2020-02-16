@@ -1,33 +1,50 @@
+use std::fmt::Debug;
+
 use crate::{
     common::{
         command::{Command, RequestMethod},
         connection_common::build_headers,
     },
     error::{RemoteConnectionError, WebDriverError, WebDriverResult},
+    SessionId,
 };
+
+pub trait RemoteConnectionSync: Debug + Send + Sync {
+    fn execute(
+        &self,
+        session_id: &SessionId,
+        command: Command<'_>,
+    ) -> WebDriverResult<serde_json::Value>;
+}
 
 /// Synchronous remote connection with the Remote WebDriver server.
 #[derive(Debug)]
-pub struct RemoteConnectionSync {
+pub struct ReqwestDriverSync {
     url: String,
     client: reqwest::blocking::Client,
 }
 
-impl RemoteConnectionSync {
+impl ReqwestDriverSync {
     /// Create a new RemoteConnectionSync instance.
     pub fn new(remote_server_addr: &str) -> Result<Self, RemoteConnectionError> {
         let headers = build_headers(remote_server_addr)?;
-        Ok(RemoteConnectionSync {
+        Ok(ReqwestDriverSync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
             client: reqwest::blocking::Client::builder()
                 .default_headers(headers)
                 .build()?,
         })
     }
+}
 
+impl RemoteConnectionSync for ReqwestDriverSync {
     /// Execute the specified command and return the data as serde_json::Value.
-    pub fn execute(&self, command: Command) -> WebDriverResult<serde_json::Value> {
-        let request_data = command.format_request();
+    fn execute(
+        &self,
+        session_id: &SessionId,
+        command: Command,
+    ) -> WebDriverResult<serde_json::Value> {
+        let request_data = command.format_request(session_id);
         let url = self.url.clone() + &request_data.url;
         let mut request = match request_data.method {
             RequestMethod::Get => self.client.get(&url),

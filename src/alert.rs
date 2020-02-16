@@ -1,22 +1,24 @@
-use std::sync::Arc;
-
 use crate::{
     common::{command::Command, connection_common::unwrap, keys::TypingData},
     error::WebDriverResult,
-    RemoteConnectionAsync, SessionId,
+    WebDriver,
 };
 
 /// Struct for managing alerts.
 pub struct Alert {
-    session_id: SessionId,
-    conn: Arc<RemoteConnectionAsync>,
+    driver: WebDriver,
 }
 
 impl Alert {
     /// Create a new Alert struct. This is typically created internally
     /// via a call to `WebDriver::switch_to().alert()`.
-    pub fn new(session_id: SessionId, conn: Arc<RemoteConnectionAsync>) -> Self {
-        Alert { session_id, conn }
+    pub fn new(driver: WebDriver) -> Self {
+        Alert { driver }
+    }
+
+    ///Convenience wrapper for executing a WebDriver command.
+    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+        self.driver.cmd(command).await
     }
 
     /// Get the active alert text.
@@ -42,10 +44,7 @@ impl Alert {
     /// # }
     /// ```
     pub async fn text(&self) -> WebDriverResult<String> {
-        let v = self
-            .conn
-            .execute(Command::GetAlertText(&self.session_id))
-            .await?;
+        let v = self.cmd(Command::GetAlertText).await?;
         unwrap::<String>(&v["value"])
     }
 
@@ -71,10 +70,7 @@ impl Alert {
     /// # }
     /// ```
     pub async fn dismiss(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::DismissAlert(&self.session_id))
-            .await
-            .map(|_| ())
+        self.cmd(Command::DismissAlert).await.map(|_| ())
     }
 
     /// Accept the active alert.
@@ -99,10 +95,7 @@ impl Alert {
     /// # }
     /// ```
     pub async fn accept(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::AcceptAlert(&self.session_id))
-            .await
-            .map(|_| ())
+        self.cmd(Command::AcceptAlert).await.map(|_| ())
     }
 
     /// Send the specified keys to the active alert.
@@ -158,8 +151,7 @@ impl Alert {
     where
         S: Into<TypingData>,
     {
-        self.conn
-            .execute(Command::SendAlertText(&self.session_id, keys.into()))
+        self.cmd(Command::SendAlertText(keys.into()))
             .await
             .map(|_| ())
     }

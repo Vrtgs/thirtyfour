@@ -2,10 +2,12 @@ use std::{fs::File, io::Write, path::Path, sync::Arc, time::Duration};
 
 use base64::decode;
 use log::error;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use serde_json::{to_value, Value};
+use serde_json::{from_value, to_value, Value};
 
 use crate::error::WebDriverError;
+use crate::sync::ReqwestDriverSync;
 use crate::{
     common::{
         command::Command,
@@ -36,11 +38,23 @@ use crate::{
 ///     Ok(())
 /// }
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct WebDriver {
-    session_id: SessionId,
-    capabilities: Value,
-    conn: Arc<RemoteConnectionSync>,
+    pub session_id: SessionId,
+    conn: Arc<dyn RemoteConnectionSync>,
+    capabilities: Option<Value>,
+    quit_on_drop: bool,
+}
+
+impl Clone for WebDriver {
+    fn clone(&self) -> Self {
+        WebDriver {
+            session_id: self.session_id.clone(),
+            conn: self.conn.clone(),
+            capabilities: None,
+            quit_on_drop: false,
+        }
+    }
 }
 
 impl WebDriver {
@@ -58,9 +72,9 @@ impl WebDriver {
     where
         T: Serialize,
     {
-        let conn = Arc::new(RemoteConnectionSync::new(remote_server_addr)?);
+        let conn = Arc::new(ReqwestDriverSync::new(remote_server_addr)?);
         let caps = to_value(capabilities)?;
-        let v = match conn.execute(Command::NewSession(&caps)) {
+        let v = match conn.execute(&SessionId::null(), Command::NewSession(&caps)) {
             Ok(x) => Ok(x),
             Err(e) => {
                 // Selenium sometimes gives a bogus 500 error "Chrome failed to start".
@@ -68,7 +82,7 @@ impl WebDriver {
                 // will be returned.
                 if let WebDriverError::UnknownError(x) = &e {
                     if x.status == 500 {
-                        conn.execute(Command::NewSession(&caps))
+                        conn.execute(&SessionId::null(), Command::NewSession(&caps))
                     } else {
                         Err(e)
                     }
@@ -104,8 +118,9 @@ impl WebDriver {
 
         let driver = WebDriver {
             session_id,
-            capabilities: actual_capabilities,
             conn,
+            capabilities: Some(actual_capabilities),
+            quit_on_drop: true,
         };
 
         // Set default timeouts.
@@ -118,51 +133,58 @@ impl WebDriver {
         Ok(driver)
     }
 
+    /// Clone this WebDriver but without the DesiredCapabilities data.
+    /// This is used internally to share the webdriver connection with elements and other
+    /// structs that need to send requests using the same WebDriver session.
+    pub fn clone_without_capabilities(&self) -> Self {
+        WebDriver {
+            session_id: self.session_id.clone(),
+            conn: self.conn.clone(),
+            capabilities: None,
+            quit_on_drop: false,
+        }
+    }
+
+    /// Convenience wrapper for executing a WebDriver command.
+    pub fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+        self.conn.execute(&self.session_id, command)
+    }
+
     /// Return a clone of the capabilities as returned by Selenium.
-    pub fn capabilities(&self) -> DesiredCapabilities {
-        DesiredCapabilities::new(self.capabilities.clone())
+    pub fn capabilities(&self) -> Option<DesiredCapabilities> {
+        self.capabilities.clone().map(DesiredCapabilities::new)
     }
 
     /// Close the current window.
     pub fn close(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::CloseWindow(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::CloseWindow).map(|_| ())
     }
 
     /// End the webdriver session.
     pub fn quit(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::DeleteSession(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::DeleteSession).map(|_| ())
     }
 
     /// Navigate to the specified URL.
     pub fn get<S: Into<String>>(&self, url: S) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::NavigateTo(&self.session_id, url.into()))
-            .map(|_| ())
+        self.cmd(Command::NavigateTo(url.into())).map(|_| ())
     }
 
     /// Get the current URL as a String.
     pub fn current_url(&self) -> WebDriverResult<String> {
-        let v = self
-            .conn
-            .execute(Command::GetCurrentUrl(&self.session_id))?;
+        let v = self.cmd(Command::GetCurrentUrl)?;
         unwrap(&v["value"])
     }
 
     /// Get the page source as a String.
     pub fn page_source(&self) -> WebDriverResult<String> {
-        let v = self
-            .conn
-            .execute(Command::GetPageSource(&self.session_id))?;
+        let v = self.cmd(Command::GetPageSource)?;
         unwrap(&v["value"])
     }
 
     /// Get the page title as a String.
     pub fn title(&self) -> WebDriverResult<String> {
-        let v = self.conn.execute(Command::GetTitle(&self.session_id))?;
+        let v = self.cmd(Command::GetTitle)?;
         unwrap(&v["value"])
     }
 
@@ -185,10 +207,8 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
-        let v = self
-            .conn
-            .execute(Command::FindElement(&self.session_id, by))?;
-        unwrap_element_sync(self.conn.clone(), self.session_id.clone(), &v["value"])
+        let v = self.cmd(Command::FindElement(by))?;
+        unwrap_element_sync(self.clone_without_capabilities(), &v["value"])
     }
 
     /// Search for all elements on the current page that match the specified
@@ -211,10 +231,8 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
-        let v = self
-            .conn
-            .execute(Command::FindElements(&self.session_id, by))?;
-        unwrap_elements_sync(&self.conn, &self.session_id, &v["value"])
+        let v = self.cmd(Command::FindElements(by))?;
+        unwrap_elements_sync(&self, &v["value"])
     }
 
     /// Execute the specified Javascript synchronously and return the result.
@@ -245,14 +263,9 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn execute_script(&self, script: &str) -> WebDriverResult<ScriptRetSync> {
-        let v = self.conn.execute(Command::ExecuteScript(
-            &self.session_id,
-            script.to_owned(),
-            Vec::new(),
-        ))?;
+        let v = self.cmd(Command::ExecuteScript(script.to_owned(), Vec::new()))?;
         Ok(ScriptRetSync::new(
-            self.conn.clone(),
-            self.session_id.clone(),
+            self.clone_without_capabilities(),
             v["value"].clone(),
         ))
     }
@@ -289,14 +302,9 @@ impl WebDriver {
         script: &str,
         args: &ScriptArgs,
     ) -> WebDriverResult<ScriptRetSync> {
-        let v = self.conn.execute(Command::ExecuteScript(
-            &self.session_id,
-            script.to_owned(),
-            args.get_args(),
-        ))?;
+        let v = self.cmd(Command::ExecuteScript(script.to_owned(), args.get_args()))?;
         Ok(ScriptRetSync::new(
-            self.conn.clone(),
-            self.session_id.clone(),
+            self.clone_without_capabilities(),
             v["value"].clone(),
         ))
     }
@@ -334,14 +342,9 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn execute_async_script(&self, script: &str) -> WebDriverResult<ScriptRetSync> {
-        let v = self.conn.execute(Command::ExecuteAsyncScript(
-            &self.session_id,
-            script.to_owned(),
-            Vec::new(),
-        ))?;
+        let v = self.cmd(Command::ExecuteAsyncScript(script.to_owned(), Vec::new()))?;
         Ok(ScriptRetSync::new(
-            self.conn.clone(),
-            self.session_id.clone(),
+            self.clone_without_capabilities(),
             v["value"].clone(),
         ))
     }
@@ -383,31 +386,25 @@ impl WebDriver {
         script: &str,
         args: &ScriptArgs,
     ) -> WebDriverResult<ScriptRetSync> {
-        let v = self.conn.execute(Command::ExecuteAsyncScript(
-            &self.session_id,
+        let v = self.cmd(Command::ExecuteAsyncScript(
             script.to_owned(),
             args.get_args(),
         ))?;
         Ok(ScriptRetSync::new(
-            self.conn.clone(),
-            self.session_id.clone(),
+            self.clone_without_capabilities(),
             v["value"].clone(),
         ))
     }
 
     /// Get the current window handle.
     pub fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
-        let v = self
-            .conn
-            .execute(Command::GetWindowHandle(&self.session_id))?;
+        let v = self.cmd(Command::GetWindowHandle)?;
         unwrap::<String>(&v["value"]).map(WindowHandle::from)
     }
 
     /// Get all window handles for the current session.
     pub fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
-        let v = self
-            .conn
-            .execute(Command::GetWindowHandles(&self.session_id))?;
+        let v = self.cmd(Command::GetWindowHandles)?;
         let strings: Vec<String> = unwrap_vec(&v["value"])?;
         Ok(strings.iter().map(WindowHandle::from).collect())
     }
@@ -428,16 +425,12 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn maximize_window(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::MaximizeWindow(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::MaximizeWindow).map(|_| ())
     }
 
     /// Minimize the current window.
     pub fn minimize_window(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::MinimizeWindow(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::MinimizeWindow).map(|_| ())
     }
 
     /// Make the current window fullscreen.
@@ -456,9 +449,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn fullscreen_window(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::FullscreenWindow(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::FullscreenWindow).map(|_| ())
     }
 
     /// Get the current window rectangle, in pixels.
@@ -466,9 +457,7 @@ impl WebDriver {
     /// The returned Rect struct has members `x`, `y`, `width`, `height`,
     /// all i32.
     pub fn get_window_rect(&self) -> WebDriverResult<Rect> {
-        let v = self
-            .conn
-            .execute(Command::GetWindowRect(&self.session_id))?;
+        let v = self.cmd(Command::GetWindowRect)?;
         unwrap(&v["value"])
     }
 
@@ -507,9 +496,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::SetWindowRect(&self.session_id, rect))
-            .map(|_| ())
+        self.cmd(Command::SetWindowRect(rect)).map(|_| ())
     }
 
     /// Go back. This is equivalent to clicking the browser's back button.
@@ -530,9 +517,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn back(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::Back(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::Back).map(|_| ())
     }
 
     /// Go forward. This is equivalent to clicking the browser's forward button.
@@ -555,9 +540,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn forward(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::Forward(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::Forward).map(|_| ())
     }
 
     /// Refresh the current page.
@@ -578,9 +561,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn refresh(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::Refresh(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::Refresh).map(|_| ())
     }
 
     /// Get all timeouts for the current session.
@@ -610,7 +591,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn get_timeouts(&self) -> WebDriverResult<TimeoutConfiguration> {
-        let v = self.conn.execute(Command::GetTimeouts(&self.session_id))?;
+        let v = self.cmd(Command::GetTimeouts)?;
         unwrap(&v["value"])
     }
 
@@ -635,9 +616,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::SetTimeouts(&self.session_id, timeouts))
-            .map(|_| ())
+        self.cmd(Command::SetTimeouts(timeouts)).map(|_| ())
     }
 
     /// Set the implicit wait timeout.
@@ -684,7 +663,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn action_chain(&self) -> ActionChain {
-        ActionChain::new(self.conn.clone(), self.session_id.clone())
+        ActionChain::new(self.clone_without_capabilities())
     }
 
     /// Get all cookies.
@@ -710,9 +689,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
-        let v = self
-            .conn
-            .execute(Command::GetAllCookies(&self.session_id))?;
+        let v = self.cmd(Command::GetAllCookies)?;
         unwrap_vec::<Cookie>(&v["value"])
     }
 
@@ -736,9 +713,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
-        let v = self
-            .conn
-            .execute(Command::GetNamedCookie(&self.session_id, name))?;
+        let v = self.cmd(Command::GetNamedCookie(name))?;
         unwrap::<Cookie>(&v["value"])
     }
 
@@ -762,9 +737,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::DeleteCookie(&self.session_id, name))
-            .map(|_| ())
+        self.cmd(Command::DeleteCookie(name)).map(|_| ())
     }
 
     /// Delete all cookies.
@@ -788,9 +761,7 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn delete_all_cookies(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::DeleteAllCookies(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::DeleteAllCookies).map(|_| ())
     }
 
     /// Add the specified cookie.
@@ -812,17 +783,13 @@ impl WebDriver {
     /// # }
     /// ```
     pub fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::AddCookie(&self.session_id, cookie))
-            .map(|_| ())
+        self.cmd(Command::AddCookie(cookie)).map(|_| ())
     }
 
     /// Take a screenshot of the current window and return it as a
     /// base64-encoded String.
     pub fn screenshot_as_base64(&self) -> WebDriverResult<String> {
-        let v = self
-            .conn
-            .execute(Command::TakeScreenshot(&self.session_id))?;
+        let v = self.cmd(Command::TakeScreenshot)?;
         unwrap(&v["value"])
     }
 
@@ -844,7 +811,7 @@ impl WebDriver {
 
     /// Return a SwitchTo struct for switching to another window or frame.
     pub fn switch_to(&self) -> SwitchTo {
-        SwitchTo::new(self.session_id.clone(), self.conn.clone())
+        SwitchTo::new(self.clone_without_capabilities())
     }
 
     /// Set the current window name.
@@ -858,7 +825,7 @@ impl WebDriver {
 impl Drop for WebDriver {
     /// Close the current session when the WebDriver struct goes out of scope.
     fn drop(&mut self) {
-        if !(*self.session_id).is_empty() {
+        if self.quit_on_drop && !(*self.session_id).is_empty() {
             if let Err(e) = self.quit() {
                 error!("Failed to close session: {:?}", e);
             }
@@ -870,8 +837,7 @@ impl Drop for WebDriver {
 /// See the examples for [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
 /// and [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script).
 pub struct ScriptRetSync {
-    conn: Arc<RemoteConnectionSync>,
-    session_id: SessionId,
+    driver: WebDriver,
     value: Value,
 }
 
@@ -879,12 +845,8 @@ impl ScriptRetSync {
     /// Create a new ScriptRetSync. This is typically done automatically via
     /// [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
     /// or [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script)
-    pub fn new(conn: Arc<RemoteConnectionSync>, session_id: SessionId, value: Value) -> Self {
-        ScriptRetSync {
-            conn,
-            session_id,
-            value,
-        }
+    pub fn new(driver: WebDriver, value: Value) -> Self {
+        ScriptRetSync { driver, value }
     }
 
     /// Get the raw JSON value.
@@ -892,15 +854,23 @@ impl ScriptRetSync {
         &self.value
     }
 
+    pub fn convert<T>(&self) -> WebDriverResult<T>
+    where
+        T: DeserializeOwned,
+    {
+        let v: T = from_value(self.value.clone())?;
+        Ok(v)
+    }
+
     /// Get a single WebElement return value.
     /// Your script must return only a single element for this to work.
     pub fn get_element(&self) -> WebDriverResult<WebElement> {
-        unwrap_element_sync(self.conn.clone(), self.session_id.clone(), &self.value)
+        unwrap_element_sync(self.driver.clone_without_capabilities(), &self.value)
     }
 
     /// Get a vec of WebElements from the return value.
     /// Your script must return an array of elements for this to work.
     pub fn get_elements(&self) -> WebDriverResult<Vec<WebElement>> {
-        unwrap_elements_sync(&self.conn, &self.session_id, &self.value)
+        unwrap_elements_sync(&self.driver, &self.value)
     }
 }

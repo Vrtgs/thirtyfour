@@ -1,26 +1,25 @@
-use std::sync::Arc;
-
 use crate::{
-    common::{
-        command::Command,
-        connection_common::{unwrap, unwrap_vec},
-    },
+    common::command::Command,
     error::{WebDriverError, WebDriverResult},
     webelement::unwrap_element_async,
-    Alert, RemoteConnectionAsync, SessionId, WebElement, WindowHandle,
+    Alert, WebDriver, WebElement, WindowHandle,
 };
 
 /// Struct for switching between frames/windows/alerts.
 pub struct SwitchTo {
-    session_id: SessionId,
-    conn: Arc<RemoteConnectionAsync>,
+    driver: WebDriver,
 }
 
 impl SwitchTo {
     /// Create a new SwitchTo struct. This is typically created internally
     /// via a call to `WebDriver::switch_to()`.
-    pub fn new(session_id: SessionId, conn: Arc<RemoteConnectionAsync>) -> Self {
-        SwitchTo { session_id, conn }
+    pub fn new(driver: WebDriver) -> Self {
+        SwitchTo { driver }
+    }
+
+    ///Convenience wrapper for executing a WebDriver command.
+    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+        self.driver.cmd(command).await
     }
 
     /// Return the element with focus, or the `<body>` element if nothing has focus.
@@ -51,18 +50,15 @@ impl SwitchTo {
     /// # }
     /// ```
     pub async fn active_element(&self) -> WebDriverResult<WebElement> {
-        let v = self
-            .conn
-            .execute(Command::GetActiveElement(&self.session_id))
-            .await?;
-        unwrap_element_async(self.conn.clone(), self.session_id.clone(), &v["value"])
+        let v = self.cmd(Command::GetActiveElement).await?;
+        unwrap_element_async(self.driver.clone(), &v["value"])
     }
 
     /// Return Alert struct for processing the active alert on the page.
     ///
     /// See [Alert](struct.Alert.html) documentation for examples.
     pub fn alert(&self) -> Alert {
-        Alert::new(self.session_id.clone(), self.conn.clone())
+        Alert::new(self.driver.clone())
     }
 
     /// Switch to the default frame.
@@ -88,10 +84,7 @@ impl SwitchTo {
     /// # }
     /// ```
     pub async fn default_content(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::SwitchToFrameDefault(&self.session_id))
-            .await
-            .map(|_| ())
+        self.cmd(Command::SwitchToFrameDefault).await.map(|_| ())
     }
 
     /// Switch to an iframe by index. The first iframe on the page has index 0.
@@ -117,8 +110,7 @@ impl SwitchTo {
     /// # }
     /// ```
     pub async fn frame_number(&self, frame_number: u16) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::SwitchToFrameNumber(&self.session_id, frame_number))
+        self.cmd(Command::SwitchToFrameNumber(frame_number))
             .await
             .map(|_| ())
     }
@@ -147,11 +139,7 @@ impl SwitchTo {
     /// # }
     /// ```
     pub async fn frame_element(&self, frame_element: &WebElement) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::SwitchToFrameElement(
-                &self.session_id,
-                &frame_element.element_id,
-            ))
+        self.cmd(Command::SwitchToFrameElement(&frame_element.element_id))
             .await
             .map(|_| ())
     }
@@ -184,10 +172,7 @@ impl SwitchTo {
     /// # }
     /// ```
     pub async fn parent_frame(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::SwitchToParentFrame(&self.session_id))
-            .await
-            .map(|_| ())
+        self.cmd(Command::SwitchToParentFrame).await.map(|_| ())
     }
 
     /// Switch to the specified window.
@@ -218,10 +203,7 @@ impl SwitchTo {
     /// # }
     /// ```
     pub async fn window(&self, handle: &WindowHandle) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::SwitchToWindow(&self.session_id, handle))
-            .await
-            .map(|_| ())
+        self.cmd(Command::SwitchToWindow(handle)).await.map(|_| ())
     }
 
     /// Switch to the window with the specified name. This uses the `window.name` property.
@@ -254,37 +236,19 @@ impl SwitchTo {
     /// # }
     /// ```
     pub async fn window_name(&self, name: &str) -> WebDriverResult<()> {
-        let original_handle = self
-            .conn
-            .execute(Command::GetWindowHandle(&self.session_id))
-            .await
-            .map(|v| unwrap::<String>(&v["value"]))??;
+        let original_handle = self.driver.current_window_handle().await?;
 
-        let v = self
-            .conn
-            .execute(Command::GetWindowHandles(&self.session_id))
-            .await?;
-        let handles: Vec<String> = unwrap_vec(&v["value"])?;
-        for handle in handles {
-            self.window(&WindowHandle::from(handle)).await?;
-            let current_name = self
-                .conn
-                .execute(Command::ExecuteScript(
-                    &self.session_id,
-                    String::from("return window.name;"),
-                    Vec::new(),
-                ))
-                .await
-                .map(|v| v["value"].clone())?;
-
-            if let Some(x) = current_name.as_str() {
-                if x == name {
-                    return Ok(());
-                }
+        let handles = self.driver.window_handles().await?;
+        for handle in &handles {
+            self.window(handle).await?;
+            let ret = self.driver.execute_script(r#"return window.name;"#).await?;
+            let current_name: String = ret.convert()?;
+            if current_name == name {
+                return Ok(());
             }
         }
 
-        self.window(&WindowHandle::from(original_handle)).await?;
+        self.window(&original_handle).await?;
         Err(WebDriverError::NotFoundError(format!(
             "No window handle found matching '{}'",
             name

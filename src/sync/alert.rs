@@ -1,23 +1,24 @@
-use std::sync::Arc;
-
+use crate::sync::WebDriver;
 use crate::{
     common::{command::Command, connection_common::unwrap, keys::TypingData},
     error::WebDriverResult,
-    sync::RemoteConnectionSync,
-    SessionId,
 };
 
 /// Struct for managing alerts.
 pub struct Alert {
-    session_id: SessionId,
-    conn: Arc<RemoteConnectionSync>,
+    driver: WebDriver,
 }
 
 impl Alert {
     /// Create a new Alert struct. This is typically created internally
     /// via a call to `WebDriver::switch_to().alert()`.
-    pub fn new(session_id: SessionId, conn: Arc<RemoteConnectionSync>) -> Self {
-        Alert { session_id, conn }
+    pub fn new(driver: WebDriver) -> Self {
+        Alert { driver }
+    }
+
+    ///Convenience wrapper for executing a WebDriver command.
+    fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+        self.driver.cmd(command)
     }
 
     /// Get the active alert text.
@@ -40,7 +41,7 @@ impl Alert {
     /// # }
     /// ```
     pub fn text(&self) -> WebDriverResult<String> {
-        let v = self.conn.execute(Command::GetAlertText(&self.session_id))?;
+        let v = self.cmd(Command::GetAlertText)?;
         unwrap::<String>(&v["value"])
     }
 
@@ -64,9 +65,7 @@ impl Alert {
     /// # }
     /// ```
     pub fn dismiss(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::DismissAlert(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::DismissAlert).map(|_| ())
     }
 
     /// Accept the active alert.
@@ -89,9 +88,7 @@ impl Alert {
     /// # }
     /// ```
     pub fn accept(&self) -> WebDriverResult<()> {
-        self.conn
-            .execute(Command::AcceptAlert(&self.session_id))
-            .map(|_| ())
+        self.cmd(Command::AcceptAlert).map(|_| ())
     }
 
     /// Send the specified keys to the active alert.
@@ -143,8 +140,6 @@ impl Alert {
     where
         S: Into<TypingData>,
     {
-        self.conn
-            .execute(Command::SendAlertText(&self.session_id, keys.into()))
-            .map(|_| ())
+        self.cmd(Command::SendAlertText(keys.into())).map(|_| ())
     }
 }

@@ -29,14 +29,20 @@ pub struct ElementRef {
 
 #[derive(Debug, Clone)]
 pub struct SessionId {
-    _id: String,
+    id: String,
+}
+
+impl SessionId {
+    pub fn null() -> Self {
+        SessionId { id: String::new() }
+    }
 }
 
 impl Deref for SessionId {
     type Target = String;
 
     fn deref(&self) -> &Self::Target {
-        &self._id
+        &self.id
     }
 }
 
@@ -45,20 +51,20 @@ where
     S: Into<String>,
 {
     fn from(value: S) -> Self {
-        SessionId { _id: value.into() }
+        SessionId { id: value.into() }
     }
 }
 
 impl fmt::Display for SessionId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self._id)
+        write!(f, "{}", self.id)
     }
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(transparent)]
 pub struct ElementId {
-    _id: String,
+    id: String,
 }
 
 impl<S> From<S> for ElementId
@@ -66,19 +72,19 @@ where
     S: Into<String>,
 {
     fn from(value: S) -> Self {
-        ElementId { _id: value.into() }
+        ElementId { id: value.into() }
     }
 }
 
 impl fmt::Display for ElementId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self._id)
+        write!(f, "{}", self.id)
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct WindowHandle {
-    _handle: String,
+    handle: String,
 }
 
 impl<S> From<S> for WindowHandle
@@ -87,14 +93,14 @@ where
 {
     fn from(value: S) -> Self {
         WindowHandle {
-            _handle: value.into(),
+            handle: value.into(),
         }
     }
 }
 
 impl fmt::Display for WindowHandle {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self._handle)
+        write!(f, "{}", self.handle)
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -25,3 +25,4 @@ base64 = "0.11.0"
 chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "0.2", features = ["fs", "macros", "rt-threaded"] }
 futures = "0.3"
+async-trait = "0.1"
