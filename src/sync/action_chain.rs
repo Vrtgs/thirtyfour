@@ -1,4 +1,4 @@
-use crate::sync::WebDriver;
+use crate::sync::webdriver::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::{
         action::{ActionSource, KeyAction, PointerAction, PointerActionType},
@@ -20,18 +20,18 @@ use crate::{
 /// ```ignore
 /// driver.action_chain().drag_and_drop_element(elem_src, elem_target).perform()?;
 /// ```
-pub struct ActionChain {
-    driver: WebDriver,
+pub struct ActionChain<'a> {
+    driver: WebDriverSession<'a>,
     key_actions: ActionSource<KeyAction>,
     pointer_actions: ActionSource<PointerAction>,
 }
 
-impl ActionChain {
+impl<'a> ActionChain<'a> {
     /// Create a new ActionChain struct.
     ///
     /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
-    pub fn new(driver: WebDriver) -> Self {
+    pub fn new(driver: WebDriverSession<'a>) -> Self {
         ActionChain {
             driver,
             key_actions: ActionSource::<KeyAction>::new("key"),
@@ -51,8 +51,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -87,8 +86,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -113,8 +111,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -135,8 +132,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -163,8 +159,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -188,8 +183,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -214,8 +208,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -236,8 +229,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -263,8 +255,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -339,8 +330,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -367,8 +357,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -393,9 +382,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::Keys;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -428,9 +415,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::Keys;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -461,8 +446,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -489,8 +473,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -521,10 +504,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use std::thread;
-    /// # use std::time::Duration;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -553,8 +533,7 @@ impl ActionChain {
     /// # Example:
     ///
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, Keys, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -596,8 +575,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -622,8 +600,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -646,9 +623,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::Keys;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -683,9 +658,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::Keys;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();

@@ -1,5 +1,4 @@
-use thirtyfour::error::WebDriverResult;
-use thirtyfour::{By, DesiredCapabilities, WebDriver};
+use thirtyfour::prelude::*;
 use tokio;
 
 #[tokio::main]

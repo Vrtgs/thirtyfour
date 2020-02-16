@@ -1,5 +1,4 @@
-use thirtyfour::error::WebDriverResult;
-use thirtyfour::{sync::WebDriver, By, DesiredCapabilities};
+use thirtyfour::sync::prelude::*;
 
 fn main() -> WebDriverResult<()> {
     let caps = DesiredCapabilities::chrome();

@@ -7,7 +7,7 @@ use crate::{
         command::{Command, RequestMethod},
         connection_common::build_headers,
     },
-    error::{RemoteConnectionError, WebDriverError},
+    error::{RemoteConnectionError, WebDriverError, WebDriverResult},
     SessionId,
 };
 
@@ -17,10 +17,10 @@ pub trait RemoteConnectionAsync: Debug + Send + Sync {
         &self,
         session_id: &SessionId,
         command: Command<'_>,
-    ) -> Result<serde_json::Value, WebDriverError>;
+    ) -> WebDriverResult<serde_json::Value>;
 }
 
-/// Asynchronous remote connection with the Remote WebDriver server.
+/// Asynchronous connection to the remote WebDriver server.
 #[derive(Debug)]
 pub struct ReqwestDriverAsync {
     url: String,
@@ -28,7 +28,7 @@ pub struct ReqwestDriverAsync {
 }
 
 impl ReqwestDriverAsync {
-    /// Create a new RemoteConnectionAsync instance.
+    /// Create a new ReqwestDriverAsync instance.
     pub fn new(remote_server_addr: &str) -> Result<Self, RemoteConnectionError> {
         let headers = build_headers(remote_server_addr)?;
         Ok(ReqwestDriverAsync {
@@ -47,7 +47,7 @@ impl RemoteConnectionAsync for ReqwestDriverAsync {
         &self,
         session_id: &SessionId,
         command: Command<'_>,
-    ) -> Result<serde_json::Value, WebDriverError> {
+    ) -> WebDriverResult<serde_json::Value> {
         let request_data = command.format_request(session_id);
         let url = self.url.clone() + &request_data.url;
         let mut request = match request_data.method {

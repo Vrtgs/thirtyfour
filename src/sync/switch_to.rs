@@ -1,4 +1,4 @@
-use crate::sync::WebDriver;
+use crate::sync::webdriver::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::command::Command,
     error::{WebDriverError, WebDriverResult},
@@ -7,14 +7,14 @@ use crate::{
 };
 
 /// Struct for switching between frames/windows/alerts.
-pub struct SwitchTo {
-    driver: WebDriver,
+pub struct SwitchTo<'a> {
+    driver: WebDriverSession<'a>,
 }
 
-impl SwitchTo {
+impl<'a> SwitchTo<'a> {
     /// Create a new SwitchTo struct. This is typically created internally
     /// via a call to `WebDriver::switch_to()`.
-    pub fn new(driver: WebDriver) -> Self {
+    pub fn new(driver: WebDriverSession<'a>) -> Self {
         SwitchTo { driver }
     }
 
@@ -27,8 +27,7 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -48,24 +47,23 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn active_element(&self) -> WebDriverResult<WebElement> {
+    pub fn active_element(self) -> WebDriverResult<WebElement<'a>> {
         let v = self.cmd(Command::GetActiveElement)?;
-        unwrap_element_sync(self.driver.clone(), &v["value"])
+        unwrap_element_sync(self.driver, &v["value"])
     }
 
     /// Return Alert struct for processing the active alert on the page.
     ///
     /// See [Alert](struct.Alert.html) documentation for examples.
-    pub fn alert(&self) -> Alert {
-        Alert::new(self.driver.clone())
+    pub fn alert(self) -> Alert<'a> {
+        Alert::new(self.driver)
     }
 
     /// Switch to the default frame.
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -80,7 +78,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn default_content(&self) -> WebDriverResult<()> {
+    pub fn default_content(self) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToFrameDefault).map(|_| ())
     }
 
@@ -88,8 +86,7 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -104,7 +101,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn frame_number(&self, frame_number: u16) -> WebDriverResult<()> {
+    pub fn frame_number(self, frame_number: u16) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToFrameNumber(frame_number))
             .map(|_| ())
     }
@@ -113,8 +110,7 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -130,7 +126,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn frame_element(&self, frame_element: &WebElement) -> WebDriverResult<()> {
+    pub fn frame_element(self, frame_element: &WebElement) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToFrameElement(&frame_element.element_id))
             .map(|_| ())
     }
@@ -139,8 +135,7 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -160,7 +155,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn parent_frame(&self) -> WebDriverResult<()> {
+    pub fn parent_frame(self) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToParentFrame).map(|_| ())
     }
 
@@ -168,8 +163,7 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -189,7 +183,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn window(&self, handle: &WindowHandle) -> WebDriverResult<()> {
+    pub fn window(self, handle: &WindowHandle) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToWindow(handle)).map(|_| ())
     }
 
@@ -198,8 +192,7 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -220,13 +213,13 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn window_name(&self, name: &str) -> WebDriverResult<()> {
+    pub fn window_name(self, name: &str) -> WebDriverResult<()> {
         let original_handle = self.driver.current_window_handle()?;
-
-        let handles = self.driver.window_handles()?;
+        let this = &self;
+        let handles = this.driver.window_handles()?;
         for handle in &handles {
-            self.window(handle)?;
-            let ret = self.driver.execute_script(r#"return window.name;"#)?;
+            this.driver.switch_to().window(handle)?;
+            let ret = this.driver.execute_script(r#"return window.name;"#)?;
             let current_name: String = ret.convert()?;
             if current_name == name {
                 return Ok(());

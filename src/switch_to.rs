@@ -1,19 +1,20 @@
+use crate::webdriver::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::command::Command,
     error::{WebDriverError, WebDriverResult},
     webelement::unwrap_element_async,
-    Alert, WebDriver, WebElement, WindowHandle,
+    Alert, WebElement, WindowHandle,
 };
 
 /// Struct for switching between frames/windows/alerts.
-pub struct SwitchTo {
-    driver: WebDriver,
+pub struct SwitchTo<'a> {
+    driver: WebDriverSession<'a>,
 }
 
-impl SwitchTo {
+impl<'a> SwitchTo<'a> {
     /// Create a new SwitchTo struct. This is typically created internally
     /// via a call to `WebDriver::switch_to()`.
-    pub fn new(driver: WebDriver) -> Self {
+    pub fn new(driver: WebDriverSession<'a>) -> Self {
         SwitchTo { driver }
     }
 
@@ -26,8 +27,8 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
+    /// # use tokio;
     /// #
     /// # #[tokio::main]
     /// # async fn main() -> WebDriverResult<()> {
@@ -49,24 +50,24 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn active_element(&self) -> WebDriverResult<WebElement> {
+    pub async fn active_element(self) -> WebDriverResult<WebElement<'a>> {
         let v = self.cmd(Command::GetActiveElement).await?;
-        unwrap_element_async(self.driver.clone(), &v["value"])
+        unwrap_element_async(self.driver, &v["value"])
     }
 
     /// Return Alert struct for processing the active alert on the page.
     ///
     /// See [Alert](struct.Alert.html) documentation for examples.
-    pub fn alert(&self) -> Alert {
-        Alert::new(self.driver.clone())
+    pub fn alert(self) -> Alert<'a> {
+        Alert::new(self.driver)
     }
 
     /// Switch to the default frame.
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
+    /// # use tokio;
     /// #
     /// # #[tokio::main]
     /// # async fn main() -> WebDriverResult<()> {
@@ -83,7 +84,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn default_content(&self) -> WebDriverResult<()> {
+    pub async fn default_content(self) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToFrameDefault).await.map(|_| ())
     }
 
@@ -91,8 +92,8 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
+    /// # use tokio;
     /// #
     /// # #[tokio::main]
     /// # async fn main() -> WebDriverResult<()> {
@@ -109,7 +110,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn frame_number(&self, frame_number: u16) -> WebDriverResult<()> {
+    pub async fn frame_number(self, frame_number: u16) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToFrameNumber(frame_number))
             .await
             .map(|_| ())
@@ -119,8 +120,8 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
+    /// # use tokio;
     /// #
     /// # #[tokio::main]
     /// # async fn main() -> WebDriverResult<()> {
@@ -138,7 +139,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn frame_element(&self, frame_element: &WebElement) -> WebDriverResult<()> {
+    pub async fn frame_element(self, frame_element: &WebElement<'a>) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToFrameElement(&frame_element.element_id))
             .await
             .map(|_| ())
@@ -148,8 +149,8 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
+    /// # use tokio;
     /// #
     /// # #[tokio::main]
     /// # async fn main() -> WebDriverResult<()> {
@@ -171,7 +172,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn parent_frame(&self) -> WebDriverResult<()> {
+    pub async fn parent_frame(self) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToParentFrame).await.map(|_| ())
     }
 
@@ -179,8 +180,8 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
+    /// # use tokio;
     /// #
     /// # #[tokio::main]
     /// # async fn main() -> WebDriverResult<()> {
@@ -202,7 +203,7 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn window(&self, handle: &WindowHandle) -> WebDriverResult<()> {
+    pub async fn window(self, handle: &WindowHandle) -> WebDriverResult<()> {
         self.cmd(Command::SwitchToWindow(handle)).await.map(|_| ())
     }
 
@@ -211,8 +212,8 @@ impl SwitchTo {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
+    /// # use tokio;
     /// #
     /// # #[tokio::main]
     /// # async fn main() -> WebDriverResult<()> {
@@ -235,13 +236,13 @@ impl SwitchTo {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn window_name(&self, name: &str) -> WebDriverResult<()> {
+    pub async fn window_name(self, name: &str) -> WebDriverResult<()> {
         let original_handle = self.driver.current_window_handle().await?;
-
-        let handles = self.driver.window_handles().await?;
+        let this = &self;
+        let handles = this.driver.window_handles().await?;
         for handle in &handles {
-            self.window(handle).await?;
-            let ret = self.driver.execute_script(r#"return window.name;"#).await?;
+            this.driver.switch_to().window(handle).await?;
+            let ret = this.driver.execute_script(r#"return window.name;"#).await?;
             let current_name: String = ret.convert()?;
             if current_name == name {
                 return Ok(());

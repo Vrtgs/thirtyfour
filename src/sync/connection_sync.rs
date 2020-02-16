@@ -17,7 +17,7 @@ pub trait RemoteConnectionSync: Debug + Send + Sync {
     ) -> WebDriverResult<serde_json::Value>;
 }
 
-/// Synchronous remote connection with the Remote WebDriver server.
+/// Synchronous connection to the remote WebDriver server.
 #[derive(Debug)]
 pub struct ReqwestDriverSync {
     url: String,
@@ -25,7 +25,7 @@ pub struct ReqwestDriverSync {
 }
 
 impl ReqwestDriverSync {
-    /// Create a new RemoteConnectionSync instance.
+    /// Create a new ReqwestDriverSync instance.
     pub fn new(remote_server_addr: &str) -> Result<Self, RemoteConnectionError> {
         let headers = build_headers(remote_server_addr)?;
         Ok(ReqwestDriverSync {

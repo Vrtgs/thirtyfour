@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{from_value, to_value, Value};
 use tokio::{fs::File, io::AsyncWriteExt};
 
+use async_trait::async_trait;
+
 use crate::error::WebDriverError;
 use crate::{
     action_chain::ActionChain,
@@ -25,10 +27,11 @@ use crate::{
 /// session. For the sync driver, see
 /// [sync::WebDriver](sync/struct.WebDriver.html).
 ///
+/// See the [WebDriverCommands](trait.WebDriverCommands.html) trait for WebDriver methods.
+///
 /// # Example:
 /// ```rust
-/// use thirtyfour::error::WebDriverResult;
-/// use thirtyfour::{DesiredCapabilities, WebDriver};
+/// use thirtyfour::prelude::*;
 /// use tokio;
 ///
 /// #[tokio::main]
@@ -43,19 +46,8 @@ use crate::{
 pub struct WebDriver {
     pub session_id: SessionId,
     conn: Arc<dyn RemoteConnectionAsync>,
-    capabilities: Option<Value>,
+    capabilities: Value,
     quit_on_drop: bool,
-}
-
-impl Clone for WebDriver {
-    fn clone(&self) -> Self {
-        WebDriver {
-            session_id: self.session_id.clone(),
-            conn: self.conn.clone(),
-            capabilities: None,
-            quit_on_drop: false,
-        }
-    }
 }
 
 impl WebDriver {
@@ -63,8 +55,7 @@ impl WebDriver {
     ///
     /// # Example
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -129,7 +120,7 @@ impl WebDriver {
         let driver = WebDriver {
             session_id,
             conn,
-            capabilities: Some(actual_capabilities),
+            capabilities: actual_capabilities,
             quit_on_drop: true,
         };
 
@@ -143,57 +134,101 @@ impl WebDriver {
         Ok(driver)
     }
 
-    /// Clone this WebDriver but without the DesiredCapabilities data.
-    /// This is used internally to share the webdriver connection with elements and other
-    /// structs that need to send requests using the same WebDriver session.
-    pub fn clone_without_capabilities(&self) -> Self {
-        WebDriver {
-            session_id: self.session_id.clone(),
-            conn: self.conn.clone(),
-            capabilities: None,
-            quit_on_drop: false,
-        }
+    /// Return a clone of the capabilities as returned by Selenium.
+    pub fn capabilities(&self) -> DesiredCapabilities {
+        DesiredCapabilities::new(self.capabilities.clone())
     }
+}
 
-    /// Convenience wrapper for executing a WebDriver command.
-    pub async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+#[async_trait]
+impl WebDriverCommands for WebDriver {
+    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
         self.conn.execute(&self.session_id, command).await
     }
 
-    /// Return a clone of the capabilities as returned by Selenium.
-    pub fn capabilities(&self) -> Option<DesiredCapabilities> {
-        self.capabilities.clone().map(DesiredCapabilities::new)
+    fn session(&self) -> WebDriverSession {
+        WebDriverSession {
+            session_id: &self.session_id,
+            conn: self.conn.clone(),
+        }
+    }
+}
+
+impl Drop for WebDriver {
+    /// Close the current session when the WebDriver struct goes out of scope.
+    fn drop(&mut self) {
+        if self.quit_on_drop && !(*self.session_id).is_empty() {
+            if let Err(e) = block_on(self.quit()) {
+                error!("Failed to close session: {:?}", e);
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct WebDriverSession<'a> {
+    pub session_id: &'a SessionId,
+    conn: Arc<dyn RemoteConnectionAsync>,
+}
+
+impl<'a> Clone for WebDriverSession<'a> {
+    fn clone(&self) -> Self {
+        WebDriverSession {
+            session_id: self.session_id,
+            conn: self.conn.clone(),
+        }
+    }
+}
+
+#[async_trait]
+impl<'a> WebDriverCommands for WebDriverSession<'a> {
+    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+        self.conn.execute(&self.session_id, command).await
     }
 
+    fn session(&self) -> WebDriverSession {
+        self.clone()
+    }
+}
+
+/// All browser-level W3C WebDriver commands are implemented under this trait.
+#[async_trait]
+pub trait WebDriverCommands {
+    /// Convenience wrapper for running WebDriver commands.
+    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value>;
+
+    /// Get the current session and connection.
+    fn session(&self) -> WebDriverSession;
+
     /// Close the current window.
-    pub async fn close(&self) -> WebDriverResult<()> {
+    async fn close(&self) -> WebDriverResult<()> {
         self.cmd(Command::CloseWindow).await.map(|_| ())
     }
 
     /// End the webdriver session.
-    pub async fn quit(&self) -> WebDriverResult<()> {
+    async fn quit(&self) -> WebDriverResult<()> {
         self.cmd(Command::DeleteSession).await.map(|_| ())
     }
 
     /// Navigate to the specified URL.
-    pub async fn get<S: Into<String>>(&self, url: S) -> WebDriverResult<()> {
+    async fn get<S: Into<String> + Send>(&self, url: S) -> WebDriverResult<()> {
         self.cmd(Command::NavigateTo(url.into())).await.map(|_| ())
     }
 
     /// Get the current URL as a String.
-    pub async fn current_url(&self) -> WebDriverResult<String> {
+    async fn current_url(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetCurrentUrl).await?;
         unwrap(&v["value"])
     }
 
     /// Get the page source as a String.
-    pub async fn page_source(&self) -> WebDriverResult<String> {
+    async fn page_source(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetPageSource).await?;
         unwrap(&v["value"])
     }
 
     /// Get the page title as a String.
-    pub async fn title(&self) -> WebDriverResult<String> {
+    async fn title(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetTitle).await?;
         Ok(v["value"].as_str().unwrap_or_default().to_owned())
     }
@@ -202,8 +237,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -218,9 +252,9 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn find_element(&self, by: By<'_>) -> WebDriverResult<WebElement> {
+    async fn find_element<'b>(&'b self, by: By<'_>) -> WebDriverResult<WebElement<'b>> {
         let v = self.cmd(Command::FindElement(by)).await?;
-        unwrap_element_async(self.clone_without_capabilities(), &v["value"])
+        unwrap_element_async(self.session(), &v["value"])
     }
 
     /// Search for all elements on the current page that match the specified
@@ -228,8 +262,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -244,18 +277,16 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn find_elements(&self, by: By<'_>) -> WebDriverResult<Vec<WebElement>> {
+    async fn find_elements<'b>(&'b self, by: By<'_>) -> WebDriverResult<Vec<WebElement<'b>>> {
         let v = self.cmd(Command::FindElements(by)).await?;
-        unwrap_elements_async(&self, &v["value"])
+        unwrap_elements_async(self.session(), &v["value"])
     }
 
     /// Execute the specified Javascript synchronously and return the result.
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::ScriptArgs;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -278,14 +309,11 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn execute_script(&self, script: &str) -> WebDriverResult<ScriptRet> {
+    async fn execute_script<'b>(&'b self, script: &str) -> WebDriverResult<ScriptRet<'b>> {
         let v = self
             .cmd(Command::ExecuteScript(script.to_owned(), Vec::new()))
             .await?;
-        Ok(ScriptRet::new(
-            self.clone_without_capabilities(),
-            v["value"].clone(),
-        ))
+        Ok(ScriptRet::new(self.session(), v["value"].clone()))
     }
 
     /// Execute the specified Javascript synchronously and return the result.
@@ -293,8 +321,7 @@ impl WebDriver {
     /// # Example:
     /// ```rust
     /// use thirtyfour::ScriptArgs;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -317,27 +344,22 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn execute_script_with_args(
-        &self,
+    async fn execute_script_with_args<'b>(
+        &'b self,
         script: &str,
         args: &ScriptArgs,
-    ) -> WebDriverResult<ScriptRet> {
+    ) -> WebDriverResult<ScriptRet<'b>> {
         let v = self
             .cmd(Command::ExecuteScript(script.to_owned(), args.get_args()))
             .await?;
-        Ok(ScriptRet::new(
-            self.clone_without_capabilities(),
-            v["value"].clone(),
-        ))
+        Ok(ScriptRet::new(self.session(), v["value"].clone()))
     }
 
     /// Execute the specified Javascrypt asynchronously and return the result.
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::ScriptArgs;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -365,14 +387,11 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn execute_async_script(&self, script: &str) -> WebDriverResult<ScriptRet> {
+    async fn execute_async_script<'b>(&'b self, script: &str) -> WebDriverResult<ScriptRet<'b>> {
         let v = self
             .cmd(Command::ExecuteAsyncScript(script.to_owned(), Vec::new()))
             .await?;
-        Ok(ScriptRet::new(
-            self.clone_without_capabilities(),
-            v["value"].clone(),
-        ))
+        Ok(ScriptRet::new(self.session(), v["value"].clone()))
     }
 
     /// Execute the specified Javascrypt asynchronously and return the result.
@@ -380,8 +399,7 @@ impl WebDriver {
     /// # Example:
     /// ```rust
     /// use thirtyfour::ScriptArgs;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -409,31 +427,28 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn execute_async_script_with_args(
-        &self,
+    async fn execute_async_script_with_args<'b>(
+        &'b self,
         script: &str,
         args: &ScriptArgs,
-    ) -> WebDriverResult<ScriptRet> {
+    ) -> WebDriverResult<ScriptRet<'b>> {
         let v = self
             .cmd(Command::ExecuteAsyncScript(
                 script.to_owned(),
                 args.get_args(),
             ))
             .await?;
-        Ok(ScriptRet::new(
-            self.clone_without_capabilities(),
-            v["value"].clone(),
-        ))
+        Ok(ScriptRet::new(self.session(), v["value"].clone()))
     }
 
     /// Get the current window handle.
-    pub async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
+    async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
         let v = self.cmd(Command::GetWindowHandle).await?;
         unwrap::<String>(&v["value"]).map(WindowHandle::from)
     }
 
     /// Get all window handles for the current session.
-    pub async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
+    async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
         let v = self.cmd(Command::GetWindowHandles).await?;
         let strings: Vec<String> = unwrap_vec(&v["value"])?;
         Ok(strings.iter().map(WindowHandle::from).collect())
@@ -443,8 +458,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -456,12 +470,12 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn maximize_window(&self) -> WebDriverResult<()> {
+    async fn maximize_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::MaximizeWindow).await.map(|_| ())
     }
 
     /// Minimize the current window.
-    pub async fn minimize_window(&self) -> WebDriverResult<()> {
+    async fn minimize_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::MinimizeWindow).await.map(|_| ())
     }
 
@@ -469,8 +483,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -482,7 +495,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn fullscreen_window(&self) -> WebDriverResult<()> {
+    async fn fullscreen_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::FullscreenWindow).await.map(|_| ())
     }
 
@@ -490,7 +503,7 @@ impl WebDriver {
     ///
     /// The returned Rect struct has members `x`, `y`, `width`, `height`,
     /// all i32.
-    pub async fn get_window_rect(&self) -> WebDriverResult<Rect> {
+    async fn get_window_rect(&self) -> WebDriverResult<Rect> {
         let v = self.cmd(Command::GetWindowRect).await?;
         unwrap(&v["value"])
     }
@@ -503,8 +516,7 @@ impl WebDriver {
     /// # Example:
     /// ```rust
     /// use thirtyfour::OptionRect;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -521,8 +533,7 @@ impl WebDriver {
     /// and modify it before setting it again.
     /// ```rust
     /// use thirtyfour::OptionRect;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -535,7 +546,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
+    async fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
         self.cmd(Command::SetWindowRect(rect)).await.map(|_| ())
     }
 
@@ -543,8 +554,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -558,7 +568,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn back(&self) -> WebDriverResult<()> {
+    async fn back(&self) -> WebDriverResult<()> {
         self.cmd(Command::Back).await.map(|_| ())
     }
 
@@ -566,8 +576,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -583,7 +592,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn forward(&self) -> WebDriverResult<()> {
+    async fn forward(&self) -> WebDriverResult<()> {
         self.cmd(Command::Forward).await.map(|_| ())
     }
 
@@ -591,8 +600,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -606,7 +614,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn refresh(&self) -> WebDriverResult<()> {
+    async fn refresh(&self) -> WebDriverResult<()> {
         self.cmd(Command::Refresh).await.map(|_| ())
     }
 
@@ -614,8 +622,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// use thirtyfour::TimeoutConfiguration;
     /// use std::time::Duration;
@@ -638,7 +645,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn get_timeouts(&self) -> WebDriverResult<TimeoutConfiguration> {
+    async fn get_timeouts(&self) -> WebDriverResult<TimeoutConfiguration> {
         let v = self.cmd(Command::GetTimeouts).await?;
         unwrap(&v["value"])
     }
@@ -647,8 +654,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// use thirtyfour::TimeoutConfiguration;
     /// use std::time::Duration;
@@ -665,24 +671,24 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
+    async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
         self.cmd(Command::SetTimeouts(timeouts)).await.map(|_| ())
     }
 
     /// Set the implicit wait timeout.
-    pub async fn implicitly_wait(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    async fn implicitly_wait(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, None, Some(time_to_wait));
         self.set_timeouts(timeouts).await
     }
 
     /// Set the script timeout.
-    pub async fn set_script_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    async fn set_script_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(Some(time_to_wait), None, None);
         self.set_timeouts(timeouts).await
     }
 
     /// Set the page load timeout.
-    pub async fn set_page_load_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    async fn set_page_load_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, Some(time_to_wait), None);
         self.set_timeouts(timeouts).await
     }
@@ -691,8 +697,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -714,17 +719,15 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn action_chain(&self) -> ActionChain {
-        ActionChain::new(self.clone_without_capabilities())
+    fn action_chain(&self) -> ActionChain {
+        ActionChain::new(self.session())
     }
 
     /// Get all cookies.
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -743,7 +746,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
+    async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
         let v = self.cmd(Command::GetAllCookies).await?;
         unwrap_vec::<Cookie>(&v["value"])
     }
@@ -752,9 +755,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -770,7 +771,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
+    async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
         let v = self.cmd(Command::GetNamedCookie(name)).await?;
         unwrap::<Cookie>(&v["value"])
     }
@@ -779,9 +780,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -797,7 +796,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
+    async fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
         self.cmd(Command::DeleteCookie(name)).await.map(|_| ())
     }
 
@@ -805,9 +804,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -824,7 +821,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn delete_all_cookies(&self) -> WebDriverResult<()> {
+    async fn delete_all_cookies(&self) -> WebDriverResult<()> {
         self.cmd(Command::DeleteAllCookies).await.map(|_| ())
     }
 
@@ -832,9 +829,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     ///
     /// # #[tokio::main]
@@ -849,19 +844,19 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
+    async fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
         self.cmd(Command::AddCookie(cookie)).await.map(|_| ())
     }
 
     /// Take a screenshot of the current window and return it as a
     /// base64-encoded String.
-    pub async fn screenshot_as_base64(&self) -> WebDriverResult<String> {
+    async fn screenshot_as_base64(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::TakeScreenshot).await?;
         unwrap(&v["value"])
     }
 
     /// Take a screenshot of the current window and return it as PNG bytes.
-    pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
+    async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
         let s = self.screenshot_as_base64().await?;
         let bytes: Vec<u8> = decode(&s)?;
         Ok(bytes)
@@ -869,7 +864,7 @@ impl WebDriver {
 
     /// Take a screenshot of the current window and write it to the specified
     /// filename.
-    pub async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
+    async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
         let mut file = File::create(path).await?;
         file.write_all(&png).await?;
@@ -877,43 +872,32 @@ impl WebDriver {
     }
 
     /// Return a SwitchTo struct for switching to another window or frame.
-    pub fn switch_to(&self) -> SwitchTo {
-        SwitchTo::new(self.clone_without_capabilities())
+    fn switch_to(&self) -> SwitchTo {
+        SwitchTo::new(self.session())
     }
 
     /// Set the current window name.
     /// Useful for switching between windows/tabs using `driver.switch_to().window_name(name)`.
-    pub async fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
-        self.execute_script(&format!(r#"window.name = "{}""#, window_name))
-            .await?;
+    async fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
+        let script = format!(r#"window.name = "{}""#, window_name);
+        self.execute_script(&script).await?;
         Ok(())
-    }
-}
-
-impl Drop for WebDriver {
-    /// Close the current session when the WebDriver struct goes out of scope.
-    fn drop(&mut self) {
-        if self.quit_on_drop && !(*self.session_id).is_empty() {
-            if let Err(e) = block_on(self.quit()) {
-                error!("Failed to close session: {:?}", e);
-            }
-        }
     }
 }
 
 /// Helper struct for getting return values from scripts.
 /// See the examples for [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
 /// and [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script).
-pub struct ScriptRet {
-    driver: WebDriver,
+pub struct ScriptRet<'a> {
+    driver: WebDriverSession<'a>,
     value: Value,
 }
 
-impl ScriptRet {
+impl<'a> ScriptRet<'a> {
     /// Create a new ScriptRet. This is typically done automatically via
     /// [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
     /// or [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script)
-    pub fn new(driver: WebDriver, value: Value) -> Self {
+    pub fn new(driver: WebDriverSession<'a>, value: Value) -> Self {
         ScriptRet { driver, value }
     }
 
@@ -933,12 +917,12 @@ impl ScriptRet {
     /// Get a single WebElement return value.
     /// Your script must return only a single element for this to work.
     pub fn get_element(&self) -> WebDriverResult<WebElement> {
-        unwrap_element_async(self.driver.clone_without_capabilities(), &self.value)
+        unwrap_element_async(self.driver.clone(), &self.value)
     }
 
     /// Get a vec of WebElements from the return value.
     /// Your script must return an array of elements for this to work.
     pub fn get_elements(&self) -> WebDriverResult<Vec<WebElement>> {
-        unwrap_elements_async(&self.driver, &self.value)
+        unwrap_elements_async(self.driver.clone(), &self.value)
     }
 }

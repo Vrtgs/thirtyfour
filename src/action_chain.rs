@@ -1,3 +1,4 @@
+use crate::webdriver::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::{
         action::{ActionSource, KeyAction, PointerAction, PointerActionType},
@@ -5,7 +6,7 @@ use crate::{
         keys::TypingData,
     },
     error::WebDriverResult,
-    WebDriver, WebElement,
+    WebElement,
 };
 
 /// The ActionChain struct allows you to perform multiple input actions in
@@ -19,18 +20,18 @@ use crate::{
 /// ```ignore
 /// driver.action_chain().drag_and_drop_element(elem_src, elem_target).perform().await?;
 /// ```
-pub struct ActionChain {
-    driver: WebDriver,
+pub struct ActionChain<'a> {
+    driver: WebDriverSession<'a>,
     key_actions: ActionSource<KeyAction>,
     pointer_actions: ActionSource<PointerAction>,
 }
 
-impl ActionChain {
+impl<'a> ActionChain<'a> {
     /// Create a new ActionChain struct.
     ///
     /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
-    pub fn new(driver: WebDriver) -> Self {
+    pub fn new(driver: WebDriverSession<'a>) -> Self {
         ActionChain {
             driver,
             key_actions: ActionSource::<KeyAction>::new("key"),
@@ -50,8 +51,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -88,8 +88,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -116,8 +115,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -140,8 +138,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -170,8 +167,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -197,8 +193,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -225,8 +220,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -249,8 +243,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -278,8 +271,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -353,8 +345,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -383,8 +374,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -411,9 +401,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::Keys;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -448,9 +436,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::Keys;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -483,8 +469,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -513,8 +498,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -547,8 +531,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -579,8 +562,7 @@ impl ActionChain {
     /// # Example:
     ///
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, Keys, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -624,8 +606,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -652,8 +633,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -679,8 +659,7 @@ impl ActionChain {
     /// # Example:
     /// ```rust
     /// use thirtyfour::Keys;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -717,9 +696,7 @@ impl ActionChain {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::Keys;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]

@@ -1,18 +1,18 @@
+use crate::webdriver::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::{command::Command, connection_common::unwrap, keys::TypingData},
     error::WebDriverResult,
-    WebDriver,
 };
 
 /// Struct for managing alerts.
-pub struct Alert {
-    driver: WebDriver,
+pub struct Alert<'a> {
+    driver: WebDriverSession<'a>,
 }
 
-impl Alert {
+impl<'a> Alert<'a> {
     /// Create a new Alert struct. This is typically created internally
     /// via a call to `WebDriver::switch_to().alert()`.
-    pub fn new(driver: WebDriver) -> Self {
+    pub fn new(driver: WebDriverSession<'a>) -> Self {
         Alert { driver }
     }
 
@@ -25,8 +25,7 @@ impl Alert {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -52,8 +51,7 @@ impl Alert {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -77,8 +75,7 @@ impl Alert {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -104,8 +101,7 @@ impl Alert {
     /// You can specify anything that implements `Into<TypingData>`. This
     /// includes &str and String.
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -126,8 +122,7 @@ impl Alert {
     ///
     /// You can also send special key combinations like this:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, Keys, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]

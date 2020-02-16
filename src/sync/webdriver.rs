@@ -26,10 +26,11 @@ use crate::{
 /// This WebDriver struct encapsulates a synchronous Selenium WebDriver browser
 /// session. For the async driver, see [WebDriver](../struct.WebDriver.html).
 ///
+/// See the [WebDriverCommands](trait.WebDriverCommands.html) trait for WebDriver methods.
+///
 /// # Example:
 /// ```rust
-/// use thirtyfour::error::WebDriverResult;
-/// use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+/// use thirtyfour::sync::prelude::*;
 ///
 /// fn main() -> WebDriverResult<()> {
 ///     let caps = DesiredCapabilities::chrome();
@@ -42,19 +43,8 @@ use crate::{
 pub struct WebDriver {
     pub session_id: SessionId,
     conn: Arc<dyn RemoteConnectionSync>,
-    capabilities: Option<Value>,
+    capabilities: Value,
     quit_on_drop: bool,
-}
-
-impl Clone for WebDriver {
-    fn clone(&self) -> Self {
-        WebDriver {
-            session_id: self.session_id.clone(),
-            conn: self.conn.clone(),
-            capabilities: None,
-            quit_on_drop: false,
-        }
-    }
 }
 
 impl WebDriver {
@@ -62,7 +52,7 @@ impl WebDriver {
     ///
     /// # Example
     /// ```rust
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// let caps = DesiredCapabilities::chrome();
     /// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)
@@ -119,7 +109,7 @@ impl WebDriver {
         let driver = WebDriver {
             session_id,
             conn,
-            capabilities: Some(actual_capabilities),
+            capabilities: actual_capabilities,
             quit_on_drop: true,
         };
 
@@ -133,57 +123,98 @@ impl WebDriver {
         Ok(driver)
     }
 
-    /// Clone this WebDriver but without the DesiredCapabilities data.
-    /// This is used internally to share the webdriver connection with elements and other
-    /// structs that need to send requests using the same WebDriver session.
-    pub fn clone_without_capabilities(&self) -> Self {
-        WebDriver {
-            session_id: self.session_id.clone(),
-            conn: self.conn.clone(),
-            capabilities: None,
-            quit_on_drop: false,
-        }
+    /// Return a clone of the capabilities as returned by Selenium.
+    pub fn capabilities(&self) -> DesiredCapabilities {
+        DesiredCapabilities::new(self.capabilities.clone())
     }
+}
 
-    /// Convenience wrapper for executing a WebDriver command.
-    pub fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+impl WebDriverCommands for WebDriver {
+    fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
         self.conn.execute(&self.session_id, command)
     }
 
-    /// Return a clone of the capabilities as returned by Selenium.
-    pub fn capabilities(&self) -> Option<DesiredCapabilities> {
-        self.capabilities.clone().map(DesiredCapabilities::new)
+    fn session(&self) -> WebDriverSession {
+        WebDriverSession {
+            session_id: &self.session_id,
+            conn: self.conn.clone(),
+        }
+    }
+}
+
+impl Drop for WebDriver {
+    /// Close the current session when the WebDriver struct goes out of scope.
+    fn drop(&mut self) {
+        if self.quit_on_drop && !(*self.session_id).is_empty() {
+            if let Err(e) = self.quit() {
+                error!("Failed to close session: {:?}", e);
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct WebDriverSession<'a> {
+    pub session_id: &'a SessionId,
+    conn: Arc<dyn RemoteConnectionSync>,
+}
+
+impl<'a> Clone for WebDriverSession<'a> {
+    fn clone(&self) -> Self {
+        WebDriverSession {
+            session_id: self.session_id,
+            conn: self.conn.clone(),
+        }
+    }
+}
+
+impl<'a> WebDriverCommands for WebDriverSession<'a> {
+    fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+        self.conn.execute(&self.session_id, command)
     }
 
+    fn session(&self) -> WebDriverSession {
+        self.clone()
+    }
+}
+
+/// All browser-level W3C WebDriver commands are implemented under this trait.
+pub trait WebDriverCommands {
+    /// Convenience wrapper for running WebDriver commands.
+    fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value>;
+
+    /// Get the current session and connection.
+    fn session(&self) -> WebDriverSession;
+
     /// Close the current window.
-    pub fn close(&self) -> WebDriverResult<()> {
+    fn close(&self) -> WebDriverResult<()> {
         self.cmd(Command::CloseWindow).map(|_| ())
     }
 
     /// End the webdriver session.
-    pub fn quit(&self) -> WebDriverResult<()> {
+    fn quit(&self) -> WebDriverResult<()> {
         self.cmd(Command::DeleteSession).map(|_| ())
     }
 
     /// Navigate to the specified URL.
-    pub fn get<S: Into<String>>(&self, url: S) -> WebDriverResult<()> {
+    fn get<S: Into<String>>(&self, url: S) -> WebDriverResult<()> {
         self.cmd(Command::NavigateTo(url.into())).map(|_| ())
     }
 
     /// Get the current URL as a String.
-    pub fn current_url(&self) -> WebDriverResult<String> {
+    fn current_url(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetCurrentUrl)?;
         unwrap(&v["value"])
     }
 
     /// Get the page source as a String.
-    pub fn page_source(&self) -> WebDriverResult<String> {
+    fn page_source(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetPageSource)?;
         unwrap(&v["value"])
     }
 
     /// Get the page title as a String.
-    pub fn title(&self) -> WebDriverResult<String> {
+    fn title(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetTitle)?;
         unwrap(&v["value"])
     }
@@ -192,8 +223,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -206,9 +236,9 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
+    fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
         let v = self.cmd(Command::FindElement(by))?;
-        unwrap_element_sync(self.clone_without_capabilities(), &v["value"])
+        unwrap_element_sync(self.session(), &v["value"])
     }
 
     /// Search for all elements on the current page that match the specified
@@ -216,8 +246,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -230,18 +259,16 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
+    fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         let v = self.cmd(Command::FindElements(by))?;
-        unwrap_elements_sync(&self, &v["value"])
+        unwrap_elements_sync(self.session(), &v["value"])
     }
 
     /// Execute the specified Javascript synchronously and return the result.
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::ScriptArgs;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -262,21 +289,16 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn execute_script(&self, script: &str) -> WebDriverResult<ScriptRetSync> {
+    fn execute_script(&self, script: &str) -> WebDriverResult<ScriptRetSync> {
         let v = self.cmd(Command::ExecuteScript(script.to_owned(), Vec::new()))?;
-        Ok(ScriptRetSync::new(
-            self.clone_without_capabilities(),
-            v["value"].clone(),
-        ))
+        Ok(ScriptRetSync::new(self.session(), v["value"].clone()))
     }
 
     /// Execute the specified Javascript synchronously and return the result.
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::ScriptArgs;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -297,25 +319,20 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn execute_script_with_args(
+    fn execute_script_with_args(
         &self,
         script: &str,
         args: &ScriptArgs,
     ) -> WebDriverResult<ScriptRetSync> {
         let v = self.cmd(Command::ExecuteScript(script.to_owned(), args.get_args()))?;
-        Ok(ScriptRetSync::new(
-            self.clone_without_capabilities(),
-            v["value"].clone(),
-        ))
+        Ok(ScriptRetSync::new(self.session(), v["value"].clone()))
     }
 
     /// Execute the specified Javascrypt asynchronously and return the result.
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::ScriptArgs;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -341,21 +358,16 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn execute_async_script(&self, script: &str) -> WebDriverResult<ScriptRetSync> {
+    fn execute_async_script(&self, script: &str) -> WebDriverResult<ScriptRetSync> {
         let v = self.cmd(Command::ExecuteAsyncScript(script.to_owned(), Vec::new()))?;
-        Ok(ScriptRetSync::new(
-            self.clone_without_capabilities(),
-            v["value"].clone(),
-        ))
+        Ok(ScriptRetSync::new(self.session(), v["value"].clone()))
     }
 
     /// Execute the specified Javascrypt asynchronously and return the result.
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::ScriptArgs;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -381,7 +393,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn execute_async_script_with_args(
+    fn execute_async_script_with_args(
         &self,
         script: &str,
         args: &ScriptArgs,
@@ -390,20 +402,17 @@ impl WebDriver {
             script.to_owned(),
             args.get_args(),
         ))?;
-        Ok(ScriptRetSync::new(
-            self.clone_without_capabilities(),
-            v["value"].clone(),
-        ))
+        Ok(ScriptRetSync::new(self.session(), v["value"].clone()))
     }
 
     /// Get the current window handle.
-    pub fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
+    fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
         let v = self.cmd(Command::GetWindowHandle)?;
         unwrap::<String>(&v["value"]).map(WindowHandle::from)
     }
 
     /// Get all window handles for the current session.
-    pub fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
+    fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
         let v = self.cmd(Command::GetWindowHandles)?;
         let strings: Vec<String> = unwrap_vec(&v["value"])?;
         Ok(strings.iter().map(WindowHandle::from).collect())
@@ -413,8 +422,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -424,12 +432,12 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn maximize_window(&self) -> WebDriverResult<()> {
+    fn maximize_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::MaximizeWindow).map(|_| ())
     }
 
     /// Minimize the current window.
-    pub fn minimize_window(&self) -> WebDriverResult<()> {
+    fn minimize_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::MinimizeWindow).map(|_| ())
     }
 
@@ -437,8 +445,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -448,7 +455,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn fullscreen_window(&self) -> WebDriverResult<()> {
+    fn fullscreen_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::FullscreenWindow).map(|_| ())
     }
 
@@ -456,7 +463,7 @@ impl WebDriver {
     ///
     /// The returned Rect struct has members `x`, `y`, `width`, `height`,
     /// all i32.
-    pub fn get_window_rect(&self) -> WebDriverResult<Rect> {
+    fn get_window_rect(&self) -> WebDriverResult<Rect> {
         let v = self.cmd(Command::GetWindowRect)?;
         unwrap(&v["value"])
     }
@@ -468,8 +475,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// use thirtyfour::OptionRect;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -483,8 +489,7 @@ impl WebDriver {
     /// You can also convert from a Rect if you want to get the window size
     /// and modify it before setting it again.
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// use thirtyfour::OptionRect;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -495,7 +500,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
+    fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
         self.cmd(Command::SetWindowRect(rect)).map(|_| ())
     }
 
@@ -503,8 +508,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -516,7 +520,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn back(&self) -> WebDriverResult<()> {
+    fn back(&self) -> WebDriverResult<()> {
         self.cmd(Command::Back).map(|_| ())
     }
 
@@ -524,8 +528,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -539,7 +542,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn forward(&self) -> WebDriverResult<()> {
+    fn forward(&self) -> WebDriverResult<()> {
         self.cmd(Command::Forward).map(|_| ())
     }
 
@@ -547,8 +550,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -560,7 +562,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn refresh(&self) -> WebDriverResult<()> {
+    fn refresh(&self) -> WebDriverResult<()> {
         self.cmd(Command::Refresh).map(|_| ())
     }
 
@@ -568,8 +570,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// use thirtyfour::TimeoutConfiguration;
     /// use std::time::Duration;
     ///
@@ -590,7 +591,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_timeouts(&self) -> WebDriverResult<TimeoutConfiguration> {
+    fn get_timeouts(&self) -> WebDriverResult<TimeoutConfiguration> {
         let v = self.cmd(Command::GetTimeouts)?;
         unwrap(&v["value"])
     }
@@ -599,8 +600,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// use thirtyfour::TimeoutConfiguration;
     /// use std::time::Duration;
     ///
@@ -615,24 +615,24 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
+    fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
         self.cmd(Command::SetTimeouts(timeouts)).map(|_| ())
     }
 
     /// Set the implicit wait timeout.
-    pub fn implicitly_wait(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    fn implicitly_wait(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, None, Some(time_to_wait));
         self.set_timeouts(timeouts)
     }
 
     /// Set the script timeout.
-    pub fn set_script_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    fn set_script_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(Some(time_to_wait), None, None);
         self.set_timeouts(timeouts)
     }
 
     /// Set the page load timeout.
-    pub fn set_page_load_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    fn set_page_load_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, Some(time_to_wait), None);
         self.set_timeouts(timeouts)
     }
@@ -641,8 +641,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
@@ -662,17 +661,15 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn action_chain(&self) -> ActionChain {
-        ActionChain::new(self.clone_without_capabilities())
+    fn action_chain(&self) -> ActionChain {
+        ActionChain::new(self.session())
     }
 
     /// Get all cookies.
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -688,7 +685,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
+    fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
         let v = self.cmd(Command::GetAllCookies)?;
         unwrap_vec::<Cookie>(&v["value"])
     }
@@ -697,9 +694,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -712,7 +707,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
+    fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
         let v = self.cmd(Command::GetNamedCookie(name))?;
         unwrap::<Cookie>(&v["value"])
     }
@@ -721,9 +716,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -736,7 +729,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
+    fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
         self.cmd(Command::DeleteCookie(name)).map(|_| ())
     }
 
@@ -744,9 +737,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -760,7 +751,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn delete_all_cookies(&self) -> WebDriverResult<()> {
+    fn delete_all_cookies(&self) -> WebDriverResult<()> {
         self.cmd(Command::DeleteAllCookies).map(|_| ())
     }
 
@@ -768,9 +759,7 @@ impl WebDriver {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::Cookie;
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{DesiredCapabilities, sync::WebDriver};
+    /// # use thirtyfour::sync::prelude::*;
     /// # fn main() -> WebDriverResult<()> {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
@@ -782,19 +771,19 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
+    fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
         self.cmd(Command::AddCookie(cookie)).map(|_| ())
     }
 
     /// Take a screenshot of the current window and return it as a
     /// base64-encoded String.
-    pub fn screenshot_as_base64(&self) -> WebDriverResult<String> {
+    fn screenshot_as_base64(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::TakeScreenshot)?;
         unwrap(&v["value"])
     }
 
     /// Take a screenshot of the current window and return it as PNG bytes.
-    pub fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
+    fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
         let s = self.screenshot_as_base64()?;
         let bytes: Vec<u8> = decode(&s)?;
         Ok(bytes)
@@ -802,7 +791,7 @@ impl WebDriver {
 
     /// Take a screenshot of the current window and write it to the specified
     /// filename.
-    pub fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
+    fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.screenshot_as_png()?;
         let mut file = File::create(path)?;
         file.write_all(&png)?;
@@ -810,42 +799,31 @@ impl WebDriver {
     }
 
     /// Return a SwitchTo struct for switching to another window or frame.
-    pub fn switch_to(&self) -> SwitchTo {
-        SwitchTo::new(self.clone_without_capabilities())
+    fn switch_to(&self) -> SwitchTo {
+        SwitchTo::new(self.session())
     }
 
     /// Set the current window name.
     /// Useful for switching between windows/tabs using `driver.switch_to().window_name(name)`.
-    pub fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
+    fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
         self.execute_script(&format!(r#"window.name = "{}""#, window_name))?;
         Ok(())
-    }
-}
-
-impl Drop for WebDriver {
-    /// Close the current session when the WebDriver struct goes out of scope.
-    fn drop(&mut self) {
-        if self.quit_on_drop && !(*self.session_id).is_empty() {
-            if let Err(e) = self.quit() {
-                error!("Failed to close session: {:?}", e);
-            }
-        }
     }
 }
 
 /// Helper struct for getting return values from scripts.
 /// See the examples for [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
 /// and [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script).
-pub struct ScriptRetSync {
-    driver: WebDriver,
+pub struct ScriptRetSync<'a> {
+    driver: WebDriverSession<'a>,
     value: Value,
 }
 
-impl ScriptRetSync {
+impl<'a> ScriptRetSync<'a> {
     /// Create a new ScriptRetSync. This is typically done automatically via
     /// [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
     /// or [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script)
-    pub fn new(driver: WebDriver, value: Value) -> Self {
+    pub fn new(driver: WebDriverSession<'a>, value: Value) -> Self {
         ScriptRetSync { driver, value }
     }
 
@@ -865,12 +843,12 @@ impl ScriptRetSync {
     /// Get a single WebElement return value.
     /// Your script must return only a single element for this to work.
     pub fn get_element(&self) -> WebDriverResult<WebElement> {
-        unwrap_element_sync(self.driver.clone_without_capabilities(), &self.value)
+        unwrap_element_sync(self.driver.clone(), &self.value)
     }
 
     /// Get a vec of WebElements from the return value.
     /// Your script must return an array of elements for this to work.
     pub fn get_elements(&self) -> WebDriverResult<Vec<WebElement>> {
-        unwrap_elements_sync(&self.driver, &self.value)
+        unwrap_elements_sync(self.driver.clone(), &self.value)
     }
 }

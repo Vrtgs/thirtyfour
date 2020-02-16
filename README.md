@@ -77,8 +77,7 @@ To run this example:
 NOTE: This example does not make use of concurrency, as it is only a demonstration of how to write a simple test using `async/.await` syntax.
 
 ```rust
-use thirtyfour::error::WebDriverResult;
-use thirtyfour::{By, DesiredCapabilities, WebDriver};
+use thirtyfour::prelude::*;
 use tokio;
 
 #[tokio::main]
@@ -115,8 +114,7 @@ To run this example:
     cargo run --example sync
 
 ```rust
-use thirtyfour::error::WebDriverResult;
-use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+use thirtyfour::sync::prelude::*;
 
 fn main() -> WebDriverResult<()> {
      let caps = DesiredCapabilities::chrome();
@@ -143,6 +141,26 @@ fn main() -> WebDriverResult<()> {
      Ok(())
 }
 ```
+
+## Lifetimes
+
+As of version 0.8.0, `thirtyfour` uses lifetimes on the SessionId in
+the WebDriver struct, and all derived structs will receive an
+immutable reference to this SessionId. This provides a compile-time
+guarantee that no element or alert struct (for example) will outlast the
+browser, and should prevent issues where something attempts to send
+a command on a session that has already been closed.
+
+Note also that the WebDriver struct will attempt to close the
+session / browser on Drop, and hence this struct cannot be cloned.
+There are ways to allow cloning, for example, by making sure none of
+the clones will attempt to close the session on Drop. I'm not yet
+convinced this is a requirement. Please raise an issue if you need this
+functionality, and explain your use case.
+
+By embedding a reference to the actual WebDriverSession inside each
+struct such as WebElement, this enables things such as easily adding
+WebElement methods that run JavaScript internally.
 
 ## Running the tests for `thirtyfour`, including doctests
 

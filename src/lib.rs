@@ -39,8 +39,7 @@
 //! ### Async example:
 //!
 //! ```rust
-//! use thirtyfour::error::WebDriverResult;
-//! use thirtyfour::{By, DesiredCapabilities, WebDriver};
+//! use thirtyfour::prelude::*;
 //! use tokio;
 //!
 //! #[tokio::main]
@@ -78,8 +77,7 @@
 //! ### Sync example:
 //!
 //! ```rust
-//! use thirtyfour::error::WebDriverResult;
-//! use thirtyfour::{By, DesiredCapabilities, sync::WebDriver};
+//! use thirtyfour::sync::prelude::*;
 //!
 //! fn main() -> WebDriverResult<()> {
 //!     let caps = DesiredCapabilities::chrome();
@@ -129,8 +127,18 @@ pub use common::{
 };
 pub use connection_async::*;
 pub use switch_to::SwitchTo;
-pub use webdriver::{ScriptRet, WebDriver};
+pub use webdriver::{ScriptRet, WebDriver, WebDriverCommands};
 pub use webelement::WebElement;
+
+// Allow importing the common async structs via `use thirtyfour::prelude::*`.
+pub mod prelude {
+    pub use crate::alert::Alert;
+    pub use crate::error::WebDriverResult;
+    pub use crate::switch_to::SwitchTo;
+    pub use crate::webdriver::{ScriptRet, WebDriver, WebDriverCommands};
+    pub use crate::webelement::WebElement;
+    pub use crate::{By, Cookie, DesiredCapabilities, Keys, ScriptArgs, TypingData};
+}
 
 pub mod action_chain;
 mod alert;
@@ -157,14 +165,24 @@ pub mod common {
     pub mod scriptargs;
     pub mod types;
 }
+// Allow importing the common sync structs via `use thirtyfour::sync::*`.
 pub mod sync {
     pub use alert::Alert;
     pub use connection_sync::*;
     pub use switch_to::SwitchTo;
-    pub use webdriver::{ScriptRetSync, WebDriver};
+    pub use webdriver::{ScriptRetSync, WebDriver, WebDriverCommands};
     pub use webelement::WebElement;
 
-    pub mod action_chain;
+    pub mod prelude {
+        pub use crate::error::WebDriverResult;
+        pub use crate::sync::alert::Alert;
+        pub use crate::sync::switch_to::SwitchTo;
+        pub use crate::sync::webdriver::{ScriptRetSync, WebDriver, WebDriverCommands};
+        pub use crate::sync::webelement::WebElement;
+        pub use crate::{By, Cookie, DesiredCapabilities, Keys, ScriptArgs, TypingData};
+    }
+
+    mod action_chain;
     mod alert;
     mod connection_sync;
     mod switch_to;

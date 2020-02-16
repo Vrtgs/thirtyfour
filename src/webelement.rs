@@ -5,6 +5,7 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use tokio::{fs::File, prelude::*};
 
 use crate::common::command::MAGIC_ELEMENTID;
+use crate::webdriver::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::{
         command::Command,
@@ -13,27 +14,27 @@ use crate::{
         types::{ElementRect, ElementRef},
     },
     error::WebDriverResult,
-    By, ElementId, WebDriver,
+    By, ElementId,
 };
 
 /// Unwrap the raw JSON into a WebElement struct.
-pub fn unwrap_element_async(
-    driver: WebDriver,
+pub fn unwrap_element_async<'a>(
+    driver: WebDriverSession<'a>,
     value: &serde_json::Value,
-) -> WebDriverResult<WebElement> {
+) -> WebDriverResult<WebElement<'a>> {
     let elem_id: ElementRef = serde_json::from_value(value.clone())?;
     Ok(WebElement::new(driver, ElementId::from(elem_id.id)))
 }
 
 /// Unwrap the raw JSON into a Vec of WebElement structs.
-pub fn unwrap_elements_async(
-    driver: &WebDriver,
+pub fn unwrap_elements_async<'a>(
+    driver: WebDriverSession<'a>,
     value: &serde_json::Value,
-) -> WebDriverResult<Vec<WebElement>> {
+) -> WebDriverResult<Vec<WebElement<'a>>> {
     let values: Vec<ElementRef> = serde_json::from_value(value.clone())?;
     Ok(values
         .into_iter()
-        .map(|x| WebElement::new(driver.clone_without_capabilities(), ElementId::from(x.id)))
+        .map(|x| WebElement::new(driver.clone(), ElementId::from(x.id)))
         .collect())
 }
 
@@ -44,8 +45,7 @@ pub fn unwrap_elements_async(
 ///
 /// # Example:
 /// ```rust
-/// # use thirtyfour::error::WebDriverResult;
-/// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+/// # use thirtyfour::prelude::*;
 /// # use tokio;
 /// #
 /// # #[tokio::main]
@@ -62,8 +62,7 @@ pub fn unwrap_elements_async(
 ///
 /// You can also search for a child element of another element as follows:
 /// ```rust
-/// # use thirtyfour::error::WebDriverResult;
-/// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+/// # use thirtyfour::prelude::*;
 /// # use tokio;
 /// #
 /// # #[tokio::main]
@@ -84,18 +83,18 @@ pub fn unwrap_elements_async(
 /// input to an element using the `send_keys()` method.
 ///
 #[derive(Debug, Clone)]
-pub struct WebElement {
+pub struct WebElement<'a> {
     pub element_id: ElementId,
-    driver: WebDriver,
+    driver: WebDriverSession<'a>,
 }
 
-impl<'a> WebElement {
+impl<'a> WebElement<'a> {
     /// Create a new WebElement struct.
     ///
     /// Typically you would not call this directly. WebElement structs are
     /// usually constructed by calling one of the find_element*() methods
     /// either on WebDriver or another WebElement.
-    pub fn new(driver: WebDriver, element_id: ElementId) -> Self {
+    pub fn new(driver: WebDriverSession<'a>, element_id: ElementId) -> Self {
         WebElement { element_id, driver }
     }
 
@@ -191,8 +190,7 @@ impl<'a> WebElement {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -208,7 +206,7 @@ impl<'a> WebElement {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement> {
+    pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement<'a>> {
         let v = self
             .cmd(Command::FindElementFromElement(&self.element_id, by))
             .await?;
@@ -220,8 +218,7 @@ impl<'a> WebElement {
     ///
     /// # Example:
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -238,11 +235,11 @@ impl<'a> WebElement {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn find_elements(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement>> {
+    pub async fn find_elements(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement<'a>>> {
         let v = self
             .cmd(Command::FindElementsFromElement(&self.element_id, by))
             .await?;
-        unwrap_elements_async(&self.driver, &v["value"])
+        unwrap_elements_async(self.driver.clone(), &v["value"])
     }
 
     /// Send the specified input.
@@ -251,8 +248,7 @@ impl<'a> WebElement {
     /// You can specify anything that implements `Into<TypingData>`. This
     /// includes &str and String.
     /// ```rust
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -270,9 +266,7 @@ impl<'a> WebElement {
     ///
     /// You can also send special key combinations like this:
     /// ```rust
-    /// use thirtyfour::{Keys, TypingData};
-    /// # use thirtyfour::error::WebDriverResult;
-    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use thirtyfour::prelude::*;
     /// # use tokio;
     /// #
     /// # #[tokio::main]
@@ -324,7 +318,7 @@ impl<'a> WebElement {
     }
 }
 
-impl fmt::Display for WebElement {
+impl<'a> fmt::Display for WebElement<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -334,7 +328,7 @@ impl fmt::Display for WebElement {
     }
 }
 
-impl Serialize for WebElement {
+impl<'a> Serialize for WebElement<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
