@@ -252,11 +252,56 @@ impl WebDriver {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     // Use find_element() to wait for the page to load.
+    /// #     driver.find_element(By::Id("button1")).await?;
+    /// let ret = driver.execute_script(r#"
+    ///     let elem = document.getElementById("button1");
+    ///     elem.click();
+    ///     return elem;
+    ///     "#
+    /// ).await?;
+    /// let elem_out = ret.get_element()?;
+    /// assert_eq!(elem_out.text().await?, "BUTTON 1");
+    /// let elem = driver.find_element(By::Id("button-result")).await?;
+    /// assert_eq!(elem.text().await?, "Button 1 clicked");
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub async fn execute_script(&self, script: &str) -> WebDriverResult<ScriptRet> {
+        let v = self
+            .conn
+            .execute(Command::ExecuteScript(
+                &self.session_id,
+                script.to_owned(),
+                Vec::new(),
+            ))
+            .await?;
+        Ok(ScriptRet::new(
+            self.conn.clone(),
+            self.session_id.clone(),
+            v["value"].clone(),
+        ))
+    }
+
+    /// Execute the specified Javascript synchronously and return the result.
+    ///
+    /// # Example:
+    /// ```rust
+    /// use thirtyfour::ScriptArgs;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// let mut args = ScriptArgs::new();
     /// args.push(elem.clone())?;
     /// args.push("TESTING")?;
-    /// let ret = driver.execute_script(r#"
+    /// let ret = driver.execute_script_with_args(r#"
     ///     arguments[0].innerHTML = arguments[1];
     ///     return arguments[0];
     ///     "#, &args
@@ -267,7 +312,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn execute_script(
+    pub async fn execute_script_with_args(
         &self,
         script: &str,
         args: &ScriptArgs,
@@ -301,11 +346,61 @@ impl WebDriver {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #     driver.get("http://webappdemo").await?;
+    /// #     // Use find_element() to wait for the page to load.
+    /// #     driver.find_element(By::Id("button1")).await?;
+    /// let ret = driver.execute_async_script(r#"
+    ///     // Selenium automatically provides an extra argument which is a
+    ///     // function that receives the return value(s).
+    ///     let done = arguments[0];
+    ///     window.setTimeout(() => {
+    ///         let elem = document.getElementById("button1");
+    ///         elem.click();
+    ///         done(elem);
+    ///     }, 1000);
+    ///     "#
+    /// ).await?;
+    /// let elem_out = ret.get_element()?;
+    /// assert_eq!(elem_out.text().await?, "BUTTON 1");
+    /// let elem = driver.find_element(By::Id("button-result")).await?;
+    /// assert_eq!(elem.text().await?, "Button 1 clicked");
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub async fn execute_async_script(&self, script: &str) -> WebDriverResult<ScriptRet> {
+        let v = self
+            .conn
+            .execute(Command::ExecuteAsyncScript(
+                &self.session_id,
+                script.to_owned(),
+                Vec::new(),
+            ))
+            .await?;
+        Ok(ScriptRet::new(
+            self.conn.clone(),
+            self.session_id.clone(),
+            v["value"].clone(),
+        ))
+    }
+
+    /// Execute the specified Javascrypt asynchronously and return the result.
+    ///
+    /// # Example:
+    /// ```rust
+    /// use thirtyfour::ScriptArgs;
+    /// # use thirtyfour::error::WebDriverResult;
+    /// # use thirtyfour::{By, DesiredCapabilities, WebDriver};
+    /// # use tokio;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #     driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// let mut args = ScriptArgs::new();
     /// args.push(elem.clone())?;
     /// args.push("TESTING")?;
-    /// let ret = driver.execute_async_script(r#"
+    /// let ret = driver.execute_async_script_with_args(r#"
     ///     // Selenium automatically provides an extra argument which is a
     ///     // function that receives the return value(s).
     ///     let done = arguments[2];
@@ -321,7 +416,7 @@ impl WebDriver {
     /// #     Ok(())
     /// # }
     /// ```
-    pub async fn execute_async_script(
+    pub async fn execute_async_script_with_args(
         &self,
         script: &str,
         args: &ScriptArgs,
@@ -848,6 +943,14 @@ impl WebDriver {
     /// Return a SwitchTo struct for switching to another window or frame.
     pub fn switch_to(&self) -> SwitchTo {
         SwitchTo::new(self.session_id.clone(), self.conn.clone())
+    }
+
+    /// Set the current window name.
+    /// Useful for switching between windows/tabs using `driver.switch_to().window_name(name)`.
+    pub async fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
+        self.execute_script(&format!(r#"window.name = "{}""#, window_name))
+            .await?;
+        Ok(())
     }
 }
 

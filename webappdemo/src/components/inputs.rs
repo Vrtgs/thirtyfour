@@ -1,14 +1,13 @@
-use yew::{html, Callback, ClickEvent, Component, ComponentLink, Html, InputData, ShouldRender};
+use yew::{html, Component, ComponentLink, Html, InputData, ShouldRender};
 
 pub struct InputComponent {
+    link: ComponentLink<Self>,
     label: String,
     value: String,
-    oninput: Callback<InputData>,
-    onclick: Callback<ClickEvent>,
 }
 
 pub enum InputMsg {
-    GotInput(String),
+    GotInput(InputData),
     Click,
 }
 
@@ -18,17 +17,16 @@ impl Component for InputComponent {
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         InputComponent {
+            link,
             label: String::new(),
             value: String::new(),
-            oninput: link.callback(|e: InputData| InputMsg::GotInput(e.value)),
-            onclick: link.callback(|_| InputMsg::Click),
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            InputMsg::GotInput(new_value) => {
-                self.value = new_value;
+            InputMsg::GotInput(e) => {
+                self.value = e.value;
                 true // Indicate that the Component should re-render
             }
             InputMsg::Click => {
@@ -46,11 +44,17 @@ impl Component for InputComponent {
                     <br /><br />
                 </div>
                 <div class="pure-u-1-6">
-                    <input type="text" name="input1" oninput=&self.oninput placeholder="Type text here" size="15" maxlength="20">{&self.value}</input>
+                    <input type="text" name="input1"
+                        oninput={self.link.callback(|e| InputMsg::GotInput(e))}
+                        placeholder="Type text here"
+                        size="15"
+                        maxlength="20">
+                        {&self.value}
+                    </input>
                 </div>
                 <div class="pure-u-1-6">
                     <button class="pure-button" id="button-set"
-                        onclick=&self.onclick>
+                        onclick={self.link.callback(|_| InputMsg::Click)}>
                         { "SET VALUE" }
                     </button>
                 </div>

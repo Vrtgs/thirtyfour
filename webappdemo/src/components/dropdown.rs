@@ -1,10 +1,9 @@
-use yew::{html, Callback, ClickEvent, Component, ComponentLink, Html, ShouldRender};
+use yew::{html, Component, ComponentLink, Html, ShouldRender};
 
 pub struct DropdownComponent {
+    link: ComponentLink<Self>,
     current: String,
     label: String,
-    on_select1: Callback<ClickEvent>,
-    on_select2: Callback<ClickEvent>,
 }
 
 pub enum DropdownMsg {
@@ -18,10 +17,9 @@ impl Component for DropdownComponent {
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         DropdownComponent {
+            link,
             current: String::from("Select"),
             label: String::from("None"),
-            on_select1: link.callback(|_| DropdownMsg::SelectOption1),
-            on_select2: link.callback(|_| DropdownMsg::SelectOption2),
         }
     }
 
@@ -54,10 +52,18 @@ impl Component for DropdownComponent {
                                 <a href="#" id="menuLink1" class="pure-menu-link">{&self.current}</a>
                                 <ul class="pure-menu-children">
                                     <li class="pure-menu-item">
-                                        <a href="#" class="pure-menu-link" id="option1" onclick=&self.on_select1>{"Option 1"}</a>
+                                        <a href="#" class="pure-menu-link"
+                                            id="option1"
+                                            onclick={self.link.callback(|_| DropdownMsg::SelectOption1)}>
+                                            {"Option 1"}
+                                        </a>
                                     </li>
                                     <li class="pure-menu-item">
-                                        <a href="#" class="pure-menu-link" id="option2" onclick=&self.on_select2>{"Option 2"}</a>
+                                        <a href="#" class="pure-menu-link"
+                                            id="option2"
+                                            onclick={self.link.callback(|_| DropdownMsg::SelectOption2)}>
+                                            {"Option 2"}
+                                        </a>
                                     </li>
                                 </ul>
                             </li>

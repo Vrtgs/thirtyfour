@@ -1,19 +1,9 @@
 use stdweb::web::event::IEvent;
-use yew::{
-    html, Callback, ClickEvent, Component, ComponentLink, ContextMenuEvent, DoubleClickEvent, Html,
-    MouseDownEvent, ShouldRender,
-};
+use yew::{html, Component, ComponentLink, ContextMenuEvent, Html, ShouldRender};
 
 pub struct ButtonComponent {
+    link: ComponentLink<Self>,
     label: String,
-    ondown_button1: Callback<MouseDownEvent>,
-    ondown_button2: Callback<MouseDownEvent>,
-    onclick_button1: Callback<ClickEvent>,
-    onclick_button2: Callback<ClickEvent>,
-    oncontextclick_button1: Callback<ContextMenuEvent>,
-    oncontextclick_button2: Callback<ContextMenuEvent>,
-    ondoubleclick_button1: Callback<DoubleClickEvent>,
-    ondoubleclick_button2: Callback<DoubleClickEvent>,
 }
 
 pub enum ButtonMsg {
@@ -21,8 +11,8 @@ pub enum ButtonMsg {
     ButtonDown2,
     ClickButton1,
     ClickButton2,
-    ContextClickButton1,
-    ContextClickButton2,
+    ContextClickButton1(ContextMenuEvent),
+    ContextClickButton2(ContextMenuEvent),
     DoubleClickButton1,
     DoubleClickButton2,
 }
@@ -33,23 +23,8 @@ impl Component for ButtonComponent {
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         ButtonComponent {
+            link,
             label: String::from("None"),
-            ondown_button1: link.callback(|_| ButtonMsg::ButtonDown1),
-            ondown_button2: link.callback(|_| ButtonMsg::ButtonDown2),
-            onclick_button1: link.callback(|_| ButtonMsg::ClickButton1),
-            onclick_button2: link.callback(|_| ButtonMsg::ClickButton2),
-            oncontextclick_button1: link.callback(|e: ContextMenuEvent| {
-                e.prevent_default();
-                e.stop_propagation();
-                ButtonMsg::ContextClickButton1
-            }),
-            oncontextclick_button2: link.callback(|e: ContextMenuEvent| {
-                e.prevent_default();
-                e.stop_propagation();
-                ButtonMsg::ContextClickButton2
-            }),
-            ondoubleclick_button1: link.callback(|_| ButtonMsg::DoubleClickButton1),
-            ondoubleclick_button2: link.callback(|_| ButtonMsg::DoubleClickButton2),
         }
     }
 
@@ -71,11 +46,15 @@ impl Component for ButtonComponent {
                 self.label = String::from("Button 2 clicked");
                 true
             }
-            ButtonMsg::ContextClickButton1 => {
+            ButtonMsg::ContextClickButton1(e) => {
+                e.prevent_default();
+                e.stop_propagation();
                 self.label = String::from("Button 1 right-clicked");
                 true
             }
-            ButtonMsg::ContextClickButton2 => {
+            ButtonMsg::ContextClickButton2(e) => {
+                e.prevent_default();
+                e.stop_propagation();
                 self.label = String::from("Button 2 right-clicked");
                 true
             }
@@ -99,19 +78,19 @@ impl Component for ButtonComponent {
                 </div>
                 <div class="pure-u-1-6">
                     <button class="pure-button pure-button-primary" id="button1"
-                        onmousedown=&self.ondown_button1
-                        onclick=&self.onclick_button1
-                        oncontextmenu=&self.oncontextclick_button1
-                        ondoubleclick=&self.ondoubleclick_button1>
+                        onmousedown={self.link.callback(|_| ButtonMsg::ButtonDown1)}
+                        onclick={self.link.callback(|_| ButtonMsg::ClickButton1)}
+                        oncontextmenu={self.link.callback(|e| ButtonMsg::ContextClickButton1(e))}
+                        ondoubleclick={self.link.callback(|_| ButtonMsg::DoubleClickButton1)}>
                         { "BUTTON 1" }
                     </button>
                 </div>
                 <div class="pure-u-1-6">
                     <button class="pure-button" id="button2"
-                        onmousedown=&self.ondown_button2
-                        onclick=&self.onclick_button2
-                        oncontextmenu=&self.oncontextclick_button2
-                        ondoubleclick=&self.ondoubleclick_button2>
+                        onmousedown={self.link.callback(|_| ButtonMsg::ButtonDown2)}
+                        onclick={self.link.callback(|_| ButtonMsg::ClickButton2)}
+                        oncontextmenu={self.link.callback(|e| ButtonMsg::ContextClickButton2(e))}
+                        ondoubleclick={self.link.callback(|_| ButtonMsg::DoubleClickButton2)}>
                         { "BUTTON 2" }
                     </button>
                 </div>

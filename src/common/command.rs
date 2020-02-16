@@ -211,10 +211,10 @@ impl<'a> Command<'a> {
                 RequestMethod::Post,
                 format!("/session/{}/frame", session_id),
             )
-            .add_body(json!({
+            .add_body(json!({"id": {
                 "ELEMENT": element_id.to_string(),
                 MAGIC_ELEMENTID: element_id.to_string()
-            })),
+            }})),
             Command::SwitchToParentFrame(session_id) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/frame/parent", session_id),

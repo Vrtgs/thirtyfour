@@ -1,6 +1,6 @@
 #![recursion_limit = "512"]
 
-use yew::{html, Callback, ClickEvent, Component, ComponentLink, Html, ShouldRender};
+use yew::{html, Component, ComponentLink, Html, ShouldRender};
 
 use crate::components::alerts::AlertComponent;
 use crate::components::buttons::ButtonComponent;
@@ -22,15 +22,12 @@ enum Page {
     TextInput,
     Alerts,
     DragDrop,
+    IFrame,
 }
 
 struct App {
+    link: ComponentLink<Self>,
     page: Page,
-    onclick_buttons: Callback<ClickEvent>,
-    onclick_dropdown: Callback<ClickEvent>,
-    onclick_textinput: Callback<ClickEvent>,
-    onclick_alerts: Callback<ClickEvent>,
-    onclick_dragdrop: Callback<ClickEvent>,
 }
 
 enum Msg {
@@ -39,6 +36,7 @@ enum Msg {
     TextInput,
     Alerts,
     DragDrop,
+    IFrame,
 }
 
 impl Component for App {
@@ -47,12 +45,8 @@ impl Component for App {
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         App {
+            link,
             page: Page::Buttons,
-            onclick_buttons: link.callback(|_| Msg::Buttons),
-            onclick_dropdown: link.callback(|_| Msg::Dropdown),
-            onclick_textinput: link.callback(|_| Msg::TextInput),
-            onclick_alerts: link.callback(|_| Msg::Alerts),
-            onclick_dragdrop: link.callback(|_| Msg::DragDrop),
         }
     }
 
@@ -78,6 +72,10 @@ impl Component for App {
                 self.page = Page::DragDrop;
                 true
             }
+            Msg::IFrame => {
+                self.page = Page::IFrame;
+                true
+            }
         }
     }
 
@@ -88,6 +86,12 @@ impl Component for App {
             Page::TextInput => html! { <InputComponent /> },
             Page::Alerts => html! { <AlertComponent /> },
             Page::DragDrop => html! { <DragDropComponent /> },
+            Page::IFrame => html! {
+                <iframe
+                    src="/" width="100%" height="400px"
+                    id="iframeid1" name="iframename1">
+                </iframe>
+            },
         };
 
         html! {
@@ -110,32 +114,38 @@ impl Component for App {
                     </div>
                     <div class="pure-u-1-6">
                         <button class="pure-button" id="pagebuttons"
-                            onclick=&self.onclick_buttons>
+                            onclick={self.link.callback(|_| Msg::Buttons)}>
                             { "BUTTONS" }
                         </button>
                     </div>
                     <div class="pure-u-1-6">
                         <button class="pure-button" id="pagedropdown"
-                            onclick=&self.onclick_dropdown>
+                            onclick={self.link.callback(|_| Msg::Dropdown)}>
                             { "DROPDOWN" }
                         </button>
                     </div>
                     <div class="pure-u-1-6">
                         <button class="pure-button" id="pagetextinput"
-                            onclick=&self.onclick_textinput>
+                            onclick={self.link.callback(|_| Msg::TextInput)}>
                             { "TEXTINPUT" }
                         </button>
                     </div>
                     <div class="pure-u-1-6">
                         <button class="pure-button" id="pagealerts"
-                            onclick=&self.onclick_alerts>
+                            onclick={self.link.callback(|_| Msg::Alerts)}>
                             { "ALERTS" }
                         </button>
                     </div>
                     <div class="pure-u-1-6">
                         <button class="pure-button" id="pagedragdrop"
-                            onclick=&self.onclick_dragdrop>
+                            onclick={self.link.callback(|_| Msg::DragDrop)}>
                             { "DRAG AND DROP" }
+                        </button>
+                    </div>
+                    <div class="pure-u-1-6">
+                        <button class="pure-button" id="pageiframe"
+                            onclick={self.link.callback(|_| Msg::IFrame)}>
+                            { "IFRAME" }
                         </button>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 use stdweb::{js, Value};
-use yew::{html, Callback, ClickEvent, Component, ComponentLink, Html, ShouldRender};
+use yew::{html, Component, ComponentLink, Html, ShouldRender};
 
 pub fn show_alert(message: String) {
     js! { alert(@{message}); };
@@ -20,10 +20,8 @@ pub fn show_prompt(message: String, default: String) -> String {
 }
 
 pub struct AlertComponent {
+    link: ComponentLink<Self>,
     label: String,
-    onclick_button1: Callback<ClickEvent>,
-    onclick_button2: Callback<ClickEvent>,
-    onclick_button3: Callback<ClickEvent>,
 }
 
 pub enum AlertMsg {
@@ -38,10 +36,8 @@ impl Component for AlertComponent {
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         AlertComponent {
+            link,
             label: String::from("None"),
-            onclick_button1: link.callback(|_| AlertMsg::ClickButton1),
-            onclick_button2: link.callback(|_| AlertMsg::ClickButton2),
-            onclick_button3: link.callback(|_| AlertMsg::ClickButton3),
         }
     }
 
@@ -77,19 +73,19 @@ impl Component for AlertComponent {
                 </div>
                 <div class="pure-u-1-6">
                     <button class="pure-button pure-button-primary" id="alertbutton1"
-                        onclick=&self.onclick_button1>
+                        onclick={self.link.callback(|_| AlertMsg::ClickButton1)}>
                         { "ALERT 1" }
                     </button>
                 </div>
                 <div class="pure-u-1-6">
                     <button class="pure-button" id="alertbutton2"
-                        onclick=&self.onclick_button2>
+                        onclick={self.link.callback(|_| AlertMsg::ClickButton2)}>
                         { "ALERT 2" }
                     </button>
                 </div>
                 <div class="pure-u-1-6">
                     <button class="pure-button" id="alertbutton3"
-                        onclick=&self.onclick_button3>
+                        onclick={self.link.callback(|_| AlertMsg::ClickButton3)}>
                         { "ALERT 3" }
                     </button>
                 </div>
