@@ -13,7 +13,7 @@ use crate::{
         types::{ElementId, ElementRect, ElementRef},
     },
     error::WebDriverResult,
-    By,
+    By, ScriptArgs,
 };
 
 /// Unwrap the raw JSON into a WebElement struct.
@@ -106,18 +106,84 @@ impl<'a> WebElement<'a> {
     }
 
     /// Get the tag name for this WebElement.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// let elem = driver.find_element(By::Id("button1"))?;
+    /// assert_eq!(elem.tag_name()?, "button");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn tag_name(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementTagName(&self.element_id))?;
         unwrap(&v["value"])
     }
 
+    /// Get the class name for this WebElement.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// let elem = driver.find_element(By::Id("button1"))?;
+    /// let class_name = elem.class_name()?;
+    /// #     assert!(class_name.contains("pure-button"));
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub fn class_name(&self) -> WebDriverResult<String> {
+        self.get_attribute("class")
+    }
+
     /// Get the text contents for this WebElement.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("button1"))?.click()?;
+    /// let elem = driver.find_element(By::Id("button-result"))?;
+    /// let text = elem.text()?;
+    /// #     assert_eq!(text, "Button 1 clicked");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn text(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementText(&self.element_id))?;
         unwrap(&v["value"])
     }
 
     /// Click the WebElement.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// let elem = driver.find_element(By::Id("button1"))?;
+    /// elem.click()?;
+    /// #     let elem = driver.find_element(By::Id("button-result"))?;
+    /// #     assert_eq!(elem.text()?, "Button 1 clicked");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn click(&self) -> WebDriverResult<()> {
         self.cmd(Command::ElementClick(&self.element_id))?;
         Ok(())
@@ -282,6 +348,55 @@ impl<'a> WebElement<'a> {
         let png = self.screenshot_as_png()?;
         let mut file = File::create(path)?;
         file.write_all(&png)?;
+        Ok(())
+    }
+
+    /// Focus this WebElement using JavaScript.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
+    /// let elem = driver.find_element(By::Name("input1"))?;
+    /// elem.focus()?;
+    /// #     driver.action_chain().send_keys("selenium").perform()?;
+    /// #     assert_eq!(elem.text()?, "selenium");
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub fn focus(&self) -> WebDriverResult<()> {
+        let mut args = ScriptArgs::new();
+        args.push(&self)?;
+        self.driver
+            .execute_script_with_args(r#"arguments[0].focus();"#, &args)?;
+        Ok(())
+    }
+
+    /// Scroll this element into view using JavaScript.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// let elem = driver.find_element(By::Id("button1"))?;
+    /// elem.scroll_into_view()?;
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub fn scroll_into_view(&self) -> WebDriverResult<()> {
+        let mut args = ScriptArgs::new();
+        args.push(&self)?;
+        self.driver
+            .execute_script_with_args(r#"arguments[0].scrollIntoView();"#, &args)?;
         Ok(())
     }
 }

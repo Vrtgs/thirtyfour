@@ -11,6 +11,11 @@ use crate::{
     SessionId,
 };
 
+// NOTE: The remote connection is intended to be pluggable in order to facilitate
+//       switching to a different HTTP client if desired. For example this should
+//       allow switching to a client such as `surf` in order to work with an
+//       async-std runtime rather than tokio.
+
 #[async_trait]
 pub trait RemoteConnectionAsync: Debug + Send + Sync {
     async fn execute(

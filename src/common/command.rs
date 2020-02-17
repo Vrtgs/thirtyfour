@@ -309,7 +309,6 @@ impl<'a> Command<'a> {
                 RequestMethod::Get,
                 format!("/session/{}/element/{}/text", session_id, element_id),
             ),
-
             Command::GetElementTagName(element_id) => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/element/{}/name", session_id, element_id),

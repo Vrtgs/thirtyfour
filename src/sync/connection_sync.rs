@@ -9,6 +9,9 @@ use crate::{
     SessionId,
 };
 
+// NOTE: The remote connection is intended to be pluggable in order to facilitate
+//       switching to a different HTTP client if desired.
+
 pub trait RemoteConnectionSync: Debug + Send + Sync {
     fn execute(
         &self,
