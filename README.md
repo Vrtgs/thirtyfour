@@ -32,49 +32,13 @@ It is named after the atomic number for the Selenium chemical element (Se).
 
 The examples assume you have a selenium server running at localhost:4444.
 
-The recommended way to do this is via docker, because it automatically takes care of all dependencies, including WebDriver and browser version combinations.
-
-### Setting up Docker and Selenium
-
-To install docker, see [https://docs.docker.com/install/](https://docs.docker.com/install/) (follow the SERVER section if you're on Linux, then look for the Community Edition)
-
-Once you have docker installed, you can start the selenium server, as follows:
-
-    docker run --rm -d -p 4444:4444 -p 5900:5900 --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome-debug:3.141.59-zinc
-
-We will use the `-debug` container because it starts a VNC server, allowing us to view the browser session in real time.
-To connect to the VNC server you will need to use a VNC viewer application. Point it at `localhost:5900` (the default password is `secret`).
-If you don't want to use a VNC viewer you don't have to, but then you won't see what is happening when you run the examples.
-
-If you want to run on Firefox instead, or customize the browser setup, see
-[docker-selenium](https://github.com/SeleniumHQ/docker-selenium) on GitHub for more options
-
-### Choosing between Sync and Async
-
-The `thirtyfour` library offers both a sync and async API. Which one you should use really depends on your personal preference and the nature of your application.
-
-For a more in-depth introduction to async programming in rust, see [The Rust Async Book](https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html).
-
-All interactions with selenium involve sending requests to the selenium server, and then waiting for a response.
-The difference between sync and async for `thirtyfour` essentially comes down to what actually happens (or doesn't happen) while waiting for that response.
-
-With the synchronous version, requests to selenium will block the calling thread until they return. While this is obviously inefficient, the code is often a little bit simpler and easier to follow.
-You can alleviate some of the inefficiency by using multiple threads if/when concurrency is required, but note that threads have some overhead as well. If you're thinking of spawning hundreds (or even tens) of threads, you probably want to use async instead.
-
-In contrast, async method calls will immediately return a "future", which is a bit like a task that can be executed later (typically via `.await`), and will eventually complete and return a value.
-While it is `.await`ing a response from selenium, the "future" will yield control of the current thread, allowing other "futures" to run.
-This allows multiple operations to be performed concurrently on the same thread, rather than just sitting and blocking the thread completely for each call to selenium.
-For more information on running multiple tasks concurrently, see chapter 6 of [The Rust Async Book](https://rust-lang.github.io/async-book/06_multiple_futures/01_chapter.html).
-
-In short, if you need to do a lot of I/O (network requests, reading/writing files, handling network connections), and especially if you want to do I/O operations concurrently, choose async. If not, it's really up to your personal preference.
+The recommended way to do this is via docker (instructions below), because it automatically takes care of all dependencies, including WebDriver and browser version combinations.
 
 ### Async example:
 
 To run this example:
 
     cargo run --example async
-
-NOTE: This example does not make use of concurrency, as it is only a demonstration of how to write a simple test using `async/.await` syntax.
 
 ```rust
 use thirtyfour::prelude::*;
@@ -141,6 +105,56 @@ fn main() -> WebDriverResult<()> {
      Ok(())
 }
 ```
+## Running the examples
+
+Below you can find my recommended development environment for running selenium tests.
+
+Essentially you need 3 main components as a minimum:
+
+1. Selenium standalone running on some server, usually localhost at port 4444.
+2. The webdriver for your browser somewhere in your PATH, e.g. chromedriver (Chrome) or geckodriver (Firefox)
+3. Your code, that imports this library
+
+If you want you can download selenium and the webdriver manually, copy the webdriver
+to somewhere in your path, then run selenium manually using `java -jar selenium.jar`.
+
+However, this is a lot of messing around and you'll need to do it all again any
+time either selenium or the webdriver gets updated. A better solution is to run
+both selenium and webdriver in a docker container, following the instructions below.
+
+### Setting up Docker and Selenium
+
+To install docker, see [https://docs.docker.com/install/](https://docs.docker.com/install/) (follow the SERVER section if you're on Linux, then look for the Community Edition)
+
+Once you have docker installed, you can start the selenium server, as follows:
+
+    docker run --rm -d -p 4444:4444 -p 5900:5900 --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome-debug:3.141.59-zinc
+
+We will use the `-debug` container because it starts a VNC server, allowing us to view the browser session in real time.
+To connect to the VNC server you will need to use a VNC viewer application. Point it at `localhost:5900` (the default password is `secret`).
+If you don't want to use a VNC viewer you don't have to, but then you won't see what is happening when you run the examples.
+
+If you want to run on Firefox instead, or customize the browser setup, see
+[docker-selenium](https://github.com/SeleniumHQ/docker-selenium) on GitHub for more options
+
+### Choosing between Sync and Async
+
+The `thirtyfour` library offers both a sync and async API. Which one you should use really depends on your personal preference and the nature of your application.
+
+For a more in-depth introduction to async programming in rust, see [The Rust Async Book](https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html).
+
+All interactions with selenium involve sending requests to the selenium server, and then waiting for a response.
+The difference between sync and async for `thirtyfour` essentially comes down to what actually happens (or doesn't happen) while waiting for that response.
+
+With the synchronous version, requests to selenium will block the calling thread until they return. While this is obviously inefficient, the code is often a little bit simpler and easier to follow.
+You can alleviate some of the inefficiency by using multiple threads if/when concurrency is required, but note that threads have some overhead as well. If you're thinking of spawning hundreds (or even tens) of threads, you probably want to use async instead.
+
+In contrast, async method calls will immediately return a "future", which is a bit like a task that can be executed later (typically via `.await`), and will eventually complete and return a value.
+While it is `.await`ing a response from selenium, the "future" will yield control of the current thread, allowing other "futures" to run.
+This allows multiple operations to be performed concurrently on the same thread, rather than just sitting and blocking the thread completely for each call to selenium.
+For more information on running multiple tasks concurrently, see chapter 6 of [The Rust Async Book](https://rust-lang.github.io/async-book/06_multiple_futures/01_chapter.html).
+
+In short, if you need to do a lot of I/O (network requests, reading/writing files, handling network connections), and especially if you want to do I/O operations concurrently, choose async. If not, it's really up to your personal preference.
 
 ## Lifetimes
 
