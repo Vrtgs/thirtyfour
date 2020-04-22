@@ -1,6 +1,6 @@
 use base64::DecodeError;
-use serde::Deserialize;
 use serde::export::Formatter;
+use serde::Deserialize;
 
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
 
@@ -20,8 +20,6 @@ pub struct WebDriverErrorInfo {
     pub error: String,
     pub value: WebDriverErrorValue,
 }
-
-
 
 /// WebDriverError is the main error type
 #[derive(Debug)]
@@ -83,7 +81,7 @@ impl WebDriverError {
     pub fn parse(status: u16, body: serde_json::Value) -> Self {
         let mut payload: WebDriverErrorInfo = match serde_json::from_value(body) {
             Ok(x) => x,
-            Err(e) => return e.into()
+            Err(e) => return e.into(),
         };
         payload.status = status;
         let mut error = payload.error.clone();

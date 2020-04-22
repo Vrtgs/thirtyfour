@@ -59,8 +59,7 @@ impl RemoteConnectionSync for ReqwestDriverSync {
             request = request.json(&x);
         }
 
-        let resp = request
-            .send()?;
+        let resp = request.send()?;
 
         match resp.status().as_u16() {
             200..=399 => Ok(resp.json()?),

@@ -1,4 +1,4 @@
-use crate::error::{WebDriverResult, WebDriverError};
+use crate::error::{WebDriverError, WebDriverResult};
 use base64::encode;
 use reqwest::{
     self,
@@ -13,7 +13,10 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn build_headers(remote_server_addr: &str) -> Result<HeaderMap, WebDriverError> {
     let mut headers = HeaderMap::new();
     headers.insert(ACCEPT, "application/json".parse().unwrap());
-    headers.insert(CONTENT_TYPE, "application/json;charset=UTF-8".parse().unwrap());
+    headers.insert(
+        CONTENT_TYPE,
+        "application/json;charset=UTF-8".parse().unwrap(),
+    );
     headers.insert(
         USER_AGENT,
         format!("thirtyfour/{} (rust)", VERSION).parse().unwrap(),
@@ -22,7 +25,10 @@ pub fn build_headers(remote_server_addr: &str) -> Result<HeaderMap, WebDriverErr
     let parsed_url = urlparse(remote_server_addr);
     if let (Some(username), Some(password)) = (parsed_url.username, parsed_url.password) {
         let base64_string = encode(&format!("{}:{}", username, password));
-        headers.insert(AUTHORIZATION, format!("Basic {}", base64_string).parse().unwrap());
+        headers.insert(
+            AUTHORIZATION,
+            format!("Basic {}", base64_string).parse().unwrap(),
+        );
     }
     headers.insert(CONNECTION, "keep-alive".parse().unwrap());
 

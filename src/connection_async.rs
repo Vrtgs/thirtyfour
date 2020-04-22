@@ -64,20 +64,13 @@ impl RemoteConnectionAsync for ReqwestDriverAsync {
             request = request.json(&x);
         }
 
-        let resp = request
-            .send()
-            .await?;
+        let resp = request.send().await?;
 
         match resp.status().as_u16() {
-            200..=399 => Ok(resp
-                .json()
-                .await?
-            ),
+            200..=399 => Ok(resp.json().await?),
             400..=599 => {
                 let status = resp.status().as_u16();
-                let body: serde_json::Value = resp
-                    .json()
-                    .await?;
+                let body: serde_json::Value = resp.json().await?;
                 Err(WebDriverError::parse(status, body))
             }
             _ => unreachable!(),
