@@ -7,7 +7,7 @@ use crate::{
         command::{Command, RequestMethod},
         connection_common::build_headers,
     },
-    error::{RemoteConnectionError, WebDriverError, WebDriverResult},
+    error::{WebDriverError, WebDriverResult},
     SessionId,
 };
 
@@ -34,7 +34,7 @@ pub struct ReqwestDriverAsync {
 
 impl ReqwestDriverAsync {
     /// Create a new ReqwestDriverAsync instance.
-    pub fn new(remote_server_addr: &str) -> Result<Self, RemoteConnectionError> {
+    pub fn new(remote_server_addr: &str) -> Result<Self, WebDriverError> {
         let headers = build_headers(remote_server_addr)?;
         Ok(ReqwestDriverAsync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
@@ -64,30 +64,16 @@ impl RemoteConnectionAsync for ReqwestDriverAsync {
             request = request.json(&x);
         }
 
-        let resp = request
-            .send()
-            .await
-            .map_err(|e| WebDriverError::RequestFailed(e.to_string()))?;
+        let resp = request.send().await?;
 
         match resp.status().as_u16() {
-            200..=399 => Ok(resp
-                .json()
-                .await
-                .map_err(|e| WebDriverError::JsonError(e.to_string()))?),
+            200..=399 => Ok(resp.json().await?),
             400..=599 => {
                 let status = resp.status().as_u16();
-                let body: serde_json::Value = resp
-                    .json()
-                    .await
-                    .map_err(|e| WebDriverError::JsonError(e.to_string()))?;
+                let body: serde_json::Value = resp.json().await?;
                 Err(WebDriverError::parse(status, body))
             }
-            _ => Err(WebDriverError::RequestFailed(format!(
-                "Unknown response: {:?}",
-                resp.json()
-                    .await
-                    .map_err(|e| WebDriverError::JsonError(e.to_string()))?
-            ))),
+            _ => unreachable!(),
         }
     }
 }
