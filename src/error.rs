@@ -1,5 +1,6 @@
 use base64::DecodeError;
 use serde::Deserialize;
+use serde::export::Formatter;
 
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
 
@@ -20,15 +21,16 @@ pub struct WebDriverErrorInfo {
     pub value: WebDriverErrorValue,
 }
 
+
+
 /// WebDriverError is the main error type
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum WebDriverError {
-    ConnectionError(RemoteConnectionError),
     NotFoundError(String),
-    JsonError(String),
-    DecodeError(String),
-    IOError(String),
-    RequestFailed(String),
+    JsonError(serde_json::error::Error),
+    DecodeError(DecodeError),
+    IOError(std::io::Error),
+    ClientError(reqwest::Error),
     NotInSpec(WebDriverErrorInfo),
     ElementClickIntercepted(WebDriverErrorInfo),
     ElementNotInteractable(WebDriverErrorInfo),
@@ -58,13 +60,30 @@ pub enum WebDriverError {
     UnsupportedOperation(WebDriverErrorInfo),
 }
 
+impl std::fmt::Display for WebDriverError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", self)
+    }
+}
+
+impl std::error::Error for WebDriverError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        use WebDriverError::*;
+        match self {
+            JsonError(e) => Some(e),
+            DecodeError(e) => Some(e),
+            IOError(e) => Some(e),
+            ClientError(e) => Some(e),
+            _ => None,
+        }
+    }
+}
+
 impl WebDriverError {
     pub fn parse(status: u16, body: serde_json::Value) -> Self {
         let mut payload: WebDriverErrorInfo = match serde_json::from_value(body) {
             Ok(x) => x,
-            Err(e) => {
-                return WebDriverError::JsonError(e.to_string());
-            }
+            Err(e) => return e.into()
         };
         payload.status = status;
         let mut error = payload.error.clone();
@@ -109,42 +128,24 @@ impl WebDriverError {
 
 impl From<serde_json::error::Error> for WebDriverError {
     fn from(value: serde_json::error::Error) -> Self {
-        WebDriverError::JsonError(value.to_string())
-    }
-}
-
-impl From<RemoteConnectionError> for WebDriverError {
-    fn from(value: RemoteConnectionError) -> Self {
-        WebDriverError::ConnectionError(value)
+        WebDriverError::JsonError(value)
     }
 }
 
 impl From<DecodeError> for WebDriverError {
     fn from(value: DecodeError) -> Self {
-        WebDriverError::DecodeError(value.to_string())
+        WebDriverError::DecodeError(value)
     }
 }
 
 impl From<std::io::Error> for WebDriverError {
     fn from(value: std::io::Error) -> Self {
-        WebDriverError::IOError(value.to_string())
+        WebDriverError::IOError(value)
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum RemoteConnectionError {
-    InvalidUrl(String),
-    ClientError(String),
-}
-
-impl From<reqwest::header::InvalidHeaderValue> for RemoteConnectionError {
-    fn from(value: reqwest::header::InvalidHeaderValue) -> Self {
-        RemoteConnectionError::InvalidUrl(value.to_string())
-    }
-}
-
-impl From<reqwest::Error> for RemoteConnectionError {
+impl From<reqwest::Error> for WebDriverError {
     fn from(value: reqwest::Error) -> Self {
-        RemoteConnectionError::ClientError(value.to_string())
+        WebDriverError::ClientError(value)
     }
 }
