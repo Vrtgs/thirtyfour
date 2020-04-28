@@ -127,6 +127,13 @@ impl WebDriver {
     pub fn capabilities(&self) -> DesiredCapabilities {
         DesiredCapabilities::new(self.capabilities.clone())
     }
+
+    /// End the webdriver session.
+    pub fn quit(mut self) -> WebDriverResult<()> {
+        self.cmd(Command::DeleteSession)?;
+        self.quit_on_drop = false;
+        Ok(())
+    }
 }
 
 impl WebDriverCommands for WebDriver {
@@ -146,7 +153,7 @@ impl Drop for WebDriver {
     /// Close the current session when the WebDriver struct goes out of scope.
     fn drop(&mut self) {
         if self.quit_on_drop && !(*self.session_id).is_empty() {
-            if let Err(e) = self.quit() {
+            if let Err(e) = self.cmd(Command::DeleteSession) {
                 error!("Failed to close session: {:?}", e);
             }
         }
@@ -189,11 +196,6 @@ pub trait WebDriverCommands {
     /// Close the current window.
     fn close(&self) -> WebDriverResult<()> {
         self.cmd(Command::CloseWindow).map(|_| ())
-    }
-
-    /// End the webdriver session.
-    fn quit(&self) -> WebDriverResult<()> {
-        self.cmd(Command::DeleteSession).map(|_| ())
     }
 
     /// Navigate to the specified URL.
