@@ -7,8 +7,8 @@ services:
     ports:
       - "4444:4444"
     environment:
-      - NODE_MAX_INSTANCES=1
-      - NODE_MAX_SESSION=1
+      - NODE_MAX_INSTANCES=4
+      - NODE_MAX_SESSION=4
   webappdemo:
     build:
       context: webappdemo
