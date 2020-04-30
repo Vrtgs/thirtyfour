@@ -153,6 +153,8 @@ pub mod http_async {
     pub mod nulldriver_async;
     #[cfg(feature = "tokio-runtime")]
     pub mod reqwest_async;
+    #[cfg(feature = "async-std-runtime")]
+    pub mod surf_async;
 }
 
 pub mod common {

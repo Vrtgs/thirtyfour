@@ -13,6 +13,8 @@ use crate::http_async::connection_async::{RemoteConnectionAsync, RemoteConnectio
 use crate::http_async::nulldriver_async::NullDriverAsync;
 #[cfg(feature = "tokio-runtime")]
 use crate::http_async::reqwest_async::ReqwestDriverAsync;
+#[cfg(feature = "async-std-runtime")]
+use crate::http_async::surf_async::SurfDriverAsync;
 use crate::webdrivercommands::{start_session, WebDriverCommands, WebDriverSession};
 use crate::{common::command::Command, error::WebDriverResult, DesiredCapabilities, SessionId};
 
@@ -20,6 +22,8 @@ use crate::{common::command::Command, error::WebDriverResult, DesiredCapabilitie
 pub type WebDriver = GenericWebDriver<NullDriverAsync>;
 #[cfg(feature = "tokio-runtime")]
 pub type WebDriver = GenericWebDriver<ReqwestDriverAsync>;
+#[cfg(feature = "async-std-runtime")]
+pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
 
 /// The WebDriver struct encapsulates an async Selenium WebDriver browser
 /// session. For the sync driver, see

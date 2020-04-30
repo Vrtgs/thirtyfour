@@ -30,6 +30,8 @@ pub enum WebDriverError {
     IOError(std::io::Error),
     #[cfg(feature = "tokio-runtime")]
     ReqwestError(reqwest::Error),
+    #[cfg(feature = "async-std-runtime")]
+    SurfError(surf::Error),
     NotInSpec(WebDriverErrorInfo),
     ElementClickIntercepted(WebDriverErrorInfo),
     ElementNotInteractable(WebDriverErrorInfo),
@@ -148,5 +150,12 @@ impl From<std::io::Error> for WebDriverError {
 impl From<reqwest::Error> for WebDriverError {
     fn from(value: reqwest::Error) -> Self {
         WebDriverError::ReqwestError(value)
+    }
+}
+
+#[cfg(feature = "async-std-runtime")]
+impl From<surf::Error> for WebDriverError {
+    fn from(value: surf::Error) -> Self {
+        WebDriverError::SurfError(value)
     }
 }
