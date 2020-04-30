@@ -15,7 +15,7 @@ keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"
 categories = ["api-bindings", "development-tools::testing"]
 
 [features]
-default = []
+default = ["tokio-runtime"]
 tokio-runtime = ["tokio", "reqwest"]
 async-std-runtime = ["async-std", "surf"]
 blocking = ["tokio-runtime"]
