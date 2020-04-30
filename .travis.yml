@@ -19,4 +19,4 @@ before_install:
 - docker ps -a
 
 script:
-  - cargo test --verbose -- --test-threads=4
+  - cargo test --verbose -- --test-threads=1

@@ -4,7 +4,7 @@ use crate::sync::http_sync::connection_sync::{RemoteConnectionSync, RemoteConnec
 use crate::{
     common::{
         command::{Command, RequestMethod},
-        connection_common::build_headers,
+        connection_common::reqwest_support::build_reqwest_headers,
     },
     error::{WebDriverError, WebDriverResult},
     SessionId,
@@ -19,7 +19,7 @@ pub struct ReqwestDriverSync {
 
 impl RemoteConnectionSyncCreate for ReqwestDriverSync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
-        let headers = build_headers(remote_server_addr)?;
+        let headers = build_reqwest_headers(remote_server_addr)?;
         Ok(ReqwestDriverSync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
             client: reqwest::blocking::Client::builder().default_headers(headers).build()?,

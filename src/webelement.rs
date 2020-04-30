@@ -1,8 +1,15 @@
-use std::{fmt, path::Path};
+use std::fmt;
+#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
+use std::path::Path;
 
+#[cfg(feature = "async-std-runtime")]
+use async_std::fs::File;
 use base64::decode;
+#[cfg(feature = "async-std-runtime")]
+use futures::io::AsyncWriteExt;
 use serde::ser::{Serialize, SerializeMap, Serializer};
-use tokio::{fs::File, prelude::*};
+#[cfg(feature = "tokio-runtime")]
+use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::common::command::MAGIC_ELEMENTID;
 use crate::webdrivercommands::{WebDriverCommands, WebDriverSession};
@@ -356,6 +363,7 @@ impl<'a> WebElement<'a> {
 
     /// Take a screenshot of this WebElement and write it to the specified
     /// filename.
+    #[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
     pub async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
         let mut file = File::create(path).await?;

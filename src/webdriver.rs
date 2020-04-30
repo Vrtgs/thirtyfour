@@ -9,10 +9,16 @@ use serde_json::Value;
 use async_trait::async_trait;
 
 use crate::http_async::connection_async::{RemoteConnectionAsync, RemoteConnectionAsyncCreate};
+#[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
+use crate::http_async::nulldriver_async::NullDriverAsync;
+#[cfg(feature = "tokio-runtime")]
 use crate::http_async::reqwest_async::ReqwestDriverAsync;
 use crate::webdrivercommands::{start_session, WebDriverCommands, WebDriverSession};
 use crate::{common::command::Command, error::WebDriverResult, DesiredCapabilities, SessionId};
 
+#[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
+pub type WebDriver = GenericWebDriver<NullDriverAsync>;
+#[cfg(feature = "tokio-runtime")]
 pub type WebDriver = GenericWebDriver<ReqwestDriverAsync>;
 
 /// The WebDriver struct encapsulates an async Selenium WebDriver browser

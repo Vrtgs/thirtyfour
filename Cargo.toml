@@ -14,8 +14,19 @@ readme = "README.md"
 keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"]
 categories = ["api-bindings", "development-tools::testing"]
 
+[features]
+default = []
+tokio-runtime = ["tokio", "reqwest"]
+async-std-runtime = ["async-std", "surf"]
+blocking = ["tokio-runtime"]
+
 [dependencies]
-reqwest = { version = "0.10", features = ["blocking", "json"] }
+async-trait = "0.1"
+futures = "0.3"
+tokio = { version = "0.2", features = ["fs", "macros", "rt-threaded", "io-util"], optional = true }
+reqwest = { version = "0.10", features = ["blocking", "json"], optional = true }
+async-std = { version = "1.5", optional = true }
+surf = { version = "1.0.3", optional = true }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
@@ -23,6 +34,4 @@ log = "0.4"
 urlparse = "0.7.3"
 base64 = "0.11.0"
 chrono = { version = "0.4", features = ["serde"] }
-tokio = { version = "0.2", features = ["fs", "macros", "rt-threaded"] }
-futures = "0.3"
-async-trait = "0.1"
+

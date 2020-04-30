@@ -1,9 +1,15 @@
+#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+#[cfg(feature = "async-std-runtime")]
+use async_std::fs::File;
 use base64::decode;
+#[cfg(feature = "async-std-runtime")]
+use futures::io::AsyncWriteExt;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+#[cfg(feature = "tokio-runtime")]
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use async_trait::async_trait;
@@ -777,6 +783,7 @@ pub trait WebDriverCommands {
 
     /// Take a screenshot of the current window and write it to the specified
     /// filename.
+    #[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
     async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
         let mut file = File::create(path).await?;

@@ -1,11 +1,12 @@
-use async_trait::async_trait;
 use std::fmt::Debug;
+
+use async_trait::async_trait;
 
 use crate::http_async::connection_async::{RemoteConnectionAsync, RemoteConnectionAsyncCreate};
 use crate::{
     common::{
         command::{Command, RequestMethod},
-        connection_common::build_headers,
+        connection_common::reqwest_support::build_reqwest_headers,
     },
     error::{WebDriverError, WebDriverResult},
     SessionId,
@@ -20,7 +21,7 @@ pub struct ReqwestDriverAsync {
 
 impl RemoteConnectionAsyncCreate for ReqwestDriverAsync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
-        let headers = build_headers(remote_server_addr)?;
+        let headers = build_reqwest_headers(remote_server_addr)?;
         Ok(ReqwestDriverAsync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
             client: reqwest::Client::builder().default_headers(headers).build()?,

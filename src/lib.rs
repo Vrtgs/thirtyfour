@@ -149,6 +149,9 @@ mod webelement;
 
 pub mod http_async {
     pub mod connection_async;
+    #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
+    pub mod nulldriver_async;
+    #[cfg(feature = "tokio-runtime")]
     pub mod reqwest_async;
 }
 
@@ -171,6 +174,7 @@ pub mod common {
     pub mod types;
 }
 // Allow importing the common sync structs via `use thirtyfour::sync::*`.
+#[cfg(feature = "blocking")]
 pub mod sync {
     pub use alert::Alert;
     pub use switch_to::SwitchTo;
@@ -191,6 +195,9 @@ pub mod sync {
     mod alert;
     pub mod http_sync {
         pub mod connection_sync;
+        #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
+        pub mod nulldriver_sync;
+        #[cfg(feature = "tokio-runtime")]
         pub mod reqwest_sync;
     }
     mod switch_to;

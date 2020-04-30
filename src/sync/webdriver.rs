@@ -6,10 +6,16 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::sync::http_sync::connection_sync::{RemoteConnectionSync, RemoteConnectionSyncCreate};
+#[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
+use crate::sync::http_sync::nulldriver_sync::NullDriverSync;
+#[cfg(feature = "tokio-runtime")]
 use crate::sync::http_sync::reqwest_sync::ReqwestDriverSync;
 use crate::sync::webdrivercommands::{start_session, WebDriverCommands, WebDriverSession};
 use crate::{common::command::Command, error::WebDriverResult, DesiredCapabilities, SessionId};
 
+#[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
+pub type WebDriver = GenericWebDriver<NullDriverSync>;
+#[cfg(feature = "tokio-runtime")]
 pub type WebDriver = GenericWebDriver<ReqwestDriverSync>;
 
 /// This WebDriver struct encapsulates a synchronous Selenium WebDriver browser

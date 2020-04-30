@@ -28,7 +28,8 @@ pub enum WebDriverError {
     JsonError(serde_json::error::Error),
     DecodeError(DecodeError),
     IOError(std::io::Error),
-    ClientError(reqwest::Error),
+    #[cfg(feature = "tokio-runtime")]
+    ReqwestError(reqwest::Error),
     NotInSpec(WebDriverErrorInfo),
     ElementClickIntercepted(WebDriverErrorInfo),
     ElementNotInteractable(WebDriverErrorInfo),
@@ -71,7 +72,8 @@ impl std::error::Error for WebDriverError {
             JsonError(e) => Some(e),
             DecodeError(e) => Some(e),
             IOError(e) => Some(e),
-            ClientError(e) => Some(e),
+            #[cfg(feature = "tokio-runtime")]
+            ReqwestError(e) => Some(e),
             _ => None,
         }
     }
@@ -142,8 +144,9 @@ impl From<std::io::Error> for WebDriverError {
     }
 }
 
+#[cfg(feature = "tokio-runtime")]
 impl From<reqwest::Error> for WebDriverError {
     fn from(value: reqwest::Error) -> Self {
-        WebDriverError::ClientError(value)
+        WebDriverError::ReqwestError(value)
     }
 }
