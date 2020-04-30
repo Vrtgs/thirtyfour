@@ -77,6 +77,7 @@
 //! ### Sync example:
 //!
 //! ```rust
+//! # #[cfg(feature = "blocking")] {
 //! use thirtyfour::sync::prelude::*;
 //!
 //! fn main() -> WebDriverResult<()> {
@@ -108,6 +109,7 @@
 //!
 //!     Ok(())
 //! }
+//! # }
 //! ```
 
 #![allow(clippy::needless_doctest_main)]
