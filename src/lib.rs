@@ -125,9 +125,8 @@ pub use common::{
     scriptargs::ScriptArgs,
     types::*,
 };
-pub use connection_async::*;
 pub use switch_to::SwitchTo;
-pub use webdriver::{ScriptRet, WebDriver, WebDriverCommands};
+pub use webdriver::WebDriver;
 pub use webelement::WebElement;
 
 // Allow importing the common async structs via `use thirtyfour::prelude::*`.
@@ -135,17 +134,23 @@ pub mod prelude {
     pub use crate::alert::Alert;
     pub use crate::error::WebDriverResult;
     pub use crate::switch_to::SwitchTo;
-    pub use crate::webdriver::{ScriptRet, WebDriver, WebDriverCommands};
+    pub use crate::webdriver::WebDriver;
+    pub use crate::webdrivercommands::{ScriptRet, WebDriverCommands};
     pub use crate::webelement::WebElement;
     pub use crate::{By, Cookie, DesiredCapabilities, Keys, ScriptArgs, TypingData};
 }
 
 pub mod action_chain;
 mod alert;
-mod connection_async;
 mod switch_to;
 mod webdriver;
+mod webdrivercommands;
 mod webelement;
+
+pub mod http_async {
+    pub mod connection_async;
+    pub mod reqwest_async;
+}
 
 pub mod common {
     pub mod action;
@@ -168,25 +173,29 @@ pub mod common {
 // Allow importing the common sync structs via `use thirtyfour::sync::*`.
 pub mod sync {
     pub use alert::Alert;
-    pub use connection_sync::*;
     pub use switch_to::SwitchTo;
-    pub use webdriver::{ScriptRetSync, WebDriver, WebDriverCommands};
+    pub use webdriver::WebDriver;
     pub use webelement::WebElement;
 
     pub mod prelude {
         pub use crate::error::WebDriverResult;
         pub use crate::sync::alert::Alert;
         pub use crate::sync::switch_to::SwitchTo;
-        pub use crate::sync::webdriver::{ScriptRetSync, WebDriver, WebDriverCommands};
+        pub use crate::sync::webdriver::WebDriver;
+        pub use crate::sync::webdrivercommands::{ScriptRetSync, WebDriverCommands};
         pub use crate::sync::webelement::WebElement;
         pub use crate::{By, Cookie, DesiredCapabilities, Keys, ScriptArgs, TypingData};
     }
 
     mod action_chain;
     mod alert;
-    mod connection_sync;
+    pub mod http_sync {
+        pub mod connection_sync;
+        pub mod reqwest_sync;
+    }
     mod switch_to;
     mod webdriver;
+    mod webdrivercommands;
     mod webelement;
 }
 

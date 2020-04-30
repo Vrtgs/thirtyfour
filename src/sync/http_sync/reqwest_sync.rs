@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use crate::sync::http_sync::connection_sync::{RemoteConnectionSync, RemoteConnectionSyncCreate};
 use crate::{
     common::{
         command::{Command, RequestMethod},
@@ -9,17 +10,6 @@ use crate::{
     SessionId,
 };
 
-// NOTE: The remote connection is intended to be pluggable in order to facilitate
-//       switching to a different HTTP client if desired.
-
-pub trait RemoteConnectionSync: Debug + Send + Sync {
-    fn execute(
-        &self,
-        session_id: &SessionId,
-        command: Command<'_>,
-    ) -> WebDriverResult<serde_json::Value>;
-}
-
 /// Synchronous connection to the remote WebDriver server.
 #[derive(Debug)]
 pub struct ReqwestDriverSync {
@@ -27,15 +17,12 @@ pub struct ReqwestDriverSync {
     client: reqwest::blocking::Client,
 }
 
-impl ReqwestDriverSync {
-    /// Create a new ReqwestDriverSync instance.
-    pub fn new(remote_server_addr: &str) -> Result<Self, WebDriverError> {
+impl RemoteConnectionSyncCreate for ReqwestDriverSync {
+    fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
         let headers = build_headers(remote_server_addr)?;
         Ok(ReqwestDriverSync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
-            client: reqwest::blocking::Client::builder()
-                .default_headers(headers)
-                .build()?,
+            client: reqwest::blocking::Client::builder().default_headers(headers).build()?,
         })
     }
 }

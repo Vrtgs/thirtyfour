@@ -1,4 +1,4 @@
-use crate::sync::webdriver::{WebDriverCommands, WebDriverSession};
+use crate::sync::webdrivercommands::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::{
         action::{ActionSource, KeyAction, PointerAction, PointerActionType},
@@ -284,8 +284,7 @@ impl<'a> ActionChain<'a> {
     /// compared to the python selenium library (which also fails due to
     /// the same bug).
     pub fn drag_and_drop_element(self, source: &WebElement, target: &WebElement) -> Self {
-        self.click_and_hold_element(source)
-            .release_on_element(target)
+        self.click_and_hold_element(source).release_on_element(target)
     }
 
     /// Drag the mouse cursor by the specified X and Y offsets.
@@ -299,9 +298,7 @@ impl<'a> ActionChain<'a> {
     /// compared to the python selenium library (which also fails due to
     /// the same bug).
     pub fn drag_and_drop_by_offset(self, x_offset: i32, y_offset: i32) -> Self {
-        self.click_and_hold()
-            .move_by_offset(x_offset, y_offset)
-            .release()
+        self.click_and_hold().move_by_offset(x_offset, y_offset).release()
     }
 
     /// Drag the mouse cursor by the specified X and Y offsets, starting
@@ -321,9 +318,7 @@ impl<'a> ActionChain<'a> {
         x_offset: i32,
         y_offset: i32,
     ) -> Self {
-        self.click_and_hold_element(element)
-            .move_by_offset(x_offset, y_offset)
-            .release()
+        self.click_and_hold_element(element).move_by_offset(x_offset, y_offset).release()
     }
 
     /// Press the specified key down.
@@ -521,8 +516,7 @@ impl<'a> ActionChain<'a> {
     /// # }
     /// ```
     pub fn move_to_element_center(mut self, element: &WebElement) -> Self {
-        self.pointer_actions
-            .move_to_element_center(element.element_id.clone());
+        self.pointer_actions.move_to_element_center(element.element_id.clone());
         self.key_actions.pause();
         self
     }
@@ -565,8 +559,7 @@ impl<'a> ActionChain<'a> {
         x_offset: i32,
         y_offset: i32,
     ) -> Self {
-        self.pointer_actions
-            .move_to_element(element.element_id.clone(), x_offset, y_offset);
+        self.pointer_actions.move_to_element(element.element_id.clone(), x_offset, y_offset);
         self.key_actions.pause();
         self
     }

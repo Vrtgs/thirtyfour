@@ -1,8 +1,8 @@
-use crate::sync::webdriver::{WebDriverCommands, WebDriverSession};
+use crate::sync::webdrivercommands::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::command::Command,
     error::{WebDriverError, WebDriverResult},
-    sync::{webelement::unwrap_element_sync, Alert, WebElement},
+    sync::{webelement::convert_element_sync, Alert, WebElement},
     WindowHandle,
 };
 
@@ -15,7 +15,9 @@ impl<'a> SwitchTo<'a> {
     /// Create a new SwitchTo struct. This is typically created internally
     /// via a call to `WebDriver::switch_to()`.
     pub fn new(driver: WebDriverSession<'a>) -> Self {
-        SwitchTo { driver }
+        SwitchTo {
+            driver,
+        }
     }
 
     ///Convenience wrapper for executing a WebDriver command.
@@ -49,7 +51,7 @@ impl<'a> SwitchTo<'a> {
     /// ```
     pub fn active_element(self) -> WebDriverResult<WebElement<'a>> {
         let v = self.cmd(Command::GetActiveElement)?;
-        unwrap_element_sync(self.driver, &v["value"])
+        convert_element_sync(self.driver, &v["value"])
     }
 
     /// Return Alert struct for processing the active alert on the page.
@@ -102,8 +104,7 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub fn frame_number(self, frame_number: u16) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToFrameNumber(frame_number))
-            .map(|_| ())
+        self.cmd(Command::SwitchToFrameNumber(frame_number)).map(|_| ())
     }
 
     /// Switch to the specified iframe element.
@@ -127,8 +128,7 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub fn frame_element(self, frame_element: &WebElement) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToFrameElement(&frame_element.element_id))
-            .map(|_| ())
+        self.cmd(Command::SwitchToFrameElement(&frame_element.element_id)).map(|_| ())
     }
 
     /// Switch to the parent frame.
@@ -227,9 +227,6 @@ impl<'a> SwitchTo<'a> {
         }
 
         self.window(&original_handle)?;
-        Err(WebDriverError::NotFoundError(format!(
-            "No window handle found matching '{}'",
-            name
-        )))
+        Err(WebDriverError::NotFoundError(format!("No window handle found matching '{}'", name)))
     }
 }

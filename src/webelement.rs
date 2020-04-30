@@ -5,11 +5,11 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use tokio::{fs::File, prelude::*};
 
 use crate::common::command::MAGIC_ELEMENTID;
-use crate::webdriver::{WebDriverCommands, WebDriverSession};
+use crate::webdrivercommands::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::{
         command::Command,
-        connection_common::unwrap,
+        connection_common::convert_json,
         keys::TypingData,
         types::{ElementRect, ElementRef},
     },
@@ -17,8 +17,8 @@ use crate::{
     By, ElementId, ScriptArgs,
 };
 
-/// Unwrap the raw JSON into a WebElement struct.
-pub fn unwrap_element_async<'a>(
+/// Convert the raw JSON into a WebElement struct.
+pub fn convert_element_async<'a>(
     driver: WebDriverSession<'a>,
     value: &serde_json::Value,
 ) -> WebDriverResult<WebElement<'a>> {
@@ -26,16 +26,13 @@ pub fn unwrap_element_async<'a>(
     Ok(WebElement::new(driver, ElementId::from(elem_id.id)))
 }
 
-/// Unwrap the raw JSON into a Vec of WebElement structs.
-pub fn unwrap_elements_async<'a>(
+/// Convert the raw JSON into a Vec of WebElement structs.
+pub fn convert_elements_async<'a>(
     driver: WebDriverSession<'a>,
     value: &serde_json::Value,
 ) -> WebDriverResult<Vec<WebElement<'a>>> {
     let values: Vec<ElementRef> = serde_json::from_value(value.clone())?;
-    Ok(values
-        .into_iter()
-        .map(|x| WebElement::new(driver.clone(), ElementId::from(x.id)))
-        .collect())
+    Ok(values.into_iter().map(|x| WebElement::new(driver.clone(), ElementId::from(x.id))).collect())
 }
 
 /// The WebElement struct encapsulates a single element on a page.
@@ -95,7 +92,10 @@ impl<'a> WebElement<'a> {
     /// usually constructed by calling one of the find_element*() methods
     /// either on WebDriver or another WebElement.
     pub fn new(driver: WebDriverSession<'a>, element_id: ElementId) -> Self {
-        WebElement { element_id, driver }
+        WebElement {
+            element_id,
+            driver,
+        }
     }
 
     ///Convenience wrapper for executing a WebDriver command.
@@ -128,10 +128,8 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn tag_name(&self) -> WebDriverResult<String> {
-        let v = self
-            .cmd(Command::GetElementTagName(&self.element_id))
-            .await?;
-        unwrap(&v["value"])
+        let v = self.cmd(Command::GetElementTagName(&self.element_id)).await?;
+        convert_json(&v["value"])
     }
 
     /// Get the class name for this WebElement.
@@ -177,7 +175,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn text(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementText(&self.element_id)).await?;
-        unwrap(&v["value"])
+        convert_json(&v["value"])
     }
 
     /// Click the WebElement.
@@ -212,51 +210,32 @@ impl<'a> WebElement<'a> {
 
     /// Get the specified property.
     pub async fn get_property(&self, name: &str) -> WebDriverResult<String> {
-        let v = self
-            .cmd(Command::GetElementProperty(
-                &self.element_id,
-                name.to_owned(),
-            ))
-            .await?;
-        unwrap(&v["value"])
+        let v = self.cmd(Command::GetElementProperty(&self.element_id, name.to_owned())).await?;
+        convert_json(&v["value"])
     }
 
     /// Get the specified attribute.
     pub async fn get_attribute(&self, name: &str) -> WebDriverResult<String> {
-        let v = self
-            .cmd(Command::GetElementAttribute(
-                &self.element_id,
-                name.to_owned(),
-            ))
-            .await?;
-        unwrap(&v["value"])
+        let v = self.cmd(Command::GetElementAttribute(&self.element_id, name.to_owned())).await?;
+        convert_json(&v["value"])
     }
 
     /// Get the specified CSS property.
     pub async fn get_css_property(&self, name: &str) -> WebDriverResult<String> {
-        let v = self
-            .cmd(Command::GetElementCSSValue(
-                &self.element_id,
-                name.to_owned(),
-            ))
-            .await?;
-        unwrap(&v["value"])
+        let v = self.cmd(Command::GetElementCSSValue(&self.element_id, name.to_owned())).await?;
+        convert_json(&v["value"])
     }
 
     /// Return true if the WebElement is currently selected, otherwise false.
     pub async fn is_selected(&self) -> WebDriverResult<bool> {
-        let v = self
-            .cmd(Command::IsElementSelected(&self.element_id))
-            .await?;
-        unwrap(&v["value"])
+        let v = self.cmd(Command::IsElementSelected(&self.element_id)).await?;
+        convert_json(&v["value"])
     }
 
     /// Return true if the WebElement is currently enabled, otherwise false.
     pub async fn is_enabled(&self) -> WebDriverResult<bool> {
-        let v = self
-            .cmd(Command::IsElementEnabled(&self.element_id))
-            .await?;
-        unwrap(&v["value"])
+        let v = self.cmd(Command::IsElementEnabled(&self.element_id)).await?;
+        convert_json(&v["value"])
     }
 
     /// Search for a child element of this WebElement using the specified
@@ -281,10 +260,8 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement<'a>> {
-        let v = self
-            .cmd(Command::FindElementFromElement(&self.element_id, by))
-            .await?;
-        unwrap_element_async(self.driver.clone(), &v["value"])
+        let v = self.cmd(Command::FindElementFromElement(&self.element_id, by)).await?;
+        convert_element_async(self.driver.clone(), &v["value"])
     }
 
     /// Search for all child elements of this WebElement that match the
@@ -310,10 +287,8 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn find_elements(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement<'a>>> {
-        let v = self
-            .cmd(Command::FindElementsFromElement(&self.element_id, by))
-            .await?;
-        unwrap_elements_async(self.driver.clone(), &v["value"])
+        let v = self.cmd(Command::FindElementsFromElement(&self.element_id, by)).await?;
+        convert_elements_async(self.driver.clone(), &v["value"])
     }
 
     /// Send the specified input.
@@ -361,18 +336,15 @@ impl<'a> WebElement<'a> {
     where
         S: Into<TypingData>,
     {
-        self.cmd(Command::ElementSendKeys(&self.element_id, keys.into()))
-            .await?;
+        self.cmd(Command::ElementSendKeys(&self.element_id, keys.into())).await?;
         Ok(())
     }
 
     /// Take a screenshot of this WebElement and return it as a base64-encoded
     /// String.
     pub async fn screenshot_as_base64(&self) -> WebDriverResult<String> {
-        let v = self
-            .cmd(Command::TakeElementScreenshot(&self.element_id))
-            .await?;
-        unwrap(&v["value"])
+        let v = self.cmd(Command::TakeElementScreenshot(&self.element_id)).await?;
+        convert_json(&v["value"])
     }
 
     /// Take a screenshot of this WebElement and return it as PNG bytes.
@@ -414,9 +386,7 @@ impl<'a> WebElement<'a> {
     pub async fn focus(&self) -> WebDriverResult<()> {
         let mut args = ScriptArgs::new();
         args.push(&self)?;
-        self.driver
-            .execute_script_with_args(r#"arguments[0].focus();"#, &args)
-            .await?;
+        self.driver.execute_script_with_args(r#"arguments[0].focus();"#, &args).await?;
         Ok(())
     }
 
@@ -440,20 +410,14 @@ impl<'a> WebElement<'a> {
     pub async fn scroll_into_view(&self) -> WebDriverResult<()> {
         let mut args = ScriptArgs::new();
         args.push(&self)?;
-        self.driver
-            .execute_script_with_args(r#"arguments[0].scrollIntoView();"#, &args)
-            .await?;
+        self.driver.execute_script_with_args(r#"arguments[0].scrollIntoView();"#, &args).await?;
         Ok(())
     }
 }
 
 impl<'a> fmt::Display for WebElement<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            r#"(session="{}", element="{}")"#,
-            self.driver.session_id, self.element_id
-        )
+        write!(f, r#"(session="{}", element="{}")"#, self.driver.session_id(), self.element_id)
     }
 }
 

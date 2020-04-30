@@ -1,8 +1,8 @@
-use crate::webdriver::{WebDriverCommands, WebDriverSession};
+use crate::webdrivercommands::{WebDriverCommands, WebDriverSession};
 use crate::{
     common::command::Command,
     error::{WebDriverError, WebDriverResult},
-    webelement::unwrap_element_async,
+    webelement::convert_element_async,
     Alert, WebElement, WindowHandle,
 };
 
@@ -15,7 +15,9 @@ impl<'a> SwitchTo<'a> {
     /// Create a new SwitchTo struct. This is typically created internally
     /// via a call to `WebDriver::switch_to()`.
     pub fn new(driver: WebDriverSession<'a>) -> Self {
-        SwitchTo { driver }
+        SwitchTo {
+            driver,
+        }
     }
 
     ///Convenience wrapper for executing a WebDriver command.
@@ -52,7 +54,7 @@ impl<'a> SwitchTo<'a> {
     /// ```
     pub async fn active_element(self) -> WebDriverResult<WebElement<'a>> {
         let v = self.cmd(Command::GetActiveElement).await?;
-        unwrap_element_async(self.driver, &v["value"])
+        convert_element_async(self.driver, &v["value"])
     }
 
     /// Return Alert struct for processing the active alert on the page.
@@ -111,9 +113,7 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub async fn frame_number(self, frame_number: u16) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToFrameNumber(frame_number))
-            .await
-            .map(|_| ())
+        self.cmd(Command::SwitchToFrameNumber(frame_number)).await.map(|_| ())
     }
 
     /// Switch to the specified iframe element.
@@ -140,9 +140,7 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub async fn frame_element(self, frame_element: &WebElement<'a>) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToFrameElement(&frame_element.element_id))
-            .await
-            .map(|_| ())
+        self.cmd(Command::SwitchToFrameElement(&frame_element.element_id)).await.map(|_| ())
     }
 
     /// Switch to the parent frame.
@@ -250,9 +248,6 @@ impl<'a> SwitchTo<'a> {
         }
 
         self.window(&original_handle).await?;
-        Err(WebDriverError::NotFoundError(format!(
-            "No window handle found matching '{}'",
-            name
-        )))
+        Err(WebDriverError::NotFoundError(format!("No window handle found matching '{}'", name)))
     }
 }

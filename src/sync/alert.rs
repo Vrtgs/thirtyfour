@@ -1,6 +1,6 @@
-use crate::sync::webdriver::{WebDriverCommands, WebDriverSession};
+use crate::sync::webdrivercommands::{WebDriverCommands, WebDriverSession};
 use crate::{
-    common::{command::Command, connection_common::unwrap, keys::TypingData},
+    common::{command::Command, connection_common::convert_json, keys::TypingData},
     error::WebDriverResult,
 };
 
@@ -13,7 +13,9 @@ impl<'a> Alert<'a> {
     /// Create a new Alert struct. This is typically created internally
     /// via a call to `WebDriver::switch_to().alert()`.
     pub fn new(driver: WebDriverSession<'a>) -> Self {
-        Alert { driver }
+        Alert {
+            driver,
+        }
     }
 
     ///Convenience wrapper for executing a WebDriver command.
@@ -41,7 +43,7 @@ impl<'a> Alert<'a> {
     /// ```
     pub fn text(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetAlertText)?;
-        unwrap::<String>(&v["value"])
+        convert_json::<String>(&v["value"])
     }
 
     /// Dismiss the active alert.

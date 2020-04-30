@@ -35,7 +35,7 @@ pub fn build_headers(remote_server_addr: &str) -> Result<HeaderMap, WebDriverErr
     Ok(headers)
 }
 
-pub fn unwrap<T>(value: &serde_json::Value) -> WebDriverResult<T>
+pub fn convert_json<T>(value: &serde_json::Value) -> WebDriverResult<T>
 where
     T: DeserializeOwned,
 {
@@ -43,7 +43,7 @@ where
     Ok(s)
 }
 
-pub fn unwrap_vec<T>(value: &serde_json::Value) -> WebDriverResult<Vec<T>>
+pub fn convert_json_vec<T>(value: &serde_json::Value) -> WebDriverResult<Vec<T>>
 where
     T: DeserializeOwned,
 {

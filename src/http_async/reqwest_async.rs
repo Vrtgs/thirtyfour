@@ -1,7 +1,7 @@
+use async_trait::async_trait;
 use std::fmt::Debug;
 
-use async_trait::async_trait;
-
+use crate::http_async::connection_async::{RemoteConnectionAsync, RemoteConnectionAsyncCreate};
 use crate::{
     common::{
         command::{Command, RequestMethod},
@@ -11,36 +11,19 @@ use crate::{
     SessionId,
 };
 
-// NOTE: The remote connection is intended to be pluggable in order to facilitate
-//       switching to a different HTTP client if desired. For example this should
-//       allow switching to a client such as `surf` in order to work with an
-//       async-std runtime rather than tokio.
-
-#[async_trait]
-pub trait RemoteConnectionAsync: Debug + Send + Sync {
-    async fn execute(
-        &self,
-        session_id: &SessionId,
-        command: Command<'_>,
-    ) -> WebDriverResult<serde_json::Value>;
-}
-
-/// Asynchronous connection to the remote WebDriver server.
+/// Asynchronous http to the remote WebDriver server.
 #[derive(Debug)]
 pub struct ReqwestDriverAsync {
     url: String,
     client: reqwest::Client,
 }
 
-impl ReqwestDriverAsync {
-    /// Create a new ReqwestDriverAsync instance.
-    pub fn new(remote_server_addr: &str) -> Result<Self, WebDriverError> {
+impl RemoteConnectionAsyncCreate for ReqwestDriverAsync {
+    fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
         let headers = build_headers(remote_server_addr)?;
         Ok(ReqwestDriverAsync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
-            client: reqwest::Client::builder()
-                .default_headers(headers)
-                .build()?,
+            client: reqwest::Client::builder().default_headers(headers).build()?,
         })
     }
 }
