@@ -1,4 +1,4 @@
-//! Thirtyfour is a Selenium library for Rust, for automated website UI testing.
+//! Thirtyfour is a Selenium/WebDriver library for Rust, for automated website UI testing.
 //!
 //! It supports the full W3C WebDriver spec.
 //! Tested with Chrome and Firefox although any W3C-compatible WebDriver
@@ -8,19 +8,40 @@
 //!
 //! ## Features
 //!
-//! - Async / await support
-//! - Synchronous support
+//! - All W3C WebDriver and WebElement methods supported
+//! - Async / await support (both **tokio** and **async-std** runtimes supported via feature flags)
+//! - Synchronous support (use the `blocking` feature flag)
+//! - Create new browser session directly via WebDriver
 //! - Create new browser session via Selenium Standalone or Grid
 //! - Automatically close browser session on drop
-//! - All W3C WebDriver and WebElement methods supported
-//! - Find elements (via all common selectors)
+//! - Find elements (via all common selectors e.g. Id, Class, CSS, Tag, XPath)
 //! - Send keys to elements, including key-combinations
 //! - Execute Javascript
 //! - Action Chains
-//! - Cookies
+//! - Get and set cookies
 //! - Switch to frame/window/element/alert
+//! - Shadow DOM support
 //! - Alert support
-//! - Capture / Save screenshot of browser or individual element
+//! - Capture / Save screenshot of browser or individual element as PNG
+//! - Easy to add support for more HTTP clients using generics
+//!
+//! ## Feature Flags
+//!
+//! Support for **tokio** and **async-std** async runtimes, and support for synchronous http,
+//! are provided via feature flags.
+//!
+//! * `tokio-runtime`: (Default) Use the **tokio** runtime with the [reqwest](https://docs.rs/reqwest) http client.
+//! * `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
+//!
+//!     Make sure you specify `default-features = false` to avoid
+//!     conflicts with the tokio runtime support.
+//!
+//! * `blocking`: Enables the synchronous reqwest http client via `thirtyfour::sync::prelude::*`.
+//!
+//!     The `blocking` flag also enables `tokio-runtime` because the
+//!     synchronous reqwest client uses **tokio** internally.
+//!
+//! **NOTE**: You cannot specify `async-std-runtime` with other feature flags.
 //!
 //! ## Examples
 //!

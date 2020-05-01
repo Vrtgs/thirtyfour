@@ -1,3 +1,6 @@
+// Run as follows:
+// cargo run --example sync --features blocking
+
 use thirtyfour::sync::prelude::*;
 
 fn main() -> WebDriverResult<()> {

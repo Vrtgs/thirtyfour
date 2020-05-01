@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.10.0-alpha.1"
+version = "0.10.0-alpha.2"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -36,9 +36,14 @@ base64 = "0.11.0"
 chrono = { version = "0.4", features = ["serde"] }
 
 [[example]]
-name = "async"
+name = "tokio_async"
 required-features = ["tokio-runtime"]
 
 [[example]]
 name = "sync"
 required-features = ["blocking"]
+
+[[example]]
+name = "async_std_example"
+default-features = false
+required-features = ["async-std-runtime"]

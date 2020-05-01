@@ -27,7 +27,6 @@ impl RemoteConnectionSync for NullDriverSync {
         _session_id: &SessionId,
         _command: Command<'_>,
     ) -> WebDriverResult<serde_json::Value> {
-        // TODO: show help message.
         Ok(serde_json::Value::Null)
     }
 }
