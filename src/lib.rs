@@ -39,6 +39,7 @@
 //! ### Async example:
 //!
 //! ```rust
+//! # #[cfg(feature = "tokio-runtime")] {
 //! use thirtyfour::prelude::*;
 //! use tokio;
 //!
@@ -72,6 +73,7 @@
 //!
 //!     Ok(())
 //! }
+//! # }
 //! ```
 //!
 //! ### Sync example:
@@ -136,6 +138,8 @@ pub mod prelude {
     pub use crate::alert::Alert;
     pub use crate::error::WebDriverResult;
     pub use crate::switch_to::SwitchTo;
+    // #[cfg(doctest)]
+    pub use crate::testsupport::block_on;
     pub use crate::webdriver::WebDriver;
     pub use crate::webdrivercommands::{ScriptRet, WebDriverCommands};
     pub use crate::webelement::WebElement;
@@ -145,6 +149,8 @@ pub mod prelude {
 pub mod action_chain;
 mod alert;
 mod switch_to;
+// #[cfg(doctest)]
+mod testsupport;
 mod webdriver;
 mod webdrivercommands;
 mod webelement;

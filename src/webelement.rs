@@ -50,36 +50,36 @@ pub fn convert_elements_async<'a>(
 /// # Example:
 /// ```rust
 /// # use thirtyfour::prelude::*;
-/// # use tokio;
 /// #
-/// # #[tokio::main]
-/// # async fn main() -> WebDriverResult<()> {
-/// #     let caps = DesiredCapabilities::chrome();
-/// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-/// #     driver.get("http://webappdemo").await?;
-/// #     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+/// # fn main() -> WebDriverResult<()> {
+/// #     block_on(async {
+/// #         let caps = DesiredCapabilities::chrome();
+/// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+/// #         driver.get("http://webappdemo").await?;
+/// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
 /// let elem = driver.find_element(By::Name("input-result")).await?;
-/// #     assert_eq!(elem.get_attribute("name").await?, "input-result");
-/// #     Ok(())
+/// #         assert_eq!(elem.get_attribute("name").await?, "input-result");
+/// #         Ok(())
+/// #     })
 /// # }
 /// ```
 ///
 /// You can also search for a child element of another element as follows:
 /// ```rust
 /// # use thirtyfour::prelude::*;
-/// # use tokio;
 /// #
-/// # #[tokio::main]
-/// # async fn main() -> WebDriverResult<()> {
-/// #     let caps = DesiredCapabilities::chrome();
-/// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-/// #     driver.get("http://webappdemo").await?;
+/// # fn main() -> WebDriverResult<()> {
+/// #     block_on(async {
+/// #         let caps = DesiredCapabilities::chrome();
+/// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+/// #         driver.get("http://webappdemo").await?;
 /// let elem = driver.find_element(By::Css("div[data-section='section-buttons']")).await?;
 /// let child_elem = elem.find_element(By::Tag("button")).await?;
-/// #     child_elem.click().await?;
-/// #     let result_elem = elem.find_element(By::Id("button-result")).await?;
-/// #     assert_eq!(result_elem.text().await?, "Button 1 clicked");
-/// #     Ok(())
+/// #         child_elem.click().await?;
+/// #         let result_elem = elem.find_element(By::Id("button-result")).await?;
+/// #         assert_eq!(result_elem.text().await?, "Button 1 clicked");
+/// #         Ok(())
+/// #     })
 /// # }
 /// ```
 ///
@@ -122,16 +122,16 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// assert_eq!(elem.tag_name().await?, "button");
-    /// #     Ok(())
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn tag_name(&self) -> WebDriverResult<String> {
@@ -144,17 +144,17 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// let class_name = elem.class_name().await?;
-    /// #     assert!(class_name.contains("pure-button"));
-    /// #     Ok(())
+    /// #         assert!(class_name.contains("pure-button"));
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn class_name(&self) -> WebDriverResult<String> {
@@ -166,18 +166,18 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
-    /// #     driver.find_element(By::Id("button1")).await?.click().await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("button1")).await?.click().await?;
     /// let elem = driver.find_element(By::Id("button-result")).await?;
     /// let text = elem.text().await?;
-    /// #     assert_eq!(text, "Button 1 clicked");
-    /// #     Ok(())
+    /// #         assert_eq!(text, "Button 1 clicked");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn text(&self) -> WebDriverResult<String> {
@@ -190,18 +190,18 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// elem.click().await?;
-    /// #     let elem = driver.find_element(By::Id("button-result")).await?;
-    /// #     assert_eq!(elem.text().await?, "Button 1 clicked");
-    /// #     Ok(())
+    /// #         let elem = driver.find_element(By::Id("button-result")).await?;
+    /// #         assert_eq!(elem.text().await?, "Button 1 clicked");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn click(&self) -> WebDriverResult<()> {
@@ -251,19 +251,19 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Css("div[data-section='section-buttons']")).await?;
     /// let child_elem = elem.find_element(By::Tag("button")).await?;
-    /// #     child_elem.click().await?;
-    /// #     let result_elem = elem.find_element(By::Id("button-result")).await?;
-    /// #     assert_eq!(result_elem.text().await?, "Button 1 clicked");
-    /// #     Ok(())
+    /// #         child_elem.click().await?;
+    /// #         let result_elem = elem.find_element(By::Id("button-result")).await?;
+    /// #         assert_eq!(result_elem.text().await?, "Button 1 clicked");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement<'a>> {
@@ -277,20 +277,20 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Css("div[data-section='section-buttons']")).await?;
     /// let child_elems = elem.find_elements(By::Tag("button")).await?;
-    /// #     assert_eq!(child_elems.len(), 2);
+    /// #         assert_eq!(child_elems.len(), 2);
     /// for child_elem in child_elems {
     ///     assert_eq!(child_elem.tag_name().await?, "button");
     /// }
-    /// #     Ok(())
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn find_elements(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement<'a>>> {
@@ -305,38 +305,38 @@ impl<'a> WebElement<'a> {
     /// includes &str and String.
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
-    /// #     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// #     let elem = driver.find_element(By::Name("input1")).await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
-    /// #     assert_eq!(elem.text().await?, "selenium");
-    /// #     Ok(())
+    /// #         assert_eq!(elem.text().await?, "selenium");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     ///
     /// You can also send special key combinations like this:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
-    /// #     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// #     let elem = driver.find_element(By::Name("input1")).await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
     /// elem.send_keys(Keys::Control + "a").await?;
     /// elem.send_keys(TypingData::from("thirtyfour") + Keys::Enter).await?;
-    /// #     assert_eq!(elem.text().await?, "thirtyfour");
-    /// #     Ok(())
+    /// #         assert_eq!(elem.text().await?, "thirtyfour");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn send_keys<S>(&self, keys: S) -> WebDriverResult<()>
@@ -376,19 +376,19 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
-    /// #     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.focus().await?;
-    /// #     driver.action_chain().send_keys("selenium").perform().await?;
-    /// #     assert_eq!(elem.text().await?, "selenium");
-    /// #     Ok(())
+    /// #         driver.action_chain().send_keys("selenium").perform().await?;
+    /// #         assert_eq!(elem.text().await?, "selenium");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn focus(&self) -> WebDriverResult<()> {
@@ -403,16 +403,16 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// elem.scroll_into_view().await?;
-    /// #     Ok(())
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn scroll_into_view(&self) -> WebDriverResult<()> {

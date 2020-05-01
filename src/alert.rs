@@ -28,20 +28,20 @@ impl<'a> Alert<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
-    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #     driver.find_element(By::Id("alertbutton1")).await?.click().await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find_element(By::Id("alertbutton1")).await?.click().await?;
     /// let alert = driver.switch_to().alert();
     /// let text = alert.text().await?;
-    /// #     assert_eq!(text, "Alert 1 showing");
-    /// #     alert.dismiss().await?;
-    /// #     Ok(())
+    /// #         assert_eq!(text, "Alert 1 showing");
+    /// #         alert.dismiss().await?;
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn text(&self) -> WebDriverResult<String> {
@@ -54,19 +54,19 @@ impl<'a> Alert<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
-    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #     driver.find_element(By::Id("alertbutton2")).await?.click().await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find_element(By::Id("alertbutton2")).await?.click().await?;
     /// driver.switch_to().alert().dismiss().await?;
-    /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
-    /// #     assert_eq!(elem.text().await?, "Alert 2 clicked false");
-    /// #     Ok(())
+    /// #         let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #         assert_eq!(elem.text().await?, "Alert 2 clicked false");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn dismiss(&self) -> WebDriverResult<()> {
@@ -78,19 +78,19 @@ impl<'a> Alert<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
-    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #     driver.find_element(By::Id("alertbutton2")).await?.click().await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find_element(By::Id("alertbutton2")).await?.click().await?;
     /// driver.switch_to().alert().accept().await?;
-    /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
-    /// #     assert_eq!(elem.text().await?, "Alert 2 clicked true");
-    /// #     Ok(())
+    /// #         let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #         assert_eq!(elem.text().await?, "Alert 2 clicked true");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn accept(&self) -> WebDriverResult<()> {
@@ -104,44 +104,44 @@ impl<'a> Alert<'a> {
     /// includes &str and String.
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
-    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #     driver.find_element(By::Id("alertbutton3")).await?.click().await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find_element(By::Id("alertbutton3")).await?.click().await?;
     /// let alert = driver.switch_to().alert();
     /// alert.send_keys("selenium").await?;
     /// alert.accept().await?;
-    /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
-    /// #     assert_eq!(elem.text().await?, "selenium");
-    /// #     Ok(())
+    /// #         let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #         assert_eq!(elem.text().await?, "selenium");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     ///
     /// You can also send special key combinations like this:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
-    /// #     let caps = DesiredCapabilities::chrome();
-    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     driver.get("http://webappdemo").await?;
-    /// #     driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #     driver.find_element(By::Id("alertbutton3")).await?.click().await?;
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find_element(By::Id("alertbutton3")).await?.click().await?;
     /// let alert = driver.switch_to().alert();
     /// alert.send_keys("selenium").await?;
     /// alert.send_keys(Keys::Control + "a").await?;
     /// alert.send_keys("thirtyfour").await?;
-    /// #     alert.accept().await?;
-    /// #     let elem = driver.find_element(By::Id("alert-result")).await?;
-    /// #     assert_eq!(elem.text().await?, "thirtyfour");
-    /// #     Ok(())
+    /// #         alert.accept().await?;
+    /// #         let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #         assert_eq!(elem.text().await?, "thirtyfour");
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn send_keys<S>(&self, keys: S) -> WebDriverResult<()>

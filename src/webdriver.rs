@@ -34,14 +34,14 @@ pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
 /// # Example:
 /// ```rust
 /// use thirtyfour::prelude::*;
-/// use tokio;
 ///
-/// #[tokio::main]
-/// async fn main() -> WebDriverResult<()> {
-///     let caps = DesiredCapabilities::chrome();
-///     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-///     driver.get("http://webappdemo").await?;
-///     Ok(())
+/// fn main() -> WebDriverResult<()> {
+///     block_on(async {
+///         let caps = DesiredCapabilities::chrome();
+///         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+///         driver.get("http://webappdemo").await?;
+///         Ok(())
+///     })
 /// }
 /// ```
 #[derive(Debug)]
@@ -62,13 +62,13 @@ where
     /// # Example
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use tokio;
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() -> WebDriverResult<()> {
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
     /// let caps = DesiredCapabilities::chrome();
     /// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #     Ok(())
+    /// #         Ok(())
+    /// #     })
     /// # }
     /// ```
     pub async fn new<C>(remote_server_addr: &str, capabilities: C) -> WebDriverResult<Self>
