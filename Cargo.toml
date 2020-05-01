@@ -1,18 +1,21 @@
 [package]
 name = "thirtyfour"
-version = "0.10.0-alpha.2"
+version = "0.10.0"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 description = """
-Thirtyfour is a Selenium WebDriver library for Rust, for automated website UI testing.
+Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
+
 It supports the full W3C WebDriver spec.
 """
 homepage = "https://github.com/stevepryde/thirtyfour"
 repository = "https://github.com/stevepryde/thirtyfour"
+documentation = "https://docs.rs/thirtyfour"
+
 readme = "README.md"
 keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"]
-categories = ["api-bindings", "development-tools::testing"]
+categories = ["api-bindings", "development-tools::testing", "web-programming::http-client"]
 
 [features]
 default = ["tokio-runtime"]
