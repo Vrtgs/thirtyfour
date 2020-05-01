@@ -135,6 +135,7 @@
 //! # }
 //! ```
 
+#![forbid(unsafe_code)]
 #![allow(clippy::needless_doctest_main)]
 
 pub use alert::Alert;
