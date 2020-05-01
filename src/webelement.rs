@@ -50,6 +50,7 @@ pub fn convert_elements_async<'a>(
 /// # Example:
 /// ```rust
 /// # use thirtyfour::prelude::*;
+/// # use thirtyfour::support::block_on;
 /// #
 /// # fn main() -> WebDriverResult<()> {
 /// #     block_on(async {
@@ -67,6 +68,7 @@ pub fn convert_elements_async<'a>(
 /// You can also search for a child element of another element as follows:
 /// ```rust
 /// # use thirtyfour::prelude::*;
+/// # use thirtyfour::support::block_on;
 /// #
 /// # fn main() -> WebDriverResult<()> {
 /// #     block_on(async {
@@ -122,6 +124,7 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -144,6 +147,7 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -166,6 +170,7 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -190,6 +195,7 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -251,6 +257,7 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -277,6 +284,7 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -305,6 +313,7 @@ impl<'a> WebElement<'a> {
     /// includes &str and String.
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -323,6 +332,7 @@ impl<'a> WebElement<'a> {
     /// You can also send special key combinations like this:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -376,6 +386,7 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -403,6 +414,7 @@ impl<'a> WebElement<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {

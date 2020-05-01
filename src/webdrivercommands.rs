@@ -168,6 +168,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -193,6 +194,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -217,6 +219,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -250,6 +253,7 @@ pub trait WebDriverCommands {
     /// ```rust
     /// use thirtyfour::ScriptArgs;
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -286,6 +290,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -324,6 +329,7 @@ pub trait WebDriverCommands {
     /// ```rust
     /// use thirtyfour::ScriptArgs;
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -378,6 +384,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -403,6 +410,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -436,6 +444,7 @@ pub trait WebDriverCommands {
     /// ```rust
     /// use thirtyfour::OptionRect;
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -453,6 +462,7 @@ pub trait WebDriverCommands {
     /// ```rust
     /// use thirtyfour::OptionRect;
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -474,6 +484,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -496,6 +507,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -520,6 +532,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -542,6 +555,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// use thirtyfour::TimeoutConfiguration;
     /// use std::time::Duration;
     /// #
@@ -574,6 +588,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// use thirtyfour::TimeoutConfiguration;
     /// use std::time::Duration;
     /// #
@@ -617,6 +632,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -647,6 +663,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -675,6 +692,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -700,6 +718,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -724,6 +743,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -749,6 +769,7 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {

@@ -30,6 +30,7 @@ impl<'a> SwitchTo<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -69,6 +70,7 @@ impl<'a> SwitchTo<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -95,6 +97,7 @@ impl<'a> SwitchTo<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -121,6 +124,7 @@ impl<'a> SwitchTo<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -148,6 +152,7 @@ impl<'a> SwitchTo<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -179,6 +184,7 @@ impl<'a> SwitchTo<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -211,6 +217,7 @@ impl<'a> SwitchTo<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {

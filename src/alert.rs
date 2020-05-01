@@ -28,6 +28,7 @@ impl<'a> Alert<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -54,6 +55,7 @@ impl<'a> Alert<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -78,6 +80,7 @@ impl<'a> Alert<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -104,6 +107,7 @@ impl<'a> Alert<'a> {
     /// includes &str and String.
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -125,6 +129,7 @@ impl<'a> Alert<'a> {
     /// You can also send special key combinations like this:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {

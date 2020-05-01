@@ -52,6 +52,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -89,6 +90,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -116,6 +118,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -139,6 +142,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -168,6 +172,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -194,6 +199,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -221,6 +227,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -244,6 +251,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -272,6 +280,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -344,6 +353,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -373,6 +383,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -400,6 +411,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -435,6 +447,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -468,6 +481,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -497,6 +511,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -530,6 +545,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -560,6 +576,7 @@ impl<'a> ActionChain<'a> {
     ///
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -603,6 +620,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -630,6 +648,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -656,6 +675,7 @@ impl<'a> ActionChain<'a> {
     /// ```rust
     /// use thirtyfour::Keys;
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -693,6 +713,7 @@ impl<'a> ActionChain<'a> {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {

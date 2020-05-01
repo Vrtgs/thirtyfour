@@ -34,6 +34,7 @@ pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
 /// # Example:
 /// ```rust
 /// use thirtyfour::prelude::*;
+/// # use thirtyfour::support::block_on;
 ///
 /// fn main() -> WebDriverResult<()> {
 ///     block_on(async {
@@ -62,6 +63,7 @@ where
     /// # Example
     /// ```rust
     /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
