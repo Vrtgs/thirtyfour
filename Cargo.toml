@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.10.0"
+version = "0.10.1"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -50,3 +50,6 @@ required-features = ["blocking"]
 name = "async_std_example"
 default-features = false
 required-features = ["async-std-runtime"]
+
+[package.metadata.docs.rs]
+features = [ "blocking" ]

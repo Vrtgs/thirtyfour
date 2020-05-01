@@ -18,8 +18,8 @@ pub type WebDriver = GenericWebDriver<NullDriverSync>;
 #[cfg(feature = "tokio-runtime")]
 pub type WebDriver = GenericWebDriver<ReqwestDriverSync>;
 
-/// This WebDriver struct encapsulates a synchronous Selenium WebDriver browser
-/// session. For the async driver, see [WebDriver](../struct.WebDriver.html).
+/// This GenericWebDriver struct encapsulates a synchronous Selenium WebDriver browser
+/// session. For the async driver, see [GenericWebDriver](../struct.GenericWebDriver.html).
 ///
 /// See the [WebDriverCommands](trait.WebDriverCommands.html) trait for WebDriver methods.
 ///

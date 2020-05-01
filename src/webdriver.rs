@@ -25,16 +25,16 @@ pub type WebDriver = GenericWebDriver<ReqwestDriverAsync>;
 #[cfg(feature = "async-std-runtime")]
 pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
 
-/// The WebDriver struct encapsulates an async Selenium WebDriver browser
+/// The GenericWebDriver struct encapsulates an async Selenium WebDriver browser
 /// session. For the sync driver, see
-/// [sync::WebDriver](sync/struct.WebDriver.html).
+/// [sync::GenericWebDriver](sync/struct.GenericWebDriver.html).
 ///
 /// See the [WebDriverCommands](trait.WebDriverCommands.html) trait for WebDriver methods.
 ///
 /// # Example:
 /// ```rust
 /// use thirtyfour::prelude::*;
-/// # use thirtyfour::support::block_on;
+/// use thirtyfour::support::block_on;
 ///
 /// fn main() -> WebDriverResult<()> {
 ///     block_on(async {
