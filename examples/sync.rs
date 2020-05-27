@@ -1,11 +1,16 @@
-// Run as follows:
-// cargo run --example sync --features blocking
+//! Requires chromedriver running on port 4444:
+//!
+//!     chromedriver --port=4444
+//!
+//! Run as follows:
+//!
+//!     cargo run --example sync --features blocking
 
 use thirtyfour::sync::prelude::*;
 
 fn main() -> WebDriverResult<()> {
     let caps = DesiredCapabilities::chrome();
-    let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    let driver = WebDriver::new("http://localhost:4444", &caps)?;
 
     // Navigate to https://wikipedia.org.
     driver.get("https://wikipedia.org")?;

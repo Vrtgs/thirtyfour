@@ -1,5 +1,10 @@
-// Run as follows:
-// cargo run --example async_std_example --features async-std-runtime --no-default-features
+//! Requires chromedriver running on port 4444:
+//!
+//!     chromedriver --port=4444
+//!
+//! Run as follows:
+//!
+//!     cargo run --example async_std_example --features async-std-runtime --no-default-features
 
 use async_std::task;
 
@@ -8,7 +13,7 @@ use thirtyfour::prelude::*;
 fn main() -> WebDriverResult<()> {
     task::block_on(async {
         let caps = DesiredCapabilities::chrome();
-        let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+        let driver = WebDriver::new("http://localhost:4444", &caps).await?;
 
         // Navigate to https://wikipedia.org.
         driver.get("https://wikipedia.org").await?;

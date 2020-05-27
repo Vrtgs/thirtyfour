@@ -13,7 +13,7 @@ Both sync and async APIs are included (see examples below).
 - All W3C WebDriver and WebElement methods supported
 - Async / await support (both **tokio** and **async-std** runtimes supported via feature flags)
 - Synchronous support (use the `blocking` feature flag)
-- Create new browser session directly via WebDriver
+- Create new browser session directly via WebDriver (e.g. chromedriver)
 - Create new browser session via Selenium Standalone or Grid
 - Automatically close browser session on drop
 - Find elements (via all common selectors e.g. Id, Class, CSS, Tag, XPath)
@@ -48,9 +48,15 @@ It is named after the atomic number for the Selenium chemical element (Se).
 
 ## Examples
 
-The examples assume you have a selenium server running at localhost:4444.
+The examples assume you have a WebDriver running at localhost:4444.
 
-The recommended way to do this is via docker (instructions below), because it automatically takes care of all dependencies, including WebDriver and browser version combinations.
+You can use Selenium (see instructions below) or you can use chromedriver 
+directly by downloading the chromedriver that matches your Chrome version,
+from here: [https://chromedriver.chromium.org/downloads](https://chromedriver.chromium.org/downloads)
+
+Then run it like this:
+
+    chromedriver --port=4444
 
 ### Async example:
 
@@ -65,7 +71,7 @@ use tokio;
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
      let caps = DesiredCapabilities::chrome();
-     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+     let driver = WebDriver::new("http://localhost:4444", &caps).await?;
 
      // Navigate to https://wikipedia.org.
      driver.get("https://wikipedia.org").await?;
@@ -100,7 +106,7 @@ use thirtyfour::sync::prelude::*;
 
 fn main() -> WebDriverResult<()> {
      let caps = DesiredCapabilities::chrome();
-     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+     let driver = WebDriver::new("http://localhost:4444", &caps)?;
 
      // Navigate to https://wikipedia.org.
      driver.get("https://wikipedia.org")?;
@@ -123,7 +129,11 @@ fn main() -> WebDriverResult<()> {
      Ok(())
 }
 ```
-## Running the examples
+## Running the examples with selenium
+
+*NOTE:* To run the examples with selenium, start selenium (instructions below) then run:
+
+    cargo run --example selenium_example
 
 Below you can find my recommended development environment for running selenium tests.
 

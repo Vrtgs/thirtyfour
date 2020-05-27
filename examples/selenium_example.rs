@@ -1,11 +1,18 @@
+//! Requires selenium running on port 4444:
+//!
+//!     java -jar selenium-server-standalone-3.141.59.jar
+//!
+//! Run as follows:
+//!
+//!     cargo run --example tokio_async
+
 use thirtyfour::prelude::*;
 use tokio;
 
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
-    // Start chromedriver using: chromedriver --port=4444
     let caps = DesiredCapabilities::chrome();
-    let driver = WebDriver::new("http://localhost:4444", &caps).await?;
+    let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 
     // Navigate to https://wikipedia.org.
     driver.get("https://wikipedia.org").await?;

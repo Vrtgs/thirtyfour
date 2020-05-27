@@ -11,7 +11,7 @@
 //! - All W3C WebDriver and WebElement methods supported
 //! - Async / await support (both **tokio** and **async-std** runtimes supported via feature flags)
 //! - Synchronous support (use the `blocking` feature flag)
-//! - Create new browser session directly via WebDriver
+//! - Create new browser session directly via WebDriver (e.g. chromedriver)
 //! - Create new browser session via Selenium Standalone or Grid
 //! - Automatically close browser session on drop
 //! - Find elements (via all common selectors e.g. Id, Class, CSS, Tag, XPath)
