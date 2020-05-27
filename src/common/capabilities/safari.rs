@@ -13,9 +13,7 @@ impl Default for SafariCapabilities {
     fn default() -> Self {
         SafariCapabilities {
             capabilities: json!({
-                "browserName": "safari",
-                "version": "",
-                "platform": "MAC"
+                "browserName": "safari"
             }),
         }
     }

@@ -79,7 +79,9 @@ impl DesiredCapabilities {
     /// but you can use `DesiredCapabilities::new` if you need to create capabilities
     /// for a browser not listed here.
     pub fn new(capabilities: Value) -> Self {
-        DesiredCapabilities { capabilities }
+        Self {
+            capabilities,
+        }
     }
 
     /// Create a FirefoxCapabilities struct.

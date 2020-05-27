@@ -13,9 +13,7 @@ impl Default for EdgeCapabilities {
     fn default() -> Self {
         EdgeCapabilities {
             capabilities: json!({
-                "browserName": "MicrosoftEdge",
-                "version": "",
-                "platform": "WINDOWS"
+                "browserName": "MicrosoftEdge"
             }),
         }
     }

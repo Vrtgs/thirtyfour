@@ -17,9 +17,7 @@ impl Default for FirefoxCapabilities {
     fn default() -> Self {
         FirefoxCapabilities {
             capabilities: json!({
-                "browserName": "firefox",
-                "version": "",
-                "platform": "ANY"
+                "browserName": "firefox"
             }),
         }
     }
@@ -106,32 +104,17 @@ pub enum LoggingPrefsLogLevel {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FirefoxProfile {
-    #[serde(
-        rename = "webdriver_accept_untrusted_certs",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename = "webdriver_accept_untrusted_certs", skip_serializing_if = "Option::is_none")]
     pub accept_untrusted_certs: Option<bool>,
-    #[serde(
-        rename = "webdriver_assume_untrusted_issuer",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename = "webdriver_assume_untrusted_issuer", skip_serializing_if = "Option::is_none")]
     pub assume_untrusted_issuer: Option<bool>,
-    #[serde(
-        rename = "webdriver.log.driver",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename = "webdriver.log.driver", skip_serializing_if = "Option::is_none")]
     pub log_driver: Option<FirefoxProfileLogDriver>,
     #[serde(rename = "webdriver.log.file", skip_serializing_if = "Option::is_none")]
     pub log_file: Option<String>,
-    #[serde(
-        rename = "webdriver.load.strategy",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename = "webdriver.load.strategy", skip_serializing_if = "Option::is_none")]
     pub load_strategy: Option<String>,
-    #[serde(
-        rename = "webdriver_firefox_port",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename = "webdriver_firefox_port", skip_serializing_if = "Option::is_none")]
     pub webdriver_port: Option<u16>,
 }
 

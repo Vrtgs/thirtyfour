@@ -13,9 +13,7 @@ impl Default for InternetExplorerCapabilities {
     fn default() -> Self {
         InternetExplorerCapabilities {
             capabilities: json!({
-                "browserName": "internet explorer",
-                "version": "",
-                "platform": "WINDOWS"
+                "browserName": "internet explorer"
             }),
         }
     }

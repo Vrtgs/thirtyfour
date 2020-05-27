@@ -14,9 +14,7 @@ impl Default for ChromeCapabilities {
     fn default() -> Self {
         ChromeCapabilities {
             capabilities: json!({
-                "browserName": "chrome",
-                "version": "",
-                "platform": "ANY"
+                "browserName": "chrome"
             }),
         }
     }

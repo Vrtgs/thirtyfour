@@ -13,9 +13,7 @@ impl Default for OperaCapabilities {
     fn default() -> Self {
         OperaCapabilities {
             capabilities: json!({
-                "browserName": "opera",
-                "version": "",
-                "platform": "ANY"
+                "browserName": "opera"
             }),
         }
     }
