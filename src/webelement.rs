@@ -216,6 +216,26 @@ impl<'a> WebElement<'a> {
     }
 
     /// Clear the WebElement contents.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         let elem = driver.find_element(By::Name("input2")).await?;
+    /// #         elem.clear().await?;
+    /// # let cleared_text = elem.text().await?;
+    /// #         assert_eq!(cleared_text, "");
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
     pub async fn clear(&self) -> WebDriverResult<()> {
         self.cmd(Command::ElementClear(&self.element_id)).await?;
         Ok(())
