@@ -53,6 +53,15 @@ impl Component for InputComponent {
                     </input>
                 </div>
                 <div class="pure-u-1-6">
+                    <input type="text" name="input2"
+                        oninput={self.link.callback(|e| InputMsg::GotInput(e))}
+                        value="default input text"
+                        size="15"
+                        maxlength="20">
+                        {&self.value}
+                    </input>
+                </div>
+                <div class="pure-u-1-6">
                     <button class="pure-button" id="button-set"
                         onclick={self.link.callback(|_| InputMsg::Click)}>
                         { "SET VALUE" }
