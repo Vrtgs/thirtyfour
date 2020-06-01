@@ -54,8 +54,8 @@ impl Component for InputComponent {
                 </div>
                 <div class="pure-u-1-6">
                     <input type="text" name="input2"
-                        oninput={self.link.callback(|e| InputMsg::GotInput(e))}
                         value="default input text"
+                        checked=true
                         size="15"
                         maxlength="20">
                         {&self.value}

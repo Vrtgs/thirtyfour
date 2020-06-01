@@ -294,7 +294,7 @@ impl<'a> Command<'a> {
             Command::GetElementProperty(element_id, property_name) => RequestData::new(
                 RequestMethod::Get,
                 format!(
-                    "/session/{}/element/{}/proprty/{}",
+                    "/session/{}/element/{}/property/{}",
                     session_id, element_id, property_name
                 ),
             ),
