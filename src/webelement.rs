@@ -242,12 +242,51 @@ impl<'a> WebElement<'a> {
     }
 
     /// Get the specified property.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         let elem = driver.find_element(By::Name("input2")).await?;
+    /// #         //Convert property value to string because its type is boolean, get_property
+    /// #         let property_value = elem.get_property("checked").await?;
+    /// #         assert_eq!(property_value, "true");
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
     pub async fn get_property(&self, name: &str) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementProperty(&self.element_id, name.to_owned())).await?;
-        convert_json(&v["value"])
+        Ok(v["value"].to_string())
     }
 
     /// Get the specified attribute.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         let elem = driver.find_element(By::Name("input2")).await?;
+    /// #         let value = elem.get_attribute("checked").await?;
+    /// #         assert_eq!(value, "true");
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
     pub async fn get_attribute(&self, name: &str) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementAttribute(&self.element_id, name.to_owned())).await?;
         convert_json(&v["value"])
