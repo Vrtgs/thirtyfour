@@ -1,8 +1,6 @@
 use std::fmt;
 #[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
 use std::path::Path;
-use std::any::{Any, TypeId};
-use serde_json::json;
 
 #[cfg(feature = "async-std-runtime")]
 use async_std::fs::File;
@@ -266,10 +264,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn get_property(&self, name: &str) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementProperty(&self.element_id, name.to_owned())).await?;
-        if !is_string(&v["value"]) {
-           return convert_json(&json!(&v["value"].to_string()))
-        }
-        convert_json(&v["value"])
+        Ok(v["value"].to_string())
     }
 
     /// Get the specified attribute.
@@ -514,8 +509,4 @@ impl<'a> Serialize for WebElement<'a> {
         map.serialize_entry(MAGIC_ELEMENTID, &self.element_id.to_string())?;
         map.end()
     }
-}
-
-fn is_string<T: ?Sized + Any>(_s: &T) -> bool {
-    TypeId::of::<String>() == TypeId::of::<T>()
 }
