@@ -196,21 +196,83 @@ impl<'a> WebElement<'a> {
     }
 
     /// Get the specified property.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
+    /// #     let elem = driver.find_element(By::Name("input2"))?;
+    /// let bool_value = elem.get_property("checked")?;
+    /// assert_eq!(bool_value, "true");
+    /// let string_value = elem.get_property("name")?;
+    /// assert_eq!(string_value, "input2");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn get_property(&self, name: &str) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementProperty(&self.element_id, name.to_owned()))?;
-        convert_json(&v["value"])
+        if !v["value"].is_string() {
+            Ok(v["value"].to_string())
+        } else {
+            convert_json(&v["value"])
+        }
     }
 
     /// Get the specified attribute.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
+    /// #     let elem = driver.find_element(By::Name("input2"))?;
+    /// let attribute = elem.get_attribute("name")?;
+    /// assert_eq!(attribute, "input2");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn get_attribute(&self, name: &str) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementAttribute(&self.element_id, name.to_owned()))?;
-        convert_json(&v["value"])
+        if !v["value"].is_string() {
+            Ok(v["value"].to_string())
+        } else {
+            convert_json(&v["value"])
+        }
     }
 
     /// Get the specified CSS property.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
+    /// #     let elem = driver.find_element(By::Name("input2"))?;
+    /// let css_color = elem.get_css_property("color")?;
+    /// assert_eq!(css_color, r"rgba(0, 0, 0, 1)");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn get_css_property(&self, name: &str) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementCSSValue(&self.element_id, name.to_owned()))?;
-        convert_json(&v["value"])
+        if !v["value"].is_string() {
+            Ok(v["value"].to_string())
+        } else {
+            convert_json(&v["value"])
+        }
     }
 
     /// Return true if the WebElement is currently selected, otherwise false.
