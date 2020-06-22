@@ -24,6 +24,7 @@ pub struct WebDriverErrorInfo {
 /// WebDriverError is the main error type
 #[derive(Debug)]
 pub enum WebDriverError {
+    UnknownResponse(String),
     NotFoundError(String),
     JsonError(serde_json::error::Error),
     DecodeError(DecodeError),
@@ -83,9 +84,14 @@ impl std::error::Error for WebDriverError {
 
 impl WebDriverError {
     pub fn parse(status: u16, body: serde_json::Value) -> Self {
-        let mut payload: WebDriverErrorInfo = match serde_json::from_value(body) {
+        let mut payload: WebDriverErrorInfo = match serde_json::from_value(body.clone()) {
             Ok(x) => x,
-            Err(e) => return e.into(),
+            Err(_) => {
+                return WebDriverError::UnknownResponse(format!(
+                    "Server returned unknown response: {}",
+                    body.to_string()
+                ))
+            }
         };
         payload.status = status;
         let mut error = payload.error.clone();

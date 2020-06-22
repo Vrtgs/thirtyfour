@@ -52,7 +52,7 @@ impl RemoteConnectionSync for ReqwestDriverSync {
             200..=399 => Ok(resp.json()?),
             400..=599 => {
                 let status = resp.status().as_u16();
-                let body: serde_json::Value = resp.json()?;
+                let body: serde_json::Value = resp.json().unwrap_or(serde_json::Value::Null);
                 Err(WebDriverError::parse(status, body))
             }
             _ => unreachable!(),

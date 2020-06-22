@@ -33,18 +33,17 @@ It is named after the atomic number for the Selenium chemical element (Se).
 
 ## Feature Flags
 
-- `tokio-runtime`: (Default) Use the **tokio** runtime with the [reqwest](https://docs.rs/reqwest) http client.
+- `tokio-runtime`: (Default) Use the **tokio** async runtime with the [reqwest](https://docs.rs/reqwest) http client.
+- `blocking`: Enables the synchronous reqwest http client via `thirtyfour::sync::prelude::*`.
+
+  The `blocking` flag also enables `tokio-runtime` because the
+  synchronous reqwest client uses **tokio** internally.
 - `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
 
   Make sure you specify `default-features = false` to avoid
   conflicts with the tokio runtime support.
 
-- `blocking`: Enables the synchronous reqwest http client via `thirtyfour::sync::prelude::*`.
-
-  The `blocking` flag also enables `tokio-runtime` because the
-  synchronous reqwest client uses **tokio** internally.
-
-**NOTE**: You cannot specify `async-std-runtime` with other feature flags.
+  **NOTE**: You cannot specify `async-std-runtime` with other feature flags.
 
 ## Examples
 
@@ -129,9 +128,9 @@ fn main() -> WebDriverResult<()> {
      Ok(())
 }
 ```
-## Running the examples with selenium
+## Running against selenium
 
-*NOTE:* To run the examples with selenium, start selenium (instructions below) then run:
+*NOTE:* To run the selenium example, start selenium (instructions below) then run:
 
     cargo run --example selenium_example
 
@@ -140,6 +139,10 @@ Below you can find my recommended development environment for running selenium t
 Essentially you need 3 main components as a minimum:
 
 1. Selenium standalone running on some server, usually localhost at port 4444.
+
+    When using selenium, remember to include `/wd/hub` after the server address.
+    For example, when running against localhost:4444, your selenium url will be `http://localhost:4444/wd/hub`
+
 2. The webdriver for your browser somewhere in your PATH, e.g. chromedriver (Chrome) or geckodriver (Firefox)
 3. Your code, that imports this library
 

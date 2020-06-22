@@ -30,18 +30,17 @@
 //! Support for **tokio** and **async-std** async runtimes, and support for synchronous http,
 //! are provided via feature flags.
 //!
-//! * `tokio-runtime`: (Default) Use the **tokio** runtime with the [reqwest](https://docs.rs/reqwest) http client.
+//! * `tokio-runtime`: (Default) Use the **tokio** async runtime with the [reqwest](https://docs.rs/reqwest) http client.
+//! * `blocking`: Enables the synchronous reqwest http client via `thirtyfour::sync::prelude::*`.
+//!
+//!     The `blocking` flag also enables `tokio-runtime` because the
+//!     synchronous reqwest client uses **tokio** internally.
 //! * `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
 //!
 //!     Make sure you specify `default-features = false` to avoid
 //!     conflicts with the tokio runtime support.
 //!
-//! * `blocking`: Enables the synchronous reqwest http client via `thirtyfour::sync::prelude::*`.
-//!
-//!     The `blocking` flag also enables `tokio-runtime` because the
-//!     synchronous reqwest client uses **tokio** internally.
-//!
-//! **NOTE**: You cannot specify `async-std-runtime` with other feature flags.
+//!     **NOTE**: You cannot specify `async-std-runtime` with other feature flags.
 //!
 //! ## Examples
 //!
