@@ -1,12 +1,11 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use futures::executor::block_on;
 use log::error;
 use serde::Serialize;
 use serde_json::Value;
-
-use async_trait::async_trait;
 
 use crate::http_async::connection_async::{RemoteConnectionAsync, RemoteConnectionAsyncCreate};
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
@@ -19,17 +18,37 @@ use crate::webdrivercommands::{start_session, WebDriverCommands, WebDriverSessio
 use crate::{common::command::Command, error::WebDriverResult, DesiredCapabilities, SessionId};
 
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
+/// The WebDriver struct represents a browser session.
+///
+/// For full documentation of all WebDriver methods,
+/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
 pub type WebDriver = GenericWebDriver<NullDriverAsync>;
 #[cfg(feature = "tokio-runtime")]
+/// The WebDriver struct represents a browser session.
+///
+/// For full documentation of all WebDriver methods,
+/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
 pub type WebDriver = GenericWebDriver<ReqwestDriverAsync>;
 #[cfg(feature = "async-std-runtime")]
+/// The WebDriver struct represents a browser session.
+///
+/// For full documentation of all WebDriver methods,
+/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
 pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
 
-/// The GenericWebDriver struct encapsulates an async Selenium WebDriver browser
+/// **NOTE:** For WebDriver method documentation,
+/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
+///
+/// The `thirtyfour` crate uses a generic struct that implements the
+/// `WebDriverCommands` trait. The generic struct is then implemented for
+/// a specific HTTP client. This enables `thirtyfour` to support different
+/// HTTP clients in order to target different async runtimes. If you do not
+/// require a specific async runtime or if you are using tokio then the
+/// default will work fine.
+///
+/// The `GenericWebDriver` struct encapsulates an async Selenium WebDriver browser
 /// session. For the sync driver, see
 /// [sync::GenericWebDriver](sync/struct.GenericWebDriver.html).
-///
-/// See the [WebDriverCommands](trait.WebDriverCommands.html) trait for WebDriver methods.
 ///
 /// # Example:
 /// ```rust
@@ -58,7 +77,13 @@ impl<T: 'static> GenericWebDriver<T>
 where
     T: RemoteConnectionAsync + RemoteConnectionAsyncCreate,
 {
-    /// Create a new async WebDriver struct.
+    /// The GenericWebDriver struct is not intended to be created directly.
+    ///
+    /// Instead you would use the WebDriver struct, which wires up the
+    /// GenericWebDriver with a HTTP client for making requests to the
+    /// WebDriver server.
+    ///
+    /// Create a new WebDriver as follows:
     ///
     /// # Example
     /// ```rust

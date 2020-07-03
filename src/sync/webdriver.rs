@@ -14,14 +14,27 @@ use crate::sync::webdrivercommands::{start_session, WebDriverCommands, WebDriver
 use crate::{common::command::Command, error::WebDriverResult, DesiredCapabilities, SessionId};
 
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
+/// The WebDriver struct represents a browser session.
+///
+/// For full documentation of all WebDriver methods,
+/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
 pub type WebDriver = GenericWebDriver<NullDriverSync>;
 #[cfg(feature = "tokio-runtime")]
+/// The WebDriver struct represents a browser session.
+///
+/// For full documentation of all WebDriver methods,
+/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
 pub type WebDriver = GenericWebDriver<ReqwestDriverSync>;
 
-/// This GenericWebDriver struct encapsulates a synchronous Selenium WebDriver browser
-/// session. For the async driver, see [GenericWebDriver](../struct.GenericWebDriver.html).
+/// **NOTE:** For WebDriver method documentation,
+/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
 ///
-/// See the [WebDriverCommands](trait.WebDriverCommands.html) trait for WebDriver methods.
+/// The `thirtyfour` crate uses a generic struct that implements the
+/// `WebDriverCommands` trait. The generic struct is then implemented for
+/// a specific HTTP client.
+///
+/// This `GenericWebDriver` struct encapsulates a synchronous Selenium WebDriver browser
+/// session. For the async driver, see [GenericWebDriver](../struct.GenericWebDriver.html).
 ///
 /// # Example:
 /// ```rust
@@ -47,7 +60,13 @@ impl<T: 'static> GenericWebDriver<T>
 where
     T: RemoteConnectionSync + RemoteConnectionSyncCreate,
 {
-    /// Create a new synchronous WebDriver struct.
+    /// The GenericWebDriver struct is not intended to be created directly.
+    ///
+    /// Instead you would use the WebDriver struct, which wires up the
+    /// GenericWebDriver with a HTTP client for making requests to the
+    /// WebDriver server.
+    ///
+    /// Create a new WebDriver as follows:
     ///
     /// # Example
     /// ```rust

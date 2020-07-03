@@ -156,7 +156,7 @@ pub use webdriver::WebDriver;
 pub use webdrivercommands::WebDriverCommands;
 pub use webelement::WebElement;
 
-// Allow importing the common async structs via `use thirtyfour::prelude::*`.
+/// Allow importing the common async structs via `use thirtyfour::prelude::*`.
 pub mod prelude {
     pub use crate::alert::Alert;
     pub use crate::error::WebDriverResult;
@@ -167,14 +167,17 @@ pub mod prelude {
     pub use crate::{By, Cookie, DesiredCapabilities, Keys, ScriptArgs, TypingData};
 }
 
+/// Action chains allow for more complex user interactions with the keyboard and mouse.
 pub mod action_chain;
 mod alert;
+/// Miscellaneous support functions for `thirtyfour` tests.
 pub mod support;
 mod switch_to;
 mod webdriver;
 mod webdrivercommands;
 mod webelement;
 
+/// Async HTTP client traits.
 pub mod http_async {
     pub mod connection_async;
     #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
@@ -185,6 +188,7 @@ pub mod http_async {
     pub mod surf_async;
 }
 
+/// Common types used by both async and sync implementations.
 pub mod common {
     pub mod action;
     pub mod capabilities {
@@ -203,8 +207,8 @@ pub mod common {
     pub mod scriptargs;
     pub mod types;
 }
-// Allow importing the common sync structs via `use thirtyfour::sync::*`.
 #[cfg(feature = "blocking")]
+/// Allow importing the common sync structs via `use thirtyfour::sync::*`.
 pub mod sync {
     pub use alert::Alert;
     pub use switch_to::SwitchTo;
@@ -238,4 +242,5 @@ pub mod sync {
     mod webelement;
 }
 
+/// Error types.
 pub mod error;

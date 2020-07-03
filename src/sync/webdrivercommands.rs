@@ -119,36 +119,139 @@ impl<'a> WebDriverCommands for WebDriverSession<'a> {
 }
 
 /// All browser-level W3C WebDriver commands are implemented under this trait.
+///
+/// `Thirtyfour` is structured as follows:
+/// - The `WebDriverCommands` trait contains all of the methods you would
+///   typically call in order to interact with the browser.
+/// - The `GenericWebDriver` struct implements the `WebDriverCommands` trait
+///   for a generic HTTP client.
+/// - The `WebDriver` struct is the `GenericWebDriver` implemented for a
+///   specific HTTP client.
+///
+/// You only need to use `WebDriver` in your code. Just create an instance
+/// of the `WebDriver` struct and it will have access to all of the methods
+/// from the `WebDriverCommands` trait.
+///
+/// For example:
+/// ```rust
+/// # use thirtyfour::sync::prelude::*;
+/// # fn main() -> WebDriverResult<()> {
+/// let caps = DesiredCapabilities::chrome();
+/// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+/// driver.get("http://webappdemo")?;
+/// assert_eq!(driver.current_url()?, "http://webappdemo/");
+/// #     Ok(())
+/// # }
+/// ```
 pub trait WebDriverCommands {
     /// Convenience wrapper for running WebDriver commands.
+    ///
+    /// For `thirtyfour` internal use only.
     fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value>;
 
-    /// Get the current session and http.
+    /// Get the current session and http client.
+    ///
+    /// For `thirtyfour` internal use only.
     fn session(&self) -> WebDriverSession;
 
-    /// Close the current window.
+    /// Close the current window or tab.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// // Open a new tab.
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#)?;
+    /// // Get window handles and switch to the new tab.
+    /// let handles = driver.window_handles()?;
+    /// driver.switch_to().window(&handles[1])?;
+    /// // We are now controlling the new tab.
+    /// driver.get("http://webappdemo")?;
+    /// // Close the tab. This will return to the original tab.
+    /// driver.close()?;
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn close(&self) -> WebDriverResult<()> {
         self.cmd(Command::CloseWindow).map(|_| ())
     }
 
     /// Navigate to the specified URL.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// driver.get("http://webappdemo")?;
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn get<S: Into<String>>(&self, url: S) -> WebDriverResult<()> {
         self.cmd(Command::NavigateTo(url.into())).map(|_| ())
     }
 
     /// Get the current URL as a String.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// driver.get("http://webappdemo")?;
+    /// let url = driver.current_url()?;
+    /// #     assert_eq!(url, "http://webappdemo/");
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn current_url(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetCurrentUrl)?;
         convert_json(&v["value"])
     }
 
     /// Get the page source as a String.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// driver.get("http://webappdemo")?;
+    /// let source = driver.page_source()?;
+    /// #     assert!(source.starts_with(r#"<html lang="en">"#));
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn page_source(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetPageSource)?;
         convert_json(&v["value"])
     }
 
     /// Get the page title as a String.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// driver.get("http://webappdemo")?;
+    /// let title = driver.title()?;
+    /// #     assert_eq!(title, "Demo Web App");
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn title(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetTitle)?;
         convert_json(&v["value"])
@@ -338,12 +441,60 @@ pub trait WebDriverCommands {
     }
 
     /// Get the current window handle.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
+    /// #     assert_eq!(driver.title()?, "Demo Web App");
+    /// // Get the current window handle.
+    /// let handle = driver.current_window_handle()?;
+    /// // Open a new tab.
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#)?;
+    /// // Get window handles and switch to the new tab.
+    /// let handles = driver.window_handles()?;
+    /// driver.switch_to().window(&handles[1])?;
+    /// // We are now controlling the new tab.
+    /// driver.get("http://webappdemo")?;
+    /// assert_ne!(driver.current_window_handle()?, handle);
+    /// // Switch back to original tab.
+    /// driver.switch_to().window(&handle)?;
+    /// assert_eq!(driver.current_window_handle()?, handle);
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
         let v = self.cmd(Command::GetWindowHandle)?;
         convert_json::<String>(&v["value"]).map(WindowHandle::from)
     }
 
     /// Get all window handles for the current session.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
+    /// #     assert_eq!(driver.title()?, "Demo Web App");
+    /// assert_eq!(driver.window_handles()?.len(), 1);
+    /// // Open a new tab.
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#)?;
+    /// // Get window handles and switch to the new tab.
+    /// let handles = driver.window_handles()?;
+    /// assert_eq!(handles.len(), 2);
+    /// driver.switch_to().window(&handles[1])?;
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
         let v = self.cmd(Command::GetWindowHandles)?;
         let strings: Vec<String> = convert_json_vec(&v["value"])?;
@@ -368,7 +519,22 @@ pub trait WebDriverCommands {
         self.cmd(Command::MaximizeWindow).map(|_| ())
     }
 
-    /// Minimize the current window.
+    /// Un-maximize the current window. This assumes the window is currently in
+    /// a maximized state.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// driver.maximize_window()?;
+    /// driver.minimize_window()?;
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn minimize_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::MinimizeWindow).map(|_| ())
     }
@@ -395,6 +561,23 @@ pub trait WebDriverCommands {
     ///
     /// The returned Rect struct has members `x`, `y`, `width`, `height`,
     /// all i32.
+    ///
+    /// # Example:
+    /// ```rust
+    /// use thirtyfour::OptionRect;
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// let option_rect = OptionRect::new().with_pos(1, 1).with_size(800, 600);
+    /// driver.set_window_rect(option_rect.clone())?;
+    /// let rect = driver.get_window_rect()?;
+    /// assert_eq!(OptionRect::from(rect), option_rect);
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn get_window_rect(&self) -> WebDriverResult<Rect> {
         let v = self.cmd(Command::GetWindowRect)?;
         convert_json(&v["value"])
@@ -543,7 +726,7 @@ pub trait WebDriverCommands {
     /// let timeouts = TimeoutConfiguration::new(None, Some(Duration::new(11, 0)), None);
     /// driver.set_timeouts(timeouts.clone())?;
     /// #     let got_timeouts = driver.get_timeouts()?;
-    /// #     assert_eq!(timeouts.page_load(), Some(Duration::new(11, 0)));
+    /// #     assert_eq!(got_timeouts.page_load(), Some(Duration::new(11, 0)));
     /// #     Ok(())
     /// # }
     /// ```
@@ -551,25 +734,91 @@ pub trait WebDriverCommands {
         self.cmd(Command::SetTimeouts(timeouts)).map(|_| ())
     }
 
-    /// Set the implicit wait timeout.
+    /// Set the implicit wait timeout. This is how long the WebDriver will
+    /// wait when querying elements.
+    ///
+    /// By default this is set to 30 seconds.
+    ///
+    /// **NOTE:** Depending on the kind of testing you want to do, you may
+    /// find it more reliable to set the implicit wait time to 0 (no wait)
+    /// and implement your own polling loop outside of `thirtyfour`.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// use thirtyfour::TimeoutConfiguration;
+    /// use std::time::Duration;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// let delay = Duration::new(11, 0);
+    /// driver.implicitly_wait(delay)?;
+    /// #     let got_timeouts = driver.get_timeouts()?;
+    /// #     assert_eq!(got_timeouts.implicit(), Some(delay));
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn implicitly_wait(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, None, Some(time_to_wait));
         self.set_timeouts(timeouts)
     }
 
-    /// Set the script timeout.
+    /// Set the script timeout. This is how long the WebDriver will wait for a
+    /// Javascript script to execute.
+    ///
+    /// By default this is set to 60 seconds.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// use thirtyfour::TimeoutConfiguration;
+    /// use std::time::Duration;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// let delay = Duration::new(11, 0);
+    /// driver.set_script_timeout(delay)?;
+    /// #     let got_timeouts = driver.get_timeouts()?;
+    /// #     assert_eq!(got_timeouts.script(), Some(delay));
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn set_script_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(Some(time_to_wait), None, None);
         self.set_timeouts(timeouts)
     }
 
-    /// Set the page load timeout.
+    /// Set the page load timeout. This is how long the WebDriver will wait
+    /// for the page to finish loading.
+    ///
+    /// By default this is set to 60 seconds.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// use thirtyfour::TimeoutConfiguration;
+    /// use std::time::Duration;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// let delay = Duration::new(11, 0);
+    /// driver.set_page_load_timeout(delay)?;
+    /// #     let got_timeouts = driver.get_timeouts()?;
+    /// #     assert_eq!(got_timeouts.page_load(), Some(delay));
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn set_page_load_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, Some(time_to_wait), None);
         self.set_timeouts(timeouts)
     }
 
-    /// Create a new action chain for this session.
+    /// Create a new action chain for this session. Action chains can be used
+    /// to simulate more complex user input actions involving key combinations,
+    /// mouse movements, mouse click, right-click, and more.
     ///
     /// # Example:
     /// ```rust
@@ -737,6 +986,34 @@ pub trait WebDriverCommands {
 
     /// Set the current window name.
     /// Useful for switching between windows/tabs using `driver.switch_to().window_name(name)`.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
+    /// #     assert_eq!(driver.title()?, "Demo Web App");
+    /// // Get the current window handle.
+    /// let handle = driver.current_window_handle()?;
+    /// driver.set_window_name("main")?;
+    /// // Open a new tab.
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#)?;
+    /// // Get window handles and switch to the new tab.
+    /// let handles = driver.window_handles()?;
+    /// driver.switch_to().window(&handles[1])?;
+    /// // We are now controlling the new tab.
+    /// driver.get("http://webappdemo")?;
+    /// assert_ne!(driver.current_window_handle()?, handle);
+    /// // Switch back to original tab using window name.
+    /// driver.switch_to().window_name("main")?;
+    /// assert_eq!(driver.current_window_handle()?, handle);
+    /// #     Ok(())
+    /// # }
+    /// ```
     fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
         self.execute_script(&format!(r#"window.name = "{}""#, window_name))?;
         Ok(())

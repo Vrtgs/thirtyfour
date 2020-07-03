@@ -34,7 +34,9 @@ pub struct SessionId {
 
 impl SessionId {
     pub fn null() -> Self {
-        SessionId { id: String::new() }
+        SessionId {
+            id: String::new(),
+        }
     }
 }
 
@@ -51,7 +53,9 @@ where
     S: Into<String>,
 {
     fn from(value: S) -> Self {
-        SessionId { id: value.into() }
+        SessionId {
+            id: value.into(),
+        }
     }
 }
 
@@ -72,7 +76,9 @@ where
     S: Into<String>,
 {
     fn from(value: S) -> Self {
-        ElementId { id: value.into() }
+        ElementId {
+            id: value.into(),
+        }
     }
 }
 
@@ -82,7 +88,7 @@ impl fmt::Display for ElementId {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WindowHandle {
     handle: String,
 }
@@ -125,10 +131,10 @@ impl fmt::Display for WindowType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rect {
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
 }
 
 impl Rect {
@@ -142,7 +148,7 @@ impl Rect {
     }
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize)]
 pub struct OptionRect {
     pub x: Option<i32>,
     pub y: Option<i32>,
