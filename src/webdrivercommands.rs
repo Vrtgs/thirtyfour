@@ -590,7 +590,8 @@ pub trait WebDriverCommands {
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use thirtyfour::support::block_on;
+    /// # use thirtyfour::support::{block_on, sleep};
+    /// # use std::time::Duration;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -598,6 +599,7 @@ pub trait WebDriverCommands {
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// driver.maximize_window().await?;
+    /// #         sleep(Duration::new(2, 0)).await;
     /// driver.minimize_window().await?;
     /// #         Ok(())
     /// #     })
