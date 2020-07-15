@@ -1,7 +1,7 @@
 version: "3"
 services:
   selenium:
-    image: selenium/standalone-chrome:3.141.59-zinc
+    image: selenium/standalone-chrome:latest
     volumes:
       - "/dev/shm:/dev/shm"
     ports:

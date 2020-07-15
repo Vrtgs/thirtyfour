@@ -584,22 +584,20 @@ pub trait WebDriverCommands {
         self.cmd(Command::MaximizeWindow).await.map(|_| ())
     }
 
-    /// Un-maximize the current window. This assumes the window is currently in
-    /// a maximized state.
+    /// Minimize the current window.
     ///
     /// # Example:
-    /// ```rust
+    /// ```ignore
+    /// # // Minimize is not currently working on Chrome, but does work
+    /// # // on Firefox/geckodriver.
     /// # use thirtyfour::prelude::*;
-    /// # use thirtyfour::support::{block_on, sleep};
-    /// # use std::time::Duration;
+    /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// driver.maximize_window().await?;
-    /// #         sleep(Duration::new(2, 0)).await;
     /// driver.minimize_window().await?;
     /// #         Ok(())
     /// #     })
