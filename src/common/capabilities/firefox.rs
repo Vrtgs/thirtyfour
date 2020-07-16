@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::{json, to_value, from_value, Value};
 
 use crate::common::capabilities::desiredcapabilities::Capabilities;
 use crate::error::WebDriverResult;
@@ -62,6 +62,26 @@ impl FirefoxCapabilities {
     /// Set the firefox profile settings to use.
     pub fn set_profile(&mut self, profile: FirefoxProfile) -> WebDriverResult<()> {
         self.add_firefox_option("profile", profile)
+    }
+
+    /// Add the specified command-line argument to `geckodriver`.
+    pub fn add_firefox_arg(&mut self, arg: &str) -> WebDriverResult<()> {
+        let mut args = self.get_args();
+        let arg_string = arg.to_string();
+        if !args.contains(&arg_string) {
+            args.push(arg_string);
+        }
+        self.add_firefox_option("args", to_value(args)?)
+    }
+
+    /// Get the current list of command-line arguments to `geckodriver` as a vec.
+    pub fn get_args(&self) -> Vec<String> {
+        from_value(self.capabilities["moz:firefoxOptions"]["args"].clone()).unwrap_or_default()
+    }
+
+    /// Set the browser to run headless.
+    pub fn set_headless(&mut self) -> WebDriverResult<()> {
+        self.add_firefox_arg("--headless")
     }
 }
 
