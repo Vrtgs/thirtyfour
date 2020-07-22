@@ -153,7 +153,7 @@ pub use common::{
 pub use switch_to::SwitchTo;
 pub use webdriver::GenericWebDriver;
 pub use webdriver::WebDriver;
-pub use webdrivercommands::WebDriverCommands;
+pub use webdrivercommands::{WebDriverCommands, WebDriverSession};
 pub use webelement::WebElement;
 
 /// Allow importing the common async structs via `use thirtyfour::prelude::*`.
@@ -214,7 +214,7 @@ pub mod sync {
     pub use switch_to::SwitchTo;
     pub use webdriver::GenericWebDriver;
     pub use webdriver::WebDriver;
-    pub use webdrivercommands::WebDriverCommands;
+    pub use webdrivercommands::{WebDriverCommands, WebDriverSession};
     pub use webelement::WebElement;
 
     pub mod prelude {
