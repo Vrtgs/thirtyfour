@@ -31,5 +31,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "resolutions": {
+    "lodash": ">=4.17.19",
+    "minimist": ">=1.2.3",
+    "http-proxy": ">=1.18.1",
+    "yargs-parser": ">=18.1.2"
   }
 }
