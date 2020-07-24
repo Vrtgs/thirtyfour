@@ -333,9 +333,9 @@ impl<'a> ActionChain<'a> {
     /// #     driver.get("http://webappdemo")?;
     /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// let elem = driver.find_element(By::Name("input1"))?;
-    /// #     assert_eq!(elem.text()?, "");
+    /// #     assert_eq!(elem.value()?, "");
     /// driver.action_chain().click_element(&elem).key_down('a').perform()?;
-    /// #     assert_eq!(elem.text()?, "a");
+    /// #     assert_eq!(elem.value()?, "a");
     /// #     Ok(())
     /// # }
     /// ```
@@ -360,9 +360,9 @@ impl<'a> ActionChain<'a> {
     /// #     driver.get("http://webappdemo")?;
     /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// let elem = driver.find_element(By::Name("input1"))?;
-    /// #     assert_eq!(elem.text()?, "");
+    /// #     assert_eq!(elem.value()?, "");
     /// driver.action_chain().key_down_on_element(&elem, 'a').perform()?;
-    /// #     assert_eq!(elem.text()?, "a");
+    /// #     assert_eq!(elem.value()?, "a");
     /// #     Ok(())
     /// # }
     /// ```
@@ -385,15 +385,15 @@ impl<'a> ActionChain<'a> {
     /// #     driver.get("http://webappdemo")?;
     /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// let elem = driver.find_element(By::Name("input1"))?;
-    /// #     assert_eq!(elem.text()?, "");
+    /// #     assert_eq!(elem.value()?, "");
     /// elem.send_keys("selenium")?;
-    /// assert_eq!(elem.text()?, "selenium");
+    /// assert_eq!(elem.value()?, "selenium");
     /// driver.action_chain()
     ///     .key_down_on_element(&elem, Keys::Control).key_down('a')
     ///     .key_up(Keys::Control).key_up('a')
     ///     .key_down('b')
     ///     .perform()?;
-    /// assert_eq!(elem.text()?, "b");
+    /// assert_eq!(elem.value()?, "b");
     /// #     Ok(())
     /// # }
     /// ```
@@ -418,15 +418,15 @@ impl<'a> ActionChain<'a> {
     /// #     driver.get("http://webappdemo")?;
     /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// let elem = driver.find_element(By::Name("input1"))?;
-    /// #     assert_eq!(elem.text()?, "");
+    /// #     assert_eq!(elem.value()?, "");
     /// elem.send_keys("selenium")?;
-    /// assert_eq!(elem.text()?, "selenium");
+    /// assert_eq!(elem.value()?, "selenium");
     /// driver.action_chain()
     ///     .key_down_on_element(&elem, Keys::Control).key_down('a')
     ///     .key_up_on_element(&elem, 'a').key_up_on_element(&elem, Keys::Control)
     ///     .key_down('b')
     ///     .perform()?;
-    /// assert_eq!(elem.text()?, "b");
+    /// assert_eq!(elem.value()?, "b");
     /// #     Ok(())
     /// # }
     /// ```
@@ -549,7 +549,7 @@ impl<'a> ActionChain<'a> {
     /// // Now paste the text into the input field.
     /// let elem_tgt = driver.find_element(By::Name("input1"))?;
     /// elem_tgt.send_keys(Keys::Control + "v")?;
-    /// #     assert_eq!(elem_tgt.text()?, "Button 1 clicked");
+    /// #     assert_eq!(elem_tgt.value()?, "Button 1 clicked");
     /// #     Ok(())
     /// # }
     /// ```
@@ -625,13 +625,13 @@ impl<'a> ActionChain<'a> {
     /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// let elem = driver.find_element(By::Name("input1"))?;
     /// let button = driver.find_element(By::Id("button-set"))?;
-    /// #     assert_eq!(elem.text()?, "");
+    /// #     assert_eq!(elem.value()?, "");
     /// driver.action_chain()
     ///     .click_element(&elem)
     ///     .send_keys("selenium")
     ///     .click_element(&button)
     ///     .perform()?;
-    /// #     let elem_result = driver.find_element(By::Name("input-result"))?;
+    /// #     let elem_result = driver.find_element(By::Id("input-result"))?;
     /// #     assert_eq!(elem_result.text()?, "selenium");
     /// #     Ok(())
     /// # }
@@ -660,12 +660,12 @@ impl<'a> ActionChain<'a> {
     /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// let elem = driver.find_element(By::Name("input1"))?;
     /// let button = driver.find_element(By::Id("button-set"))?;
-    /// #     assert_eq!(elem.text()?, "");
+    /// #     assert_eq!(elem.value()?, "");
     /// driver.action_chain()
     ///     .send_keys_to_element(&elem, "selenium")
     ///     .click_element(&button)
     ///     .perform()?;
-    /// #     let elem_result = driver.find_element(By::Name("input-result"))?;
+    /// #     let elem_result = driver.find_element(By::Id("input-result"))?;
     /// #     assert_eq!(elem_result.text()?, "selenium");
     /// #     Ok(())
     /// # }

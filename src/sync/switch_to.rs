@@ -45,7 +45,7 @@ impl<'a> SwitchTo<'a> {
     /// let elem = driver.switch_to().active_element()?;
     /// elem.send_keys("selenium")?;
     /// #     let elem = driver.find_element(By::Name("input1"))?;
-    /// #     assert_eq!(elem.text()?, "selenium");
+    /// #     assert_eq!(elem.value()?, "selenium");
     /// #     Ok(())
     /// # }
     /// ```

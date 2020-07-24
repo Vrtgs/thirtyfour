@@ -308,7 +308,7 @@ pub trait WebDriverCommands {
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem_text = driver.find_element(By::Name("input1")).await?;
     /// let elem_button = driver.find_element(By::Id("button-set")).await?;
-    /// let elem_result = driver.find_element(By::Name("input-result")).await?;
+    /// let elem_result = driver.find_element(By::Id("input-result")).await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -945,7 +945,7 @@ pub trait WebDriverCommands {
     ///     .move_to_element_center(&elem_button)
     ///     .click()
     ///     .perform().await?;
-    /// #         let elem_result = driver.find_element(By::Name("input-result")).await?;
+    /// #         let elem_result = driver.find_element(By::Id("input-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "thirtyfour");
     /// #         Ok(())
     /// #     })

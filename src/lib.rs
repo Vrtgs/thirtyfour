@@ -88,7 +88,7 @@
 //!     elem_button.click().await?;
 //!
 //!     // Get text value of element.
-//!     let elem_result = driver.find_element(By::Name("input-result")).await?;
+//!     let elem_result = driver.find_element(By::Id("input-result")).await?;
 //!     assert_eq!(elem_result.text().await?, "selenium");
 //!
 //!     Ok(())
@@ -126,7 +126,7 @@
 //!     elem_button.click()?;
 //!
 //!     // Get text value of element.
-//!     let elem_result = driver.find_element(By::Name("input-result"))?;
+//!     let elem_result = driver.find_element(By::Id("input-result"))?;
 //!     assert_eq!(elem_result.text()?, "selenium");
 //!
 //!     Ok(())

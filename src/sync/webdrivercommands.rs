@@ -270,7 +270,7 @@ pub trait WebDriverCommands {
     /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// let elem_text = driver.find_element(By::Name("input1"))?;
     /// let elem_button = driver.find_element(By::Id("button-set"))?;
-    /// let elem_result = driver.find_element(By::Name("input-result"))?;
+    /// let elem_result = driver.find_element(By::Id("input-result"))?;
     /// #     Ok(())
     /// # }
     /// ```
@@ -837,7 +837,7 @@ pub trait WebDriverCommands {
     ///     .move_to_element_center(&elem_button)
     ///     .click()
     ///     .perform()?;
-    /// #     let elem_result = driver.find_element(By::Name("input-result"))?;
+    /// #     let elem_result = driver.find_element(By::Id("input-result"))?;
     /// #     assert_eq!(elem_result.text()?, "thirtyfour");
     /// #     Ok(())
     /// # }

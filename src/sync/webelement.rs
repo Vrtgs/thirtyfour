@@ -48,8 +48,8 @@ pub fn convert_elements_sync<'a>(
 /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
 /// #     driver.get("http://webappdemo")?;
 /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
-/// let elem = driver.find_element(By::Name("input-result"))?;
-/// #     assert_eq!(elem.get_attribute("name")?, "input-result");
+/// let elem = driver.find_element(By::Id("input-result"))?;
+/// #     assert_eq!(elem.get_attribute("id")?, "input-result");
 /// #     Ok(())
 /// # }
 /// ```
@@ -167,6 +167,11 @@ impl<'a> WebElement<'a> {
         convert_json(&v["value"])
     }
 
+    /// Convenience method for getting the value attribute of this element.
+    pub fn value(&self) -> WebDriverResult<String> {
+        self.get_attribute("value")
+    }
+
     /// Click the WebElement.
     ///
     /// # Example:
@@ -190,6 +195,23 @@ impl<'a> WebElement<'a> {
     }
 
     /// Clear the WebElement contents.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
+    /// #     let elem = driver.find_element(By::Name("input2"))?;
+    /// #     elem.clear()?;
+    /// # let cleared_text = elem.text()?;
+    /// #     assert_eq!(cleared_text, "");
+    /// #     Ok(())
+    /// # }
+    /// ```
     pub fn clear(&self) -> WebDriverResult<()> {
         self.cmd(Command::ElementClear(&self.element_id))?;
         Ok(())
@@ -351,7 +373,7 @@ impl<'a> WebElement<'a> {
     /// #     driver.find_element(By::Id("pagetextinput"))?.click()?;
     /// #     let elem = driver.find_element(By::Name("input1"))?;
     /// elem.send_keys("selenium")?;
-    /// #     assert_eq!(elem.text()?, "selenium");
+    /// #     assert_eq!(elem.value()?, "selenium");
     /// #     Ok(())
     /// # }
     /// ```
@@ -369,7 +391,7 @@ impl<'a> WebElement<'a> {
     /// elem.send_keys("selenium")?;
     /// elem.send_keys(Keys::Control + "a")?;
     /// elem.send_keys(TypingData::from("thirtyfour") + Keys::Enter)?;
-    /// #     assert_eq!(elem.text()?, "thirtyfour");
+    /// #     assert_eq!(elem.value()?, "thirtyfour");
     /// #     Ok(())
     /// # }
     /// ```
@@ -418,7 +440,7 @@ impl<'a> WebElement<'a> {
     /// let elem = driver.find_element(By::Name("input1"))?;
     /// elem.focus()?;
     /// #     driver.action_chain().send_keys("selenium").perform()?;
-    /// #     assert_eq!(elem.text()?, "selenium");
+    /// #     assert_eq!(elem.value()?, "selenium");
     /// #     Ok(())
     /// # }
     /// ```

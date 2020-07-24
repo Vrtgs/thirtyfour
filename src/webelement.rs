@@ -58,8 +58,8 @@ pub fn convert_elements_async<'a>(
 /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 /// #         driver.get("http://webappdemo").await?;
 /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-/// let elem = driver.find_element(By::Name("input-result")).await?;
-/// #         assert_eq!(elem.get_attribute("name").await?, "input-result");
+/// let elem = driver.find_element(By::Id("input-result")).await?;
+/// #         assert_eq!(elem.get_attribute("id").await?, "input-result");
 /// #         Ok(())
 /// #     })
 /// # }
@@ -188,6 +188,11 @@ impl<'a> WebElement<'a> {
     pub async fn text(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetElementText(&self.element_id)).await?;
         convert_json(&v["value"])
+    }
+
+    /// Convenience method for getting the value attribute of this element.
+    pub async fn value(&self) -> WebDriverResult<String> {
+        self.get_attribute("value").await
     }
 
     /// Click the WebElement.
@@ -413,7 +418,7 @@ impl<'a> WebElement<'a> {
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
-    /// #         assert_eq!(elem.text().await?, "selenium");
+    /// #         assert_eq!(elem.value().await?, "selenium");
     /// #         Ok(())
     /// #     })
     /// # }
@@ -434,7 +439,7 @@ impl<'a> WebElement<'a> {
     /// elem.send_keys("selenium").await?;
     /// elem.send_keys(Keys::Control + "a").await?;
     /// elem.send_keys(TypingData::from("thirtyfour") + Keys::Enter).await?;
-    /// #         assert_eq!(elem.text().await?, "thirtyfour");
+    /// #         assert_eq!(elem.value().await?, "thirtyfour");
     /// #         Ok(())
     /// #     })
     /// # }
@@ -487,7 +492,7 @@ impl<'a> WebElement<'a> {
     /// let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.focus().await?;
     /// #         driver.action_chain().send_keys("selenium").perform().await?;
-    /// #         assert_eq!(elem.text().await?, "selenium");
+    /// #         assert_eq!(elem.value().await?, "selenium");
     /// #         Ok(())
     /// #     })
     /// # }

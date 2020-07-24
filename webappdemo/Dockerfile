@@ -1,24 +1,13 @@
-FROM rust:latest as build
+FROM node:lts
+
+RUN yarn global add serve
 
 WORKDIR /app
+COPY *.json /app/
+COPY yarn.lock /app/
+RUN yarn
 
-RUN cargo install cargo-web
-
-# Build dependencies first without source, so that source changes don't cause dependencies to be recompiled.
-COPY Cargo.toml /app/Cargo.toml
-RUN mkdir src/
-RUN echo "fn main() {println!(\"Temporary main used for building deps.\")}" > src/main.rs
-RUN cargo-web build --release
-RUN rm -f target/wasm32-unknown-unknown/release/deps/webappdemo*
-
-# Now copy source and rebuild.
 COPY src/ /app/src/
-COPY static /app/static/
-RUN cargo-web build --release
-RUN cargo-web deploy --release
-
-
-FROM nginx:alpine
-COPY --from=build /app/target/deploy/ /usr/share/nginx/html/
-COPY nginx.conf /etc/nginx/nginx.conf
-EXPOSE 80
+COPY public/ /app/public/
+RUN yarn build
+CMD ["serve", "-l", "80", "-s", "/app/build"]
