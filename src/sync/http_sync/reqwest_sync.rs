@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::sync::http_sync::connection_sync::{RemoteConnectionSync, RemoteConnectionSyncCreate};
+use crate::sync::http_sync::connection_sync::WebDriverHttpClientSync;
 use crate::{
     common::{
         command::{Command, RequestMethod},
@@ -17,7 +17,7 @@ pub struct ReqwestDriverSync {
     client: reqwest::blocking::Client,
 }
 
-impl RemoteConnectionSyncCreate for ReqwestDriverSync {
+impl WebDriverHttpClientSync for ReqwestDriverSync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
         let headers = build_reqwest_headers(remote_server_addr)?;
         Ok(ReqwestDriverSync {
@@ -25,9 +25,7 @@ impl RemoteConnectionSyncCreate for ReqwestDriverSync {
             client: reqwest::blocking::Client::builder().default_headers(headers).build()?,
         })
     }
-}
 
-impl RemoteConnectionSync for ReqwestDriverSync {
     /// Execute the specified command and return the data as serde_json::Value.
     fn execute(
         &self,

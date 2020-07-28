@@ -7,7 +7,7 @@ use log::error;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::http_async::connection_async::{RemoteConnectionAsync, RemoteConnectionAsyncCreate};
+use crate::http_async::connection_async::WebDriverHttpClientAsync;
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
 use crate::http_async::nulldriver_async::NullDriverAsync;
 #[cfg(feature = "tokio-runtime")]
@@ -65,9 +65,9 @@ pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
 /// }
 /// ```
 #[derive(Debug)]
-pub struct GenericWebDriver<T: RemoteConnectionAsync + RemoteConnectionAsyncCreate> {
+pub struct GenericWebDriver<T: WebDriverHttpClientAsync> {
     pub session_id: SessionId,
-    conn: Arc<dyn RemoteConnectionAsync>,
+    conn: Arc<dyn WebDriverHttpClientAsync>,
     capabilities: Value,
     quit_on_drop: bool,
     phantom: PhantomData<T>,
@@ -75,7 +75,7 @@ pub struct GenericWebDriver<T: RemoteConnectionAsync + RemoteConnectionAsyncCrea
 
 impl<T: 'static> GenericWebDriver<T>
 where
-    T: RemoteConnectionAsync + RemoteConnectionAsyncCreate,
+    T: WebDriverHttpClientAsync,
 {
     /// The GenericWebDriver struct is not intended to be created directly.
     ///
@@ -131,7 +131,7 @@ where
 #[async_trait]
 impl<T> WebDriverCommands for GenericWebDriver<T>
 where
-    T: RemoteConnectionAsync + RemoteConnectionAsyncCreate,
+    T: WebDriverHttpClientAsync,
 {
     async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
         self.conn.execute(&self.session_id, command).await
@@ -144,7 +144,7 @@ where
 
 impl<T> Drop for GenericWebDriver<T>
 where
-    T: RemoteConnectionAsync + RemoteConnectionAsyncCreate,
+    T: WebDriverHttpClientAsync,
 {
     /// Close the current session when the WebDriver struct goes out of scope.
     fn drop(&mut self) {

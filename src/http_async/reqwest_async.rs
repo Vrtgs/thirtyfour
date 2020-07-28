@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 
-use crate::http_async::connection_async::{RemoteConnectionAsync, RemoteConnectionAsyncCreate};
+use crate::http_async::connection_async::WebDriverHttpClientAsync;
 use crate::{
     common::{
         command::{Command, RequestMethod},
@@ -19,7 +19,8 @@ pub struct ReqwestDriverAsync {
     client: reqwest::Client,
 }
 
-impl RemoteConnectionAsyncCreate for ReqwestDriverAsync {
+#[async_trait]
+impl WebDriverHttpClientAsync for ReqwestDriverAsync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
         let headers = build_reqwest_headers(remote_server_addr)?;
         Ok(ReqwestDriverAsync {
@@ -27,10 +28,7 @@ impl RemoteConnectionAsyncCreate for ReqwestDriverAsync {
             client: reqwest::Client::builder().default_headers(headers).build()?,
         })
     }
-}
 
-#[async_trait]
-impl RemoteConnectionAsync for ReqwestDriverAsync {
     /// Execute the specified command and return the data as serde_json::Value.
     async fn execute(
         &self,

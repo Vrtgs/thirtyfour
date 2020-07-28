@@ -305,7 +305,7 @@ impl<'a> ActionChain<'a> {
     /// ## This method is not working correctly due to a selenium bug.
     /// It appears selenium has a bug in the drag and drop feature
     /// causing it to start the drag but not perform the drop.
-    /// See [https://github.com/SeleniumHQ/selenium/issues/7744](https://github.com/SeleniumHQ/selenium/issues/7744)
+    /// See [https://github.com/SeleniumHQ/selenium/issues/8003](https://github.com/SeleniumHQ/selenium/issues/8003)
     ///
     /// This method has been confirmed to produce identical JSON output
     /// compared to the python selenium library (which also fails due to
@@ -319,7 +319,7 @@ impl<'a> ActionChain<'a> {
     /// ## This method is not working correctly due to a selenium bug.
     /// It appears selenium has a bug in the drag and drop feature
     /// causing it to start the drag but not perform the drop.
-    /// See [https://github.com/SeleniumHQ/selenium/issues/7744](https://github.com/SeleniumHQ/selenium/issues/7744)
+    /// See [https://github.com/SeleniumHQ/selenium/issues/8003](https://github.com/SeleniumHQ/selenium/issues/8003)
     ///
     /// This method has been confirmed to produce identical JSON output
     /// compared to the python selenium library (which also fails due to
@@ -334,7 +334,7 @@ impl<'a> ActionChain<'a> {
     /// ## This method is not working correctly due to a selenium bug.
     /// It appears selenium has a bug in the drag and drop feature
     /// causing it to start the drag but not perform the drop.
-    /// See [https://github.com/SeleniumHQ/selenium/issues/7744](https://github.com/SeleniumHQ/selenium/issues/7744)
+    /// See [https://github.com/SeleniumHQ/selenium/issues/8003](https://github.com/SeleniumHQ/selenium/issues/8003)
     ///
     /// This method has been confirmed to produce identical JSON output
     /// compared to the python selenium library (which also fails due to

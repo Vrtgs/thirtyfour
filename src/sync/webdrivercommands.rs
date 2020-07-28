@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
 
 use crate::error::WebDriverError;
-use crate::sync::http_sync::connection_sync::RemoteConnectionSync;
+use crate::sync::http_sync::connection_sync::WebDriverHttpClientSync;
 use crate::{
     common::{
         command::Command,
@@ -22,7 +22,7 @@ use crate::{
 };
 
 pub fn start_session<C>(
-    conn: Arc<dyn RemoteConnectionSync>,
+    conn: Arc<dyn WebDriverHttpClientSync>,
     capabilities: C,
 ) -> WebDriverResult<(SessionId, serde_json::Value)>
 where
@@ -83,11 +83,11 @@ where
 #[derive(Debug)]
 pub struct WebDriverSession<'a> {
     session_id: &'a SessionId,
-    conn: Arc<dyn RemoteConnectionSync>,
+    conn: Arc<dyn WebDriverHttpClientSync>,
 }
 
 impl<'a> WebDriverSession<'a> {
-    pub fn new(session_id: &'a SessionId, conn: Arc<dyn RemoteConnectionSync>) -> Self {
+    pub fn new(session_id: &'a SessionId, conn: Arc<dyn WebDriverHttpClientSync>) -> Self {
         Self {
             session_id,
             conn,

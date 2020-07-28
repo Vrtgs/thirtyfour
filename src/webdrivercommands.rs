@@ -17,7 +17,7 @@ use crate::action_chain::ActionChain;
 use crate::common::command::Command;
 use crate::common::connection_common::{convert_json, convert_json_vec};
 use crate::error::{WebDriverError, WebDriverResult};
-use crate::http_async::connection_async::RemoteConnectionAsync;
+use crate::http_async::connection_async::WebDriverHttpClientAsync;
 use crate::webelement::{convert_element_async, convert_elements_async};
 use crate::{
     By, Cookie, OptionRect, Rect, ScriptArgs, SessionId, SwitchTo, TimeoutConfiguration,
@@ -27,7 +27,7 @@ use crate::{
 /// Start a new WebDriver session, returning the session id and the
 /// capabilities JSON that was received back from the server.
 pub async fn start_session<C>(
-    conn: Arc<dyn RemoteConnectionAsync>,
+    conn: Arc<dyn WebDriverHttpClientAsync>,
     capabilities: C,
 ) -> WebDriverResult<(SessionId, serde_json::Value)>
 where
@@ -89,11 +89,11 @@ where
 #[derive(Debug)]
 pub struct WebDriverSession<'a> {
     session_id: &'a SessionId,
-    conn: Arc<dyn RemoteConnectionAsync>,
+    conn: Arc<dyn WebDriverHttpClientAsync>,
 }
 
 impl<'a> WebDriverSession<'a> {
-    pub fn new(session_id: &'a SessionId, conn: Arc<dyn RemoteConnectionAsync>) -> Self {
+    pub fn new(session_id: &'a SessionId, conn: Arc<dyn WebDriverHttpClientAsync>) -> Self {
         Self {
             session_id,
             conn,

@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 
-use crate::http_async::connection_async::{RemoteConnectionAsync, RemoteConnectionAsyncCreate};
+use crate::http_async::connection_async::WebDriverHttpClientAsync;
 use crate::{
     common::command::{Command, RequestMethod},
     error::{WebDriverError, WebDriverResult},
@@ -15,16 +15,14 @@ pub struct SurfDriverAsync {
     url: String,
 }
 
-impl RemoteConnectionAsyncCreate for SurfDriverAsync {
+#[async_trait]
+impl WebDriverHttpClientAsync for SurfDriverAsync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
         Ok(SurfDriverAsync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
         })
     }
-}
 
-#[async_trait]
-impl RemoteConnectionAsync for SurfDriverAsync {
     /// Execute the specified command and return the data as serde_json::Value.
     async fn execute(
         &self,

@@ -1,5 +1,7 @@
+#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
 use futures::Future;
 
+#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
 use crate::error::WebDriverResult;
 
 #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
