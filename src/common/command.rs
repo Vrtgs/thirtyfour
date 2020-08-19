@@ -75,10 +75,15 @@ impl<'a> By<'a> {
 }
 
 pub trait ExtensionCommand {
+    /// Request Body
     fn parameters_json(&self) -> Option<serde_json::Value>;
 
+    /// HTTP method accepting by the webdriver
     fn method(&self) -> RequestMethod;
 
+    /// Endpoint URL without `/session/{sessionId}` prefix
+    ///
+    /// Example:- `/moz/addon/install`
     fn endpoint(&self) -> String;
 }
 
