@@ -15,6 +15,7 @@ use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::action_chain::ActionChain;
 use crate::common::command::Command;
+use crate::common::command::ExtensionCommand;
 use crate::common::connection_common::{convert_json, convert_json_vec};
 use crate::error::{WebDriverError, WebDriverResult};
 use crate::http_async::connection_async::WebDriverHttpClientAsync;
@@ -1151,6 +1152,74 @@ pub trait WebDriverCommands {
         let script = format!(r#"window.name = "{}""#, window_name);
         self.execute_script(&script).await?;
         Ok(())
+    }
+
+    /// Running an extension command
+    /// Extension commands are browser specific commands and using browser specific endpoints and
+    /// parameters.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// # use serde::Serialize;
+    ///
+    /// #[derive(Serialize)]
+    /// pub struct AddonInstallParameters {
+    ///     pub path: String,
+    ///     pub temporary: Option<bool>
+    /// }
+    ///
+    /// #[derive(Serialize)]
+    /// pub struct AddonUninstallParameters {
+    ///     pub id: String
+    /// }
+    ///
+    /// #[derive(Serialize)]
+    /// enum GeckoExtensionCommand {
+    ///     InstallAddon(AddonInstallParameters),
+    ///     UninstallAddon(AddonUninstallParameters)
+    /// }
+    ///
+    /// impl ExtensionCommand for GeckoExtensionCommand {
+    ///     fn parameters_json(&self)-> Option<serde_json::Value>{
+    ///        Some( match self {
+    ///             Self::InstallAddon(param)=>serde_json::to_value(param).unwrap(),
+    ///             Self::UninstallAddon(param)=>serde_json::to_value(param).unwrap()
+    ///        })
+    ///     }
+    ///
+    ///     fn method(&self)-> RequestMethod {
+    ///         RequestMethod::POST
+    ///     }
+    ///
+    ///     fn endpoint(&self)->String {
+    ///         match self {
+    ///             Self::InstallAddon(_)=>String::from("/moz/addon/install"),
+    ///             Self::UninstallAddon(param)=>String::from("/moz/addon/uninstall")
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// # fn main()-> WebDriverResult<()> {
+    /// #   let caps = DesiredCapabilities::firefox();
+    /// #   let driver = WebDriver::new("http://localhost:4444", &caps)?;
+    /// #   
+    ///   let install_command = GeckoExtensionCommand::InstallAddon(AddonInstallParameters {
+    ///       path: String::from("/path/to/addon.xpi"),
+    ///       temporary: Some(true)
+    ///   });
+    ///
+    ///   let response = driver.extension_command(install_command).await?;
+    ///
+    ///   assert_eq!(response);
+    /// # }
+    ///
+    /// ```
+    async fn extension_command<T: ExtensionCommand + Send>(
+        &self,
+        ext_cmd: T,
+    ) -> WebDriverResult<serde_json::Value> {
+        self.cmd(Command::ExtensionCommand(Box::new(ext_cmd))).await
     }
 }
 
