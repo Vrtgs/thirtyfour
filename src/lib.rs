@@ -144,7 +144,7 @@ pub use common::{
         firefox::FirefoxCapabilities, ie::InternetExplorerCapabilities, opera::OperaCapabilities,
         safari::SafariCapabilities,
     },
-    command::By,
+    command::{By, ExtensionCommand, RequestMethod},
     cookie::Cookie,
     keys::{Keys, TypingData},
     scriptargs::ScriptArgs,

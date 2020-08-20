@@ -10,6 +10,7 @@ use crate::sync::http_sync::connection_sync::WebDriverHttpClientSync;
 use crate::{
     common::{
         command::Command,
+        command::ExtensionCommand,
         connection_common::{convert_json, convert_json_vec},
     },
     error::WebDriverResult,
@@ -1017,6 +1018,61 @@ pub trait WebDriverCommands {
     fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
         self.execute_script(&format!(r#"window.name = "{}""#, window_name))?;
         Ok(())
+    }
+
+    /// Running an extension command.
+    /// Extension commands are browser specific commands and using browser specific endpoints and
+    /// parameters.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use serde::Serialize;
+    /// use thirtyfour::sync::prelude::*;
+    /// use thirtyfour::{ExtensionCommand, RequestMethod};
+    ///
+    /// #[derive(Serialize)]
+    /// pub struct AddonInstallCommand {
+    ///    pub path: String,
+    ///    pub temporary: Option<bool>,
+    /// }
+    ///
+    /// impl ExtensionCommand for AddonInstallCommand {
+    ///    fn parameters_json(&self) -> Option<serde_json::Value> {
+    ///        Some(serde_json::to_value(self).unwrap())
+    ///    }
+    ///    fn method(&self) -> RequestMethod {
+    ///        RequestMethod::Post
+    ///    }
+    ///
+    ///    fn endpoint(&self) -> String {
+    ///        String::from("/moz/addon/install")
+    ///    }
+    /// }
+    ///
+    /// fn main()-> WebDriverResult<()> {
+    ///     let caps = DesiredCapabilities::firefox();
+    ///     let driver = WebDriver::new("http://localhost:4444", &caps)?;
+    ///
+    ///     let install_command = AddonInstallCommand {
+    ///         path: String::from("/path/to/addon.xpi"),
+    ///         temporary: Some(true),
+    ///     };
+    ///
+    ///     let response = driver.extension_command(install_command)?;
+    ///
+    ///     assert_eq!(response.is_string(), true);
+    ///
+    ///     Ok(())
+    /// }
+    ///
+    /// ```
+    fn extension_command<T: ExtensionCommand + Send>(
+        &self,
+        ext_cmd: T,
+    ) -> WebDriverResult<serde_json::Value> {
+        let response = self.cmd(Command::ExtensionCommand(Box::new(ext_cmd)))?;
+
+        Ok(response["value"].clone())
     }
 }
 

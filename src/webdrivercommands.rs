@@ -15,6 +15,7 @@ use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::action_chain::ActionChain;
 use crate::common::command::Command;
+use crate::common::command::ExtensionCommand;
 use crate::common::connection_common::{convert_json, convert_json_vec};
 use crate::error::{WebDriverError, WebDriverResult};
 use crate::http_async::connection_async::WebDriverHttpClientAsync;
@@ -1151,6 +1152,65 @@ pub trait WebDriverCommands {
         let script = format!(r#"window.name = "{}""#, window_name);
         self.execute_script(&script).await?;
         Ok(())
+    }
+
+    /// Running an extension command.
+    /// Extension commands are browser specific commands and using browser specific endpoints and
+    /// parameters.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use thirtyfour::prelude::*;
+    /// use thirtyfour::{ExtensionCommand, RequestMethod};
+    /// use thirtyfour::support::block_on;
+    /// use serde::Serialize;
+    ///
+    /// #[derive(Serialize)]
+    /// pub struct AddonInstallCommand {
+    ///     pub path: String,
+    ///     pub temporary: Option<bool>
+    /// }
+    ///
+    /// impl ExtensionCommand for AddonInstallCommand {
+    ///     fn parameters_json(&self)-> Option<serde_json::Value>{
+    ///        Some( serde_json::to_value(self).unwrap())
+    ///     }
+    ///
+    ///     fn method(&self)-> RequestMethod {
+    ///         RequestMethod::Post
+    ///     }
+    ///
+    ///     fn endpoint(&self)->String {
+    ///         String::from("/moz/addon/install")
+    ///     }
+    /// }
+    ///         
+    ///
+    /// fn main()->WebDriverResult<()>{
+    ///     block_on(async {
+    ///         let caps = DesiredCapabilities::firefox();
+    ///         let driver = WebDriver::new("http://localhost:4444", &caps).await?;
+    ///
+    ///         let install_command = AddonInstallCommand {
+    ///             path: String::from("/path/to/addon.xpi"),
+    ///             temporary: Some(true)
+    ///         };
+    ///
+    ///         let response = driver.extension_command(install_command).await?;
+    ///
+    ///         assert_eq!(response.is_string(), true);
+    ///
+    ///         Ok(())
+    ///     })
+    /// }
+    ///
+    /// ```
+    async fn extension_command<T: ExtensionCommand + Send>(
+        &self,
+        ext_cmd: T,
+    ) -> WebDriverResult<serde_json::Value> {
+        let response = self.cmd(Command::ExtensionCommand(Box::new(ext_cmd))).await?;
+        Ok(response["value"].clone())
     }
 }
 

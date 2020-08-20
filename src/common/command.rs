@@ -74,6 +74,19 @@ impl<'a> By<'a> {
     }
 }
 
+pub trait ExtensionCommand {
+    /// Request Body
+    fn parameters_json(&self) -> Option<serde_json::Value>;
+
+    /// HTTP method accepting by the webdriver
+    fn method(&self) -> RequestMethod;
+
+    /// Endpoint URL without `/session/{sessionId}` prefix
+    ///
+    /// Example:- `/moz/addon/install`
+    fn endpoint(&self) -> String;
+}
+
 pub enum Command<'a> {
     NewSession(&'a Value),
     DeleteSession,
@@ -131,6 +144,7 @@ pub enum Command<'a> {
     SendAlertText(TypingData),
     TakeScreenshot,
     TakeElementScreenshot(&'a ElementId),
+    ExtensionCommand(Box<dyn ExtensionCommand + Send + 'a>),
 }
 
 impl<'a> Command<'a> {
@@ -147,15 +161,13 @@ impl<'a> Command<'a> {
                 RequestData::new(RequestMethod::Delete, format!("/session/{}", session_id))
             }
             Command::Status => RequestData::new(RequestMethod::Get, "/status"),
-            Command::GetTimeouts => RequestData::new(
-                RequestMethod::Get,
-                format!("/session/{}/timeouts", session_id),
-            ),
-            Command::SetTimeouts(timeout_configuration) => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/timeouts", session_id),
-            )
-            .add_body(json!(timeout_configuration)),
+            Command::GetTimeouts => {
+                RequestData::new(RequestMethod::Get, format!("/session/{}/timeouts", session_id))
+            }
+            Command::SetTimeouts(timeout_configuration) => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/timeouts", session_id))
+                    .add_body(json!(timeout_configuration))
+            }
             Command::NavigateTo(url) => {
                 RequestData::new(RequestMethod::Post, format!("/session/{}/url", session_id))
                     .add_body(json!({ "url": url }))
@@ -167,63 +179,54 @@ impl<'a> Command<'a> {
                 RequestData::new(RequestMethod::Post, format!("/session/{}/back", session_id))
                     .add_body(json!({}))
             }
-            Command::Forward => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/forward", session_id),
-            )
-            .add_body(json!({})),
-            Command::Refresh => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/refresh", session_id),
-            )
-            .add_body(json!({})),
+            Command::Forward => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/forward", session_id))
+                    .add_body(json!({}))
+            }
+            Command::Refresh => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/refresh", session_id))
+                    .add_body(json!({}))
+            }
             Command::GetTitle => {
                 RequestData::new(RequestMethod::Get, format!("/session/{}/title", session_id))
             }
-            Command::GetWindowHandle => RequestData::new(
-                RequestMethod::Get,
-                format!("/session/{}/window", session_id),
-            ),
-            Command::CloseWindow => RequestData::new(
-                RequestMethod::Delete,
-                format!("/session/{}/window", session_id),
-            ),
-            Command::SwitchToWindow(window_handle) => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/window", session_id),
-            )
-            .add_body(json!({ "handle": window_handle.to_string() })),
+            Command::GetWindowHandle => {
+                RequestData::new(RequestMethod::Get, format!("/session/{}/window", session_id))
+            }
+            Command::CloseWindow => {
+                RequestData::new(RequestMethod::Delete, format!("/session/{}/window", session_id))
+            }
+            Command::SwitchToWindow(window_handle) => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/window", session_id))
+                    .add_body(json!({ "handle": window_handle.to_string() }))
+            }
             Command::GetWindowHandles => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/window/handles", session_id),
             ),
-            Command::SwitchToFrameDefault => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/frame", session_id),
-            )
-            .add_body(json!({ "id": serde_json::Value::Null })),
-            Command::SwitchToFrameNumber(frame_number) => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/frame", session_id),
-            )
-            .add_body(json!({ "id": frame_number })),
-            Command::SwitchToFrameElement(element_id) => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/frame", session_id),
-            )
-            .add_body(json!({"id": {
-                "ELEMENT": element_id.to_string(),
-                MAGIC_ELEMENTID: element_id.to_string()
-            }})),
+            Command::SwitchToFrameDefault => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/frame", session_id))
+                    .add_body(json!({ "id": serde_json::Value::Null }))
+            }
+            Command::SwitchToFrameNumber(frame_number) => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/frame", session_id))
+                    .add_body(json!({ "id": frame_number }))
+            }
+            Command::SwitchToFrameElement(element_id) => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/frame", session_id))
+                    .add_body(json!({"id": {
+                        "ELEMENT": element_id.to_string(),
+                        MAGIC_ELEMENTID: element_id.to_string()
+                    }}))
+            }
             Command::SwitchToParentFrame => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/frame/parent", session_id),
             )
             .add_body(json!({})),
-            Command::GetWindowRect => RequestData::new(
-                RequestMethod::Get,
-                format!("/session/{}/window/rect", session_id),
-            ),
+            Command::GetWindowRect => {
+                RequestData::new(RequestMethod::Get, format!("/session/{}/window/rect", session_id))
+            }
             Command::SetWindowRect(option_rect) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/window/rect", session_id),
@@ -250,19 +253,13 @@ impl<'a> Command<'a> {
             ),
             Command::FindElement(by) => {
                 let (selector, value) = by.get_w3c_selector();
-                RequestData::new(
-                    RequestMethod::Post,
-                    format!("/session/{}/element", session_id),
-                )
-                .add_body(json!({"using": selector, "value": value}))
+                RequestData::new(RequestMethod::Post, format!("/session/{}/element", session_id))
+                    .add_body(json!({"using": selector, "value": value}))
             }
             Command::FindElements(by) => {
                 let (selector, value) = by.get_w3c_selector();
-                RequestData::new(
-                    RequestMethod::Post,
-                    format!("/session/{}/elements", session_id),
-                )
-                .add_body(json!({"using": selector, "value": value}))
+                RequestData::new(RequestMethod::Post, format!("/session/{}/elements", session_id))
+                    .add_body(json!({"using": selector, "value": value}))
             }
             Command::FindElementFromElement(element_id, by) => {
                 let (selector, value) = by.get_w3c_selector();
@@ -300,10 +297,7 @@ impl<'a> Command<'a> {
             ),
             Command::GetElementCSSValue(element_id, property_name) => RequestData::new(
                 RequestMethod::Get,
-                format!(
-                    "/session/{}/element/{}/css/{}",
-                    session_id, element_id, property_name
-                ),
+                format!("/session/{}/element/{}/css/{}", session_id, element_id, property_name),
             ),
             Command::GetElementText(element_id) => RequestData::new(
                 RequestMethod::Get,
@@ -336,10 +330,9 @@ impl<'a> Command<'a> {
                 format!("/session/{}/element/{}/value", session_id, element_id),
             )
             .add_body(json!({"text": typing_data.to_string(), "value": typing_data.as_vec() })),
-            Command::GetPageSource => RequestData::new(
-                RequestMethod::Get,
-                format!("/session/{}/source", session_id),
-            ),
+            Command::GetPageSource => {
+                RequestData::new(RequestMethod::Get, format!("/session/{}/source", session_id))
+            }
             Command::ExecuteScript(script, args) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/execute/sync", session_id),
@@ -350,36 +343,31 @@ impl<'a> Command<'a> {
                 format!("/session/{}/execute/async", session_id),
             )
             .add_body(json!({"script": script, "args": args})),
-            Command::GetAllCookies => RequestData::new(
-                RequestMethod::Get,
-                format!("/session/{}/cookie", session_id),
-            ),
+            Command::GetAllCookies => {
+                RequestData::new(RequestMethod::Get, format!("/session/{}/cookie", session_id))
+            }
             Command::GetNamedCookie(cookie_name) => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/cookie/{}", session_id, cookie_name),
             ),
-            Command::AddCookie(cookie) => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/cookie", session_id),
-            )
-            .add_body(json!({ "cookie": cookie })),
+            Command::AddCookie(cookie) => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/cookie", session_id))
+                    .add_body(json!({ "cookie": cookie }))
+            }
             Command::DeleteCookie(cookie_name) => RequestData::new(
                 RequestMethod::Delete,
                 format!("/session/{}/cookie/{}", session_id, cookie_name),
             ),
-            Command::DeleteAllCookies => RequestData::new(
-                RequestMethod::Delete,
-                format!("/session/{}/cookie", session_id),
-            ),
-            Command::PerformActions(actions) => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/actions", session_id),
-            )
-            .add_body(json!({"actions": actions.0})),
-            Command::ReleaseActions => RequestData::new(
-                RequestMethod::Delete,
-                format!("/session/{}/actions", session_id),
-            ),
+            Command::DeleteAllCookies => {
+                RequestData::new(RequestMethod::Delete, format!("/session/{}/cookie", session_id))
+            }
+            Command::PerformActions(actions) => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/actions", session_id))
+                    .add_body(json!({"actions": actions.0}))
+            }
+            Command::ReleaseActions => {
+                RequestData::new(RequestMethod::Delete, format!("/session/{}/actions", session_id))
+            }
             Command::DismissAlert => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/alert/dismiss", session_id),
@@ -390,25 +378,32 @@ impl<'a> Command<'a> {
                 format!("/session/{}/alert/accept", session_id),
             )
             .add_body(json!({})),
-            Command::GetAlertText => RequestData::new(
-                RequestMethod::Get,
-                format!("/session/{}/alert/text", session_id),
-            ),
-            Command::SendAlertText(typing_data) => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/alert/text", session_id),
-            )
-            .add_body(json!({
-                "value": typing_data.as_vec(), "text": typing_data.to_string()
-            })),
-            Command::TakeScreenshot => RequestData::new(
-                RequestMethod::Get,
-                format!("/session/{}/screenshot", session_id),
-            ),
+            Command::GetAlertText => {
+                RequestData::new(RequestMethod::Get, format!("/session/{}/alert/text", session_id))
+            }
+            Command::SendAlertText(typing_data) => {
+                RequestData::new(RequestMethod::Post, format!("/session/{}/alert/text", session_id))
+                    .add_body(json!({
+                        "value": typing_data.as_vec(), "text": typing_data.to_string()
+                    }))
+            }
+            Command::TakeScreenshot => {
+                RequestData::new(RequestMethod::Get, format!("/session/{}/screenshot", session_id))
+            }
             Command::TakeElementScreenshot(element_id) => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/element/{}/screenshot", session_id, element_id),
             ),
+            Command::ExtensionCommand(command) => {
+                let request_data = RequestData::new(
+                    command.method(),
+                    format!("/session/{}{}", session_id, command.endpoint()),
+                );
+                match command.parameters_json() {
+                    Some(param) => request_data.add_body(param),
+                    None => request_data,
+                }
+            }
         }
     }
 }
