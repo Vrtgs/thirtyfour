@@ -1154,17 +1154,17 @@ pub trait WebDriverCommands {
         Ok(())
     }
 
-    /// Running an extension command
+    /// Running an extension command.
     /// Extension commands are browser specific commands and using browser specific endpoints and
     /// parameters.
     ///
     /// # Example
     /// ```no_run
-    /// # use thirtyfour::prelude::*;
-    /// # use thirtyfour::{ExtensionCommand, RequestMethod};
-    /// # use thirtyfour::support::block_on;
-    /// # use serde::Serialize;
-    /// #
+    /// use thirtyfour::prelude::*;
+    /// use thirtyfour::{ExtensionCommand, RequestMethod};
+    /// use thirtyfour::support::block_on;
+    /// use serde::Serialize;
+    ///
     /// #[derive(Serialize)]
     /// pub struct AddonInstallCommand {
     ///     pub path: String,
@@ -1184,25 +1184,22 @@ pub trait WebDriverCommands {
     ///         String::from("/moz/addon/install")
     ///     }
     /// }
+    ///         
+    /// let install_command = AddonInstallCommand {
+    ///     path: String::from("/path/to/addon.xpi"),
+    ///     temporary: Some(true)
+    /// };
     ///
-    /// # fn main()-> WebDriverResult<()> {
-    /// #   block_on(async {
-
-    /// #       let caps = DesiredCapabilities::firefox();
-    /// #       let driver = WebDriver::new("http://localhost:4444", &caps).await?;
-    /// #   
-    ///         let install_command = AddonInstallCommand {
-    ///             path: String::from("/path/to/addon.xpi"),
-    ///             temporary: Some(true)
-    ///         };
+    /// block_on(async {
+    ///     let caps = DesiredCapabilities::firefox();
+    ///     let driver = WebDriver::new("http://localhost:4444", &caps).await?;
     ///
-    ///         let response = driver.extension_command(install_command).await?;
+    ///     let response = driver.extension_command(install_command).await?;
     ///
-    ///         assert_eq!(response.is_string(), true);
+    ///     assert_eq!(response.is_string(), true);
     ///
-    ///         Ok(())
-    ///     })
-    /// # }
+    ///     Ok(())
+    /// });
     ///
     /// ```
     async fn extension_command<T: ExtensionCommand + Send>(

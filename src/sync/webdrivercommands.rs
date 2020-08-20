@@ -1020,14 +1020,14 @@ pub trait WebDriverCommands {
         Ok(())
     }
 
-    /// Running an extension command
+    /// Running an extension command.
     /// Extension commands are browser specific commands and using browser specific endpoints and
     /// parameters.
     ///
     /// # Example
     /// ```no_run
-    /// # use serde::Serialize;
-    /// # use thirtyfour::sync::prelude::*;
+    /// use serde::Serialize;
+    /// use thirtyfour::sync::prelude::*;
     /// use thirtyfour::{ExtensionCommand, RequestMethod};
     ///
     /// #[derive(Serialize)]
@@ -1049,21 +1049,18 @@ pub trait WebDriverCommands {
     ///    }
     /// }
     ///
-    /// # fn main() -> WebDriverResult<()> {
-    /// #        let caps = DesiredCapabilities::firefox();
-    /// #        let driver = WebDriver::new("http://localhost:4444", &caps)?;
+    /// let caps = DesiredCapabilities::firefox();
+    /// let driver = WebDriver::new("http://localhost:4444", &caps).unwrap();
     ///
-    ///        let install_command = AddonInstallCommand {
-    ///            path: String::from("/path/to/addon.xpi"),
-    ///           temporary: Some(true),
-    ///        };
+    /// let install_command = AddonInstallCommand {
+    ///     path: String::from("/path/to/addon.xpi"),
+    ///     temporary: Some(true),
+    /// };
     ///
-    ///        let response = driver.extension_command(install_command)?;
+    /// let response = driver.extension_command(install_command).unwrap();
     ///
-    ///        assert_eq!(response.is_string(), true);
+    /// assert_eq!(response.is_string(), true);
     ///
-    ///        Ok(())
-    /// # }
     /// ```
     fn extension_command<T: ExtensionCommand + Send>(
         &self,
