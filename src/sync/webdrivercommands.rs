@@ -1049,17 +1049,21 @@ pub trait WebDriverCommands {
     ///    }
     /// }
     ///
-    /// let caps = DesiredCapabilities::firefox();
-    /// let driver = WebDriver::new("http://localhost:4444", &caps).unwrap();
+    /// fn main()-> WebDriverResult<()> {
+    ///     let caps = DesiredCapabilities::firefox();
+    ///     let driver = WebDriver::new("http://localhost:4444", &caps)?;
     ///
-    /// let install_command = AddonInstallCommand {
-    ///     path: String::from("/path/to/addon.xpi"),
-    ///     temporary: Some(true),
-    /// };
+    ///     let install_command = AddonInstallCommand {
+    ///         path: String::from("/path/to/addon.xpi"),
+    ///         temporary: Some(true),
+    ///     };
     ///
-    /// let response = driver.extension_command(install_command).unwrap();
+    ///     let response = driver.extension_command(install_command)?;
     ///
-    /// assert_eq!(response.is_string(), true);
+    ///     assert_eq!(response.is_string(), true);
+    ///
+    ///     Ok(())
+    /// }
     ///
     /// ```
     fn extension_command<T: ExtensionCommand + Send>(
