@@ -472,6 +472,46 @@ impl<'a> WebElement<'a> {
         self.driver.execute_script_with_args(r#"arguments[0].scrollIntoView();"#, &args)?;
         Ok(())
     }
+
+    /// Get the innerHtml property of this element.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #         driver.get("http://webappdemo")?;
+    /// let elem = driver.find_element(By::XPath(r##"//*[@id="button1"]/.."##))?;
+    /// let html = elem.inner_html()?;
+    /// #         assert_eq!(html, r##"<button class="pure-button pure-button-primary" id="button1">BUTTON 1</button>"##);
+    /// #         Ok(())
+    /// # }
+    /// ```
+    pub fn inner_html(&self) -> WebDriverResult<String> {
+        self.get_property("innerHTML")
+    }
+
+    /// Get the outerHtml property of this element.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #         driver.get("http://webappdemo")?;
+    /// let elem = driver.find_element(By::XPath(r##"//*[@id="button1"]/.."##))?;
+    /// let html = elem.outer_html()?;
+    /// #         assert_eq!(html, r##"<div class="pure-u-1-6"><button class="pure-button pure-button-primary" id="button1">BUTTON 1</button></div>"##);
+    /// #         Ok(())
+    /// # }
+    /// ```
+    pub fn outer_html(&self) -> WebDriverResult<String> {
+        self.get_property("outerHTML")
+    }
 }
 
 impl<'a> fmt::Display for WebElement<'a> {
