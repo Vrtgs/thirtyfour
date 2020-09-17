@@ -31,17 +31,19 @@ const OSS_W3C_CONVERSION: &[(&str, &str)] = &[
 pub fn make_w3c_caps(caps: &serde_json::Value) -> serde_json::Value {
     let mut always_match = serde_json::json!({});
 
-    for (k, v) in caps.as_object().unwrap().iter() {
-        if !v.is_null() {
-            for (k_from, k_to) in OSS_W3C_CONVERSION {
-                if k_from == k {
-                    always_match[k_to] = v.clone();
+    if let Some(caps_map) = caps.as_object() {
+        for (k, v) in caps_map.iter() {
+            if !v.is_null() {
+                for (k_from, k_to) in OSS_W3C_CONVERSION {
+                    if k_from == k {
+                        always_match[k_to] = v.clone();
+                    }
                 }
             }
-        }
 
-        if W3C_CAPABILITY_NAMES.contains(&k.as_str()) || k.contains(':') {
-            always_match[k] = v.clone();
+            if W3C_CAPABILITY_NAMES.contains(&k.as_str()) || k.contains(':') {
+                always_match[k] = v.clone();
+            }
         }
     }
 
@@ -67,7 +69,7 @@ fn merge(a: &mut Value, b: Value) {
 
 /// The DesiredCapabilities struct provides a generic way to construct capabilities as well as
 /// helper methods that create specific capabilities structs for the various browsers.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
 pub struct DesiredCapabilities {
     capabilities: Value,
