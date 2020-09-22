@@ -13,6 +13,7 @@ use crate::{
 #[derive(Debug)]
 pub struct SurfDriverAsync {
     url: String,
+    client: surf::Client,
 }
 
 #[async_trait]
@@ -20,6 +21,7 @@ impl WebDriverHttpClientAsync for SurfDriverAsync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
         Ok(SurfDriverAsync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
+            client: surf::Client::new(),
         })
     }
 
@@ -32,9 +34,9 @@ impl WebDriverHttpClientAsync for SurfDriverAsync {
         let request_data = command.format_request(session_id);
         let url = self.url.clone() + &request_data.url;
         let mut request = match request_data.method {
-            RequestMethod::Get => surf::get(&url),
-            RequestMethod::Post => surf::post(&url),
-            RequestMethod::Delete => surf::delete(&url),
+            RequestMethod::Get => self.client.get(&url),
+            RequestMethod::Post => self.client.post(&url),
+            RequestMethod::Delete => self.client.delete(&url),
         };
         if let Some(x) = request_data.body {
             request = request.body(x);
