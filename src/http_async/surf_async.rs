@@ -37,7 +37,7 @@ impl WebDriverHttpClientAsync for SurfDriverAsync {
             RequestMethod::Delete => surf::delete(&url),
         };
         if let Some(x) = request_data.body {
-            request = request.body_json(&x)?;
+            request = request.body(x);
         }
 
         let mut resp = request.await?;
