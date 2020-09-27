@@ -371,7 +371,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement<'a>> {
         let v = self.cmd(Command::FindElementFromElement(&self.element_id, by)).await?;
-        convert_element_async(self.session.clone(), &v["value"])
+        convert_element_async(self.session, &v["value"])
     }
 
     /// Search for all child elements of this WebElement that match the
@@ -399,7 +399,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn find_elements(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement<'a>>> {
         let v = self.cmd(Command::FindElementsFromElement(&self.element_id, by)).await?;
-        convert_elements_async(self.session.clone(), &v["value"])
+        convert_elements_async(self.session, &v["value"])
     }
 
     /// Send the specified input.
