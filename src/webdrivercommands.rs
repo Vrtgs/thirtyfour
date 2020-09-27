@@ -19,6 +19,7 @@ use crate::common::command::ExtensionCommand;
 use crate::common::connection_common::{convert_json, convert_json_vec};
 use crate::error::{WebDriverError, WebDriverResult};
 use crate::http_async::connection_async::WebDriverHttpClientAsync;
+use crate::session::WebDriverSession;
 use crate::webelement::{convert_element_async, convert_elements_async};
 use crate::{
     By, Cookie, OptionRect, Rect, ScriptArgs, SessionId, SwitchTo, TimeoutConfiguration,
@@ -87,45 +88,6 @@ where
     Ok((session_id, data.capabilities))
 }
 
-#[derive(Debug)]
-pub struct WebDriverSession<'a> {
-    session_id: &'a SessionId,
-    conn: Arc<dyn WebDriverHttpClientAsync>,
-}
-
-impl<'a> WebDriverSession<'a> {
-    pub fn new(session_id: &'a SessionId, conn: Arc<dyn WebDriverHttpClientAsync>) -> Self {
-        Self {
-            session_id,
-            conn,
-        }
-    }
-
-    pub fn session_id(&self) -> &SessionId {
-        &self.session_id
-    }
-}
-
-impl<'a> Clone for WebDriverSession<'a> {
-    fn clone(&self) -> Self {
-        WebDriverSession {
-            session_id: self.session_id,
-            conn: self.conn.clone(),
-        }
-    }
-}
-
-#[async_trait]
-impl<'a> WebDriverCommands for WebDriverSession<'_> {
-    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.conn.execute(&self.session_id, command).await
-    }
-
-    fn session(&self) -> WebDriverSession {
-        self.clone()
-    }
-}
-
 /// All browser-level W3C WebDriver commands are implemented under this trait.
 ///
 /// ----
@@ -166,15 +128,17 @@ impl<'a> WebDriverCommands for WebDriverSession<'_> {
 /// ```
 #[async_trait]
 pub trait WebDriverCommands {
-    /// Convenience wrapper for running WebDriver commands.
-    ///
-    /// For `thirtyfour` internal use only.
-    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value>;
-
     /// Get the current session and http client.
     ///
     /// For `thirtyfour` internal use only.
-    fn session(&self) -> WebDriverSession;
+    fn session(&self) -> &WebDriverSession;
+
+    /// Convenience wrapper for running WebDriver commands.
+    ///
+    /// For `thirtyfour` internal use only.
+    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+        self.session().execute(command).await
+    }
 
     /// Close the current window or tab.
     ///
@@ -1184,7 +1148,7 @@ pub trait WebDriverCommands {
     ///         String::from("/moz/addon/install")
     ///     }
     /// }
-    ///         
+    ///
     ///
     /// fn main()->WebDriverResult<()>{
     ///     block_on(async {
@@ -1218,7 +1182,7 @@ pub trait WebDriverCommands {
 /// See the examples for [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
 /// and [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script).
 pub struct ScriptRet<'a> {
-    driver: WebDriverSession<'a>,
+    session: &'a WebDriverSession,
     value: serde_json::Value,
 }
 
@@ -1226,9 +1190,9 @@ impl<'a> ScriptRet<'a> {
     /// Create a new ScriptRet. This is typically done automatically via
     /// [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
     /// or [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script)
-    pub fn new(driver: WebDriverSession<'a>, value: serde_json::Value) -> Self {
+    pub fn new(session: &'a WebDriverSession, value: serde_json::Value) -> Self {
         ScriptRet {
-            driver,
+            session,
             value,
         }
     }
@@ -1249,12 +1213,12 @@ impl<'a> ScriptRet<'a> {
     /// Get a single WebElement return value.
     /// Your script must return only a single element for this to work.
     pub fn get_element(&self) -> WebDriverResult<WebElement> {
-        convert_element_async(self.driver.clone(), &self.value)
+        convert_element_async(self.session, &self.value)
     }
 
     /// Get a vec of WebElements from the return value.
     /// Your script must return an array of elements for this to work.
     pub fn get_elements(&self) -> WebDriverResult<Vec<WebElement>> {
-        convert_elements_async(self.driver.clone(), &self.value)
+        convert_elements_async(self.session, &self.value)
     }
 }

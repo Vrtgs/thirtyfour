@@ -12,6 +12,17 @@ pub struct WebDriverErrorValue {
     data: Option<serde_json::Value>,
 }
 
+impl WebDriverErrorValue {
+    pub fn new(message: &str) -> Self {
+        Self {
+            message: message.to_string(),
+            error: None,
+            stacktrace: None,
+            data: None,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct WebDriverErrorInfo {
     #[serde(skip)]
@@ -19,6 +30,16 @@ pub struct WebDriverErrorInfo {
     #[serde(default, rename(deserialize = "state"))]
     pub error: String,
     pub value: WebDriverErrorValue,
+}
+
+impl WebDriverErrorInfo {
+    pub fn new(message: &str) -> Self {
+        Self {
+            status: 0,
+            error: message.to_string(),
+            value: WebDriverErrorValue::new(message),
+        }
+    }
 }
 
 /// WebDriverError is the main error type

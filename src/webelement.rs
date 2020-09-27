@@ -12,7 +12,7 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::common::command::MAGIC_ELEMENTID;
-use crate::webdrivercommands::{WebDriverCommands, WebDriverSession};
+use crate::webdrivercommands::WebDriverCommands;
 use crate::{
     common::{
         command::Command,
@@ -21,25 +21,26 @@ use crate::{
         types::{ElementRect, ElementRef},
     },
     error::WebDriverResult,
+    session::WebDriverSession,
     By, ElementId, ScriptArgs,
 };
 
 /// Convert the raw JSON into a WebElement struct.
 pub fn convert_element_async<'a>(
-    driver: WebDriverSession<'a>,
+    session: &'a WebDriverSession,
     value: &serde_json::Value,
 ) -> WebDriverResult<WebElement<'a>> {
     let elem_id: ElementRef = serde_json::from_value(value.clone())?;
-    Ok(WebElement::new(driver, ElementId::from(elem_id.id)))
+    Ok(WebElement::new(session, ElementId::from(elem_id.id)))
 }
 
 /// Convert the raw JSON into a Vec of WebElement structs.
 pub fn convert_elements_async<'a>(
-    driver: WebDriverSession<'a>,
+    session: &'a WebDriverSession,
     value: &serde_json::Value,
 ) -> WebDriverResult<Vec<WebElement<'a>>> {
     let values: Vec<ElementRef> = serde_json::from_value(value.clone())?;
-    Ok(values.into_iter().map(|x| WebElement::new(driver.clone(), ElementId::from(x.id))).collect())
+    Ok(values.into_iter().map(|x| WebElement::new(session, ElementId::from(x.id))).collect())
 }
 
 /// The WebElement struct encapsulates a single element on a page.
@@ -91,7 +92,7 @@ pub fn convert_elements_async<'a>(
 #[derive(Debug, Clone)]
 pub struct WebElement<'a> {
     pub element_id: ElementId,
-    driver: WebDriverSession<'a>,
+    pub session: &'a WebDriverSession,
 }
 
 impl<'a> WebElement<'a> {
@@ -100,16 +101,16 @@ impl<'a> WebElement<'a> {
     /// Typically you would not call this directly. WebElement structs are
     /// usually constructed by calling one of the find_element*() methods
     /// either on WebDriver or another WebElement.
-    pub fn new(driver: WebDriverSession<'a>, element_id: ElementId) -> Self {
+    pub fn new(session: &'a WebDriverSession, element_id: ElementId) -> Self {
         WebElement {
             element_id,
-            driver,
+            session,
         }
     }
 
     ///Convenience wrapper for executing a WebDriver command.
     async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.driver.cmd(command).await
+        self.session.cmd(command).await
     }
 
     /// Get the bounding rectangle for this WebElement.
@@ -370,7 +371,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement<'a>> {
         let v = self.cmd(Command::FindElementFromElement(&self.element_id, by)).await?;
-        convert_element_async(self.driver.clone(), &v["value"])
+        convert_element_async(self.session.clone(), &v["value"])
     }
 
     /// Search for all child elements of this WebElement that match the
@@ -398,7 +399,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn find_elements(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement<'a>>> {
         let v = self.cmd(Command::FindElementsFromElement(&self.element_id, by)).await?;
-        convert_elements_async(self.driver.clone(), &v["value"])
+        convert_elements_async(self.session.clone(), &v["value"])
     }
 
     /// Send the specified input.
@@ -500,7 +501,7 @@ impl<'a> WebElement<'a> {
     pub async fn focus(&self) -> WebDriverResult<()> {
         let mut args = ScriptArgs::new();
         args.push(&self)?;
-        self.driver.execute_script_with_args(r#"arguments[0].focus();"#, &args).await?;
+        self.session.execute_script_with_args(r#"arguments[0].focus();"#, &args).await?;
         Ok(())
     }
 
@@ -525,7 +526,7 @@ impl<'a> WebElement<'a> {
     pub async fn scroll_into_view(&self) -> WebDriverResult<()> {
         let mut args = ScriptArgs::new();
         args.push(&self)?;
-        self.driver.execute_script_with_args(r#"arguments[0].scrollIntoView();"#, &args).await?;
+        self.session.execute_script_with_args(r#"arguments[0].scrollIntoView();"#, &args).await?;
         Ok(())
     }
 
@@ -578,7 +579,7 @@ impl<'a> WebElement<'a> {
 
 impl<'a> fmt::Display for WebElement<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, r#"(session="{}", element="{}")"#, self.driver.session_id(), self.element_id)
+        write!(f, r#"(session="{}", element="{}")"#, self.session.session_id(), self.element_id)
     }
 }
 

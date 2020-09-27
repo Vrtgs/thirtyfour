@@ -150,10 +150,11 @@ pub use common::{
     scriptargs::ScriptArgs,
     types::*,
 };
+pub use session::WebDriverSession;
 pub use switch_to::SwitchTo;
 pub use webdriver::GenericWebDriver;
 pub use webdriver::WebDriver;
-pub use webdrivercommands::{WebDriverCommands, WebDriverSession};
+pub use webdrivercommands::WebDriverCommands;
 pub use webelement::WebElement;
 
 /// Allow importing the common async structs via `use thirtyfour::prelude::*`.
@@ -170,6 +171,7 @@ pub mod prelude {
 /// Action chains allow for more complex user interactions with the keyboard and mouse.
 pub mod action_chain;
 mod alert;
+mod session;
 /// Miscellaneous support functions for `thirtyfour` tests.
 pub mod support;
 mod switch_to;
@@ -201,6 +203,7 @@ pub mod common {
         pub mod safari;
     }
     pub mod command;
+    pub mod config;
     pub mod connection_common;
     pub mod cookie;
     pub mod keys;

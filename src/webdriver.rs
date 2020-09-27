@@ -7,6 +7,7 @@ use log::error;
 use serde::Serialize;
 use serde_json::Value;
 
+use crate::common::config::WebDriverConfig;
 use crate::http_async::connection_async::WebDriverHttpClientAsync;
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
 use crate::http_async::nulldriver_async::NullDriverAsync;
@@ -14,8 +15,11 @@ use crate::http_async::nulldriver_async::NullDriverAsync;
 use crate::http_async::reqwest_async::ReqwestDriverAsync;
 #[cfg(feature = "async-std-runtime")]
 use crate::http_async::surf_async::SurfDriverAsync;
-use crate::webdrivercommands::{start_session, WebDriverCommands, WebDriverSession};
-use crate::{common::command::Command, error::WebDriverResult, DesiredCapabilities, SessionId};
+use crate::webdrivercommands::{start_session, WebDriverCommands};
+use crate::{
+    common::command::Command, error::WebDriverResult, session::WebDriverSession,
+    DesiredCapabilities, SessionId,
+};
 
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
 /// The WebDriver struct represents a browser session.
@@ -66,8 +70,7 @@ pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
 /// ```
 #[derive(Debug)]
 pub struct GenericWebDriver<T: WebDriverHttpClientAsync> {
-    pub session_id: SessionId,
-    conn: Arc<dyn WebDriverHttpClientAsync>,
+    pub session: WebDriverSession,
     capabilities: Value,
     quit_on_drop: bool,
     phantom: PhantomData<T>,
@@ -105,8 +108,7 @@ where
         let conn = Arc::new(T::create(remote_server_addr)?);
         let (session_id, session_capabilities) = start_session(conn.clone(), capabilities).await?;
         let driver = GenericWebDriver {
-            session_id,
-            conn,
+            session: WebDriverSession::new(session_id, conn),
             capabilities: session_capabilities,
             quit_on_drop: true,
             phantom: PhantomData,
@@ -126,6 +128,18 @@ where
         self.quit_on_drop = false;
         Ok(())
     }
+
+    pub fn session_id(&self) -> &SessionId {
+        self.session.session_id()
+    }
+
+    pub fn config(&self) -> &WebDriverConfig {
+        self.session.config()
+    }
+
+    pub fn config_mut(&mut self) -> &mut WebDriverConfig {
+        self.session.config_mut()
+    }
 }
 
 #[async_trait]
@@ -133,12 +147,8 @@ impl<T> WebDriverCommands for GenericWebDriver<T>
 where
     T: WebDriverHttpClientAsync,
 {
-    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.conn.execute(&self.session_id, command).await
-    }
-
-    fn session(&self) -> WebDriverSession {
-        WebDriverSession::new(&self.session_id, self.conn.clone())
+    fn session(&self) -> &WebDriverSession {
+        &self.session
     }
 }
 
@@ -148,7 +158,7 @@ where
 {
     /// Close the current session when the WebDriver struct goes out of scope.
     fn drop(&mut self) {
-        if self.quit_on_drop && !(*self.session_id).is_empty() {
+        if self.quit_on_drop && !self.session.session_id().is_empty() {
             if let Err(e) = block_on(self.cmd(Command::DeleteSession)) {
                 error!("Failed to close session: {:?}", e);
             }

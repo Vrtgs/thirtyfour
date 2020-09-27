@@ -1,26 +1,27 @@
-use crate::webdrivercommands::{WebDriverCommands, WebDriverSession};
+use crate::webdrivercommands::WebDriverCommands;
 use crate::{
     common::{command::Command, connection_common::convert_json, keys::TypingData},
     error::WebDriverResult,
+    session::WebDriverSession,
 };
 
 /// Struct for managing alerts.
 pub struct Alert<'a> {
-    driver: WebDriverSession<'a>,
+    session: &'a WebDriverSession,
 }
 
 impl<'a> Alert<'a> {
     /// Create a new Alert struct. This is typically created internally
     /// via a call to `WebDriver::switch_to().alert()`.
-    pub fn new(driver: WebDriverSession<'a>) -> Self {
+    pub fn new(session: &'a WebDriverSession) -> Self {
         Alert {
-            driver,
+            session,
         }
     }
 
     ///Convenience wrapper for executing a WebDriver command.
     async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.driver.cmd(command).await
+        self.session.cmd(command).await
     }
 
     /// Get the active alert text.

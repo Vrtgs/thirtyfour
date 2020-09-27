@@ -8,6 +8,7 @@ use crate::common::{
     keys::TypingData,
     types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
 };
+use std::fmt;
 
 pub const MAGIC_ELEMENTID: &str = "element-6066-11e4-a52e-4f735466cecf";
 
@@ -48,6 +49,7 @@ impl From<serde_json::Value> for Actions {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum By<'a> {
     Id(&'a str),
     XPath(&'a str),
@@ -57,6 +59,21 @@ pub enum By<'a> {
     Tag(&'a str),
     ClassName(&'a str),
     Css(&'a str),
+}
+
+impl fmt::Display for By<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            By::Id(id) => write!(f, "Id({})", id),
+            By::XPath(xpath) => write!(f, "XPath({})", xpath),
+            By::LinkText(text) => write!(f, "Link Text({})", text),
+            By::PartialLinkText(text) => write!(f, "Partial Link Text({})", text),
+            By::Name(name) => write!(f, "Name({})", name),
+            By::Tag(tag) => write!(f, "Tag({})", tag),
+            By::ClassName(cname) => write!(f, "Class({})", cname),
+            By::Css(css) => write!(f, "CSS({})", css),
+        }
+    }
 }
 
 impl<'a> By<'a> {

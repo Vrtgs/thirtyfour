@@ -1,28 +1,29 @@
-use crate::webdrivercommands::{WebDriverCommands, WebDriverSession};
+use crate::webdrivercommands::WebDriverCommands;
 use crate::{
     common::command::Command,
     error::{WebDriverError, WebDriverResult},
+    session::WebDriverSession,
     webelement::convert_element_async,
     Alert, WebElement, WindowHandle,
 };
 
 /// Struct for switching between frames/windows/alerts.
 pub struct SwitchTo<'a> {
-    driver: WebDriverSession<'a>,
+    session: &'a WebDriverSession,
 }
 
 impl<'a> SwitchTo<'a> {
     /// Create a new SwitchTo struct. This is typically created internally
     /// via a call to `WebDriver::switch_to()`.
-    pub fn new(driver: WebDriverSession<'a>) -> Self {
+    pub fn new(session: &'a WebDriverSession) -> Self {
         SwitchTo {
-            driver,
+            session,
         }
     }
 
     ///Convenience wrapper for executing a WebDriver command.
     async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.driver.cmd(command).await
+        self.session.cmd(command).await
     }
 
     /// Return the element with focus, or the `<body>` element if nothing has focus.
@@ -55,14 +56,14 @@ impl<'a> SwitchTo<'a> {
     /// ```
     pub async fn active_element(self) -> WebDriverResult<WebElement<'a>> {
         let v = self.cmd(Command::GetActiveElement).await?;
-        convert_element_async(self.driver, &v["value"])
+        convert_element_async(self.session, &v["value"])
     }
 
     /// Return Alert struct for processing the active alert on the page.
     ///
     /// See [Alert](struct.Alert.html) documentation for examples.
     pub fn alert(self) -> Alert<'a> {
-        Alert::new(self.driver)
+        Alert::new(self.session)
     }
 
     /// Switch to the default frame.
@@ -242,12 +243,11 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub async fn window_name(self, name: &str) -> WebDriverResult<()> {
-        let original_handle = self.driver.current_window_handle().await?;
-        let this = &self;
-        let handles = this.driver.window_handles().await?;
+        let original_handle = self.session.current_window_handle().await?;
+        let handles = self.session.window_handles().await?;
         for handle in &handles {
-            this.driver.switch_to().window(handle).await?;
-            let ret = this.driver.execute_script(r#"return window.name;"#).await?;
+            self.session.switch_to().window(handle).await?;
+            let ret = self.session.execute_script(r#"return window.name;"#).await?;
             let current_name: String = ret.convert()?;
             if current_name == name {
                 return Ok(());
