@@ -719,13 +719,13 @@ pub trait WebDriverCommands {
     /// #     let caps = DesiredCapabilities::chrome();
     /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
     /// let delay = Duration::new(11, 0);
-    /// driver.implicitly_wait(delay)?;
+    /// driver.set_implicit_wait_timeout(delay)?;
     /// #     let got_timeouts = driver.get_timeouts()?;
     /// #     assert_eq!(got_timeouts.implicit(), Some(delay));
     /// #     Ok(())
     /// # }
     /// ```
-    fn implicitly_wait(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    fn set_implicit_wait_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, None, Some(time_to_wait));
         self.set_timeouts(timeouts)
     }
