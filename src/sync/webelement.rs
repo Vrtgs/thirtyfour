@@ -4,7 +4,8 @@ use base64::decode;
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
 use crate::common::command::MAGIC_ELEMENTID;
-use crate::sync::webdrivercommands::{WebDriverCommands, WebDriverSession};
+use crate::sync::webdrivercommands::WebDriverCommands;
+use crate::sync::WebDriverSession;
 use crate::{
     common::{
         command::Command,
@@ -18,7 +19,7 @@ use crate::{
 
 /// Unwrap the raw JSON into a WebElement struct.
 pub fn convert_element_sync<'a>(
-    driver: WebDriverSession<'a>,
+    driver: &'a WebDriverSession,
     value: &serde_json::Value,
 ) -> WebDriverResult<WebElement<'a>> {
     let elem_id: ElementRef = serde_json::from_value(value.clone())?;
@@ -27,11 +28,11 @@ pub fn convert_element_sync<'a>(
 
 /// Unwrap the raw JSON into a Vec of WebElement structs.
 pub fn convert_elements_sync<'a>(
-    driver: WebDriverSession<'a>,
+    driver: &'a WebDriverSession,
     value: &serde_json::Value,
 ) -> WebDriverResult<Vec<WebElement<'a>>> {
     let values: Vec<ElementRef> = serde_json::from_value(value.clone())?;
-    Ok(values.into_iter().map(|x| WebElement::new(driver.clone(), ElementId::from(x.id))).collect())
+    Ok(values.into_iter().map(|x| WebElement::new(driver, ElementId::from(x.id))).collect())
 }
 
 /// The WebElement struct encapsulates a single element on a page.
@@ -77,7 +78,7 @@ pub fn convert_elements_sync<'a>(
 #[derive(Debug, Clone)]
 pub struct WebElement<'a> {
     pub element_id: ElementId,
-    driver: WebDriverSession<'a>,
+    session: &'a WebDriverSession,
 }
 
 impl<'a> WebElement<'a> {
@@ -86,16 +87,16 @@ impl<'a> WebElement<'a> {
     /// Typically you would not call this directly. WebElement structs are
     /// usually constructed by calling one of the find_element*() methods
     /// either on WebDriver or another WebElement.
-    pub fn new(driver: WebDriverSession<'a>, element_id: ElementId) -> Self {
+    pub fn new(session: &'a WebDriverSession, element_id: ElementId) -> Self {
         WebElement {
             element_id,
-            driver,
+            session,
         }
     }
 
     ///Convenience wrapper for executing a WebDriver command.
     fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.driver.cmd(command)
+        self.session.cmd(command)
     }
 
     /// Get the bounding rectangle for this WebElement.
@@ -143,6 +144,26 @@ impl<'a> WebElement<'a> {
     /// ```
     pub fn class_name(&self) -> WebDriverResult<String> {
         self.get_attribute("class")
+    }
+
+    /// Get the id for this WebElement.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::sync::prelude::*;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     let caps = DesiredCapabilities::chrome();
+    /// #     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
+    /// #     driver.get("http://webappdemo")?;
+    /// let elem = driver.find_element(By::Id("button1"))?;
+    /// let id = elem.id()?;
+    /// #     assert_eq!(id, "button1");
+    /// #     Ok(())
+    /// # }
+    /// ```
+    pub fn id(&self) -> WebDriverResult<String> {
+        self.get_attribute("id")
     }
 
     /// Get the text contents for this WebElement.
@@ -330,7 +351,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
         let v = self.cmd(Command::FindElementFromElement(&self.element_id, by))?;
-        convert_element_sync(self.driver.clone(), &v["value"])
+        convert_element_sync(self.session, &v["value"])
     }
 
     /// Search for all child elements of this WebElement that match the
@@ -355,7 +376,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         let v = self.cmd(Command::FindElementsFromElement(&self.element_id, by))?;
-        convert_elements_sync(self.driver.clone(), &v["value"])
+        convert_elements_sync(self.session, &v["value"])
     }
 
     /// Send the specified input.
@@ -447,7 +468,7 @@ impl<'a> WebElement<'a> {
     pub fn focus(&self) -> WebDriverResult<()> {
         let mut args = ScriptArgs::new();
         args.push(&self)?;
-        self.driver.execute_script_with_args(r#"arguments[0].focus();"#, &args)?;
+        self.session.execute_script_with_args(r#"arguments[0].focus();"#, &args)?;
         Ok(())
     }
 
@@ -469,7 +490,7 @@ impl<'a> WebElement<'a> {
     pub fn scroll_into_view(&self) -> WebDriverResult<()> {
         let mut args = ScriptArgs::new();
         args.push(&self)?;
-        self.driver.execute_script_with_args(r#"arguments[0].scrollIntoView();"#, &args)?;
+        self.session.execute_script_with_args(r#"arguments[0].scrollIntoView();"#, &args)?;
         Ok(())
     }
 
@@ -516,7 +537,7 @@ impl<'a> WebElement<'a> {
 
 impl<'a> fmt::Display for WebElement<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, r#"(session="{}", element="{}")"#, self.driver.session_id(), self.element_id)
+        write!(f, r#"(session="{}", element="{}")"#, self.session.session_id(), self.element_id)
     }
 }
 

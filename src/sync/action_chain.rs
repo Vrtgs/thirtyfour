@@ -1,4 +1,5 @@
-use crate::sync::webdrivercommands::{WebDriverCommands, WebDriverSession};
+use crate::sync::webdrivercommands::WebDriverCommands;
+use crate::sync::WebDriverSession;
 use crate::{
     common::{
         action::{ActionSource, KeyAction, PointerAction, PointerActionType},
@@ -21,7 +22,7 @@ use crate::{
 /// driver.action_chain().drag_and_drop_element(elem_src, elem_target).perform()?;
 /// ```
 pub struct ActionChain<'a> {
-    driver: WebDriverSession<'a>,
+    session: &'a WebDriverSession,
     key_actions: ActionSource<KeyAction>,
     pointer_actions: ActionSource<PointerAction>,
 }
@@ -31,9 +32,9 @@ impl<'a> ActionChain<'a> {
     ///
     /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
-    pub fn new(driver: WebDriverSession<'a>) -> Self {
+    pub fn new(session: &'a WebDriverSession) -> Self {
         ActionChain {
-            driver,
+            session,
             key_actions: ActionSource::<KeyAction>::new("key"),
             pointer_actions: ActionSource::<PointerAction>::new(
                 "pointer",
@@ -44,7 +45,7 @@ impl<'a> ActionChain<'a> {
 
     ///Convenience wrapper for executing a WebDriver command.
     fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.driver.cmd(command)
+        self.session.cmd(command)
     }
 
     /// Reset all actions, reverting all input devices back to default states.

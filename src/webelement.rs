@@ -166,6 +166,29 @@ impl<'a> WebElement<'a> {
         self.get_attribute("class").await
     }
 
+    /// Get the id for this WebElement.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let id = elem.id().await?;
+    /// #         assert_eq!(id, "button1");
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn id(&self) -> WebDriverResult<String> {
+        self.get_attribute("id").await
+    }
+
     /// Get the text contents for this WebElement.
     ///
     /// # Example:
@@ -371,7 +394,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement<'a>> {
         let v = self.cmd(Command::FindElementFromElement(&self.element_id, by)).await?;
-        convert_element_async(self.session, &v["value"])
+        convert_element_async(self.session.session(), &v["value"])
     }
 
     /// Search for all child elements of this WebElement that match the
@@ -399,7 +422,7 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn find_elements(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement<'a>>> {
         let v = self.cmd(Command::FindElementsFromElement(&self.element_id, by)).await?;
-        convert_elements_async(self.session, &v["value"])
+        convert_elements_async(self.session.session(), &v["value"])
     }
 
     /// Send the specified input.

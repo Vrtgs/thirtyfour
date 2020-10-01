@@ -278,7 +278,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn find_element<'b>(&'b self, by: By<'b>) -> WebDriverResult<WebElement<'b>> {
+    async fn find_element<'a>(&'a self, by: By<'_>) -> WebDriverResult<WebElement<'a>> {
         let v = self.cmd(Command::FindElement(by)).await?;
         convert_element_async(self.session(), &v["value"])
     }
@@ -304,7 +304,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn find_elements<'b>(&'b self, by: By<'b>) -> WebDriverResult<Vec<WebElement<'b>>> {
+    async fn find_elements<'a>(&'a self, by: By<'_>) -> WebDriverResult<Vec<WebElement<'a>>> {
         let v = self.cmd(Command::FindElements(by)).await?;
         convert_elements_async(self.session(), &v["value"])
     }
@@ -337,7 +337,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn execute_script<'b>(&'b self, script: &'b str) -> WebDriverResult<ScriptRet<'b>> {
+    async fn execute_script<'a>(&'a self, script: &str) -> WebDriverResult<ScriptRet<'a>> {
         let v = self.cmd(Command::ExecuteScript(script.to_owned(), Vec::new())).await?;
         Ok(ScriptRet::new(self.session(), v["value"].clone()))
     }
@@ -371,11 +371,11 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn execute_script_with_args<'b>(
-        &'b self,
-        script: &'b str,
-        args: &'b ScriptArgs,
-    ) -> WebDriverResult<ScriptRet<'b>> {
+    async fn execute_script_with_args<'a>(
+        &'a self,
+        script: &str,
+        args: &ScriptArgs,
+    ) -> WebDriverResult<ScriptRet<'a>> {
         let v = self.cmd(Command::ExecuteScript(script.to_owned(), args.get_args())).await?;
         Ok(ScriptRet::new(self.session(), v["value"].clone()))
     }
@@ -413,7 +413,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn execute_async_script<'b>(&'b self, script: &'b str) -> WebDriverResult<ScriptRet<'b>> {
+    async fn execute_async_script<'a>(&'a self, script: &str) -> WebDriverResult<ScriptRet<'a>> {
         let v = self.cmd(Command::ExecuteAsyncScript(script.to_owned(), Vec::new())).await?;
         Ok(ScriptRet::new(self.session(), v["value"].clone()))
     }
@@ -452,11 +452,11 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn execute_async_script_with_args<'b>(
-        &'b self,
-        script: &'b str,
-        args: &'b ScriptArgs,
-    ) -> WebDriverResult<ScriptRet<'b>> {
+    async fn execute_async_script_with_args<'a>(
+        &'a self,
+        script: &str,
+        args: &ScriptArgs,
+    ) -> WebDriverResult<ScriptRet<'a>> {
         let v = self.cmd(Command::ExecuteAsyncScript(script.to_owned(), args.get_args())).await?;
         Ok(ScriptRet::new(self.session(), v["value"].clone()))
     }

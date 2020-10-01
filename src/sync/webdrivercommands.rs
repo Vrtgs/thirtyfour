@@ -7,6 +7,7 @@ use serde_json::{from_value, Value};
 
 use crate::error::WebDriverError;
 use crate::sync::http_sync::connection_sync::WebDriverHttpClientSync;
+use crate::sync::WebDriverSession;
 use crate::{
     common::{
         command::Command,
@@ -81,44 +82,6 @@ where
     Ok((session_id, data.capabilities))
 }
 
-#[derive(Debug)]
-pub struct WebDriverSession<'a> {
-    session_id: &'a SessionId,
-    conn: Arc<dyn WebDriverHttpClientSync>,
-}
-
-impl<'a> WebDriverSession<'a> {
-    pub fn new(session_id: &'a SessionId, conn: Arc<dyn WebDriverHttpClientSync>) -> Self {
-        Self {
-            session_id,
-            conn,
-        }
-    }
-
-    pub fn session_id(&self) -> &SessionId {
-        &self.session_id
-    }
-}
-
-impl<'a> Clone for WebDriverSession<'a> {
-    fn clone(&self) -> Self {
-        WebDriverSession {
-            session_id: self.session_id,
-            conn: self.conn.clone(),
-        }
-    }
-}
-
-impl<'a> WebDriverCommands for WebDriverSession<'a> {
-    fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.conn.execute(&self.session_id, command)
-    }
-
-    fn session(&self) -> WebDriverSession {
-        self.clone()
-    }
-}
-
 /// All browser-level W3C WebDriver commands are implemented under this trait.
 ///
 /// `Thirtyfour` is structured as follows:
@@ -145,15 +108,17 @@ impl<'a> WebDriverCommands for WebDriverSession<'a> {
 /// # }
 /// ```
 pub trait WebDriverCommands {
-    /// Convenience wrapper for running WebDriver commands.
-    ///
-    /// For `thirtyfour` internal use only.
-    fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value>;
-
     /// Get the current session and http client.
     ///
     /// For `thirtyfour` internal use only.
-    fn session(&self) -> WebDriverSession;
+    fn session(&self) -> &WebDriverSession;
+
+    /// Convenience wrapper for running WebDriver commands.
+    ///
+    /// For `thirtyfour` internal use only.
+    fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+        self.session().execute(command)
+    }
 
     /// Close the current window or tab.
     ///
@@ -1080,7 +1045,7 @@ pub trait WebDriverCommands {
 /// See the examples for [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
 /// and [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script).
 pub struct ScriptRetSync<'a> {
-    driver: WebDriverSession<'a>,
+    driver: &'a WebDriverSession,
     value: Value,
 }
 
@@ -1088,7 +1053,7 @@ impl<'a> ScriptRetSync<'a> {
     /// Create a new ScriptRetSync. This is typically done automatically via
     /// [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
     /// or [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script)
-    pub fn new(driver: WebDriverSession<'a>, value: Value) -> Self {
+    pub fn new(driver: &'a WebDriverSession, value: Value) -> Self {
         ScriptRetSync {
             driver,
             value,

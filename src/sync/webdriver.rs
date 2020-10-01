@@ -10,8 +10,9 @@ use crate::sync::http_sync::connection_sync::WebDriverHttpClientSync;
 use crate::sync::http_sync::nulldriver_sync::NullDriverSync;
 #[cfg(feature = "tokio-runtime")]
 use crate::sync::http_sync::reqwest_sync::ReqwestDriverSync;
-use crate::sync::webdrivercommands::{start_session, WebDriverCommands, WebDriverSession};
-use crate::{common::command::Command, error::WebDriverResult, DesiredCapabilities, SessionId};
+use crate::sync::webdrivercommands::{start_session, WebDriverCommands};
+use crate::sync::WebDriverSession;
+use crate::{common::command::Command, error::WebDriverResult, DesiredCapabilities};
 
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
 /// The WebDriver struct represents a browser session.
@@ -49,8 +50,7 @@ pub type WebDriver = GenericWebDriver<ReqwestDriverSync>;
 /// ```
 #[derive(Debug)]
 pub struct GenericWebDriver<T: WebDriverHttpClientSync> {
-    pub session_id: SessionId,
-    conn: Arc<dyn WebDriverHttpClientSync>,
+    pub session: WebDriverSession,
     capabilities: Value,
     quit_on_drop: bool,
     phantom: PhantomData<T>,
@@ -83,8 +83,7 @@ where
         let conn = Arc::new(T::create(remote_server_addr)?);
         let (session_id, session_capabilities) = start_session(conn.clone(), capabilities)?;
         let driver = GenericWebDriver {
-            session_id,
-            conn,
+            session: WebDriverSession::new(session_id, conn),
             capabilities: session_capabilities,
             quit_on_drop: true,
             phantom: PhantomData,
@@ -110,12 +109,8 @@ impl<T> WebDriverCommands for GenericWebDriver<T>
 where
     T: WebDriverHttpClientSync,
 {
-    fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.conn.execute(&self.session_id, command)
-    }
-
-    fn session(&self) -> WebDriverSession {
-        WebDriverSession::new(&self.session_id, self.conn.clone())
+    fn session(&self) -> &WebDriverSession {
+        &self.session
     }
 }
 
@@ -125,7 +120,7 @@ where
 {
     /// Close the current session when the WebDriver struct goes out of scope.
     fn drop(&mut self) {
-        if self.quit_on_drop && !(*self.session_id).is_empty() {
+        if self.quit_on_drop && !(self.session.session_id()).is_empty() {
             if let Err(e) = self.cmd(Command::DeleteSession) {
                 error!("Failed to close session: {:?}", e);
             }

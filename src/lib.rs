@@ -214,10 +214,11 @@ pub mod common {
 /// Allow importing the common sync structs via `use thirtyfour::sync::*`.
 pub mod sync {
     pub use alert::Alert;
+    pub use session::WebDriverSession;
     pub use switch_to::SwitchTo;
     pub use webdriver::GenericWebDriver;
     pub use webdriver::WebDriver;
-    pub use webdrivercommands::{WebDriverCommands, WebDriverSession};
+    pub use webdrivercommands::WebDriverCommands;
     pub use webelement::WebElement;
 
     pub mod prelude {
@@ -239,6 +240,7 @@ pub mod sync {
         #[cfg(feature = "tokio-runtime")]
         pub mod reqwest_sync;
     }
+    mod session;
     mod switch_to;
     mod webdriver;
     mod webdrivercommands;
