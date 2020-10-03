@@ -1,26 +1,25 @@
 use std::fmt::Debug;
 
-use crate::sync::http_sync::connection_sync::WebDriverHttpClientSync;
-use crate::{
-    common::command::{Command, RequestMethod},
-    error::{WebDriverError, WebDriverResult},
-    SessionId,
-};
+use async_trait::async_trait;
+
+use crate::http::connection_async::WebDriverHttpClientAsync;
+use crate::{common::command::Command, error::WebDriverResult, SessionId};
 
 /// Null driver that satisfies the build but does nothing.
 #[derive(Debug)]
-pub struct NullDriverSync {
+pub struct NullDriverAsync {
     url: String,
 }
 
-impl WebDriverHttpClientSync for NullDriverSync {
+#[async_trait]
+impl WebDriverHttpClientAsync for NullDriverAsync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
-        Ok(NullDriverSync {
+        Ok(NullDriverAsync {
             url: remote_server_addr.to_string(),
         })
     }
 
-    fn execute(
+    async fn execute(
         &self,
         _session_id: &SessionId,
         _command: Command<'_>,

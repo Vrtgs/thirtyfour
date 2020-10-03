@@ -18,7 +18,7 @@ use crate::common::command::Command;
 use crate::common::command::ExtensionCommand;
 use crate::common::connection_common::{convert_json, convert_json_vec};
 use crate::error::{WebDriverError, WebDriverResult};
-use crate::http_async::connection_async::WebDriverHttpClientAsync;
+use crate::http::connection_async::WebDriverHttpClientAsync;
 use crate::session::WebDriverSession;
 use crate::webelement::{convert_element_async, convert_elements_async};
 use crate::{

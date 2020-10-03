@@ -4,13 +4,14 @@
 //! Tested with Chrome and Firefox although any W3C-compatible WebDriver
 //! should work.
 //!
-//! Both sync and async APIs are provided (see examples below).
+//! Async only (`tokio` and `async-std` runtimes supported via feature flags).
+//! For synchronous support, use the [thirtyfour_sync](https://docs.rs/thirtyfour_sync) crate instead.
 //!
 //! ## Features
 //!
 //! - All W3C WebDriver and WebElement methods supported
 //! - Async / await support (both **tokio** and **async-std** runtimes supported via feature flags)
-//! - Synchronous support (use the `blocking` feature flag)
+//! - Synchronous support (use the `thirtyfour_sync` crate)
 //! - Create new browser session directly via WebDriver (e.g. chromedriver)
 //! - Create new browser session via Selenium Standalone or Grid
 //! - Automatically close browser session on drop
@@ -23,7 +24,6 @@
 //! - Shadow DOM support
 //! - Alert support
 //! - Capture / Save screenshot of browser or individual element as PNG
-//! - Easy to add support for more HTTP clients using generics
 //!
 //! ## Feature Flags
 //!
@@ -31,7 +31,7 @@
 //! are provided via feature flags.
 //!
 //! * `tokio-runtime`: (Default) Use the **tokio** async runtime with the [reqwest](https://docs.rs/reqwest) http client.
-//! * `blocking`: Enables the synchronous reqwest http client via `thirtyfour::sync::prelude::*`.
+//! * `blocking`: Enables the synchronous reqwest http client via `thirtyfour_sync::prelude::*`.
 //!
 //!     The `blocking` flag also enables `tokio-runtime` because the
 //!     synchronous reqwest client uses **tokio** internally.
@@ -97,7 +97,7 @@
 //!
 //! ```rust
 //! # #[cfg(all(feature = "blocking", not(feature = "async-std-runtime")))] {
-//! use thirtyfour::sync::prelude::*;
+//! use thirtyfour_sync::prelude::*;
 //!
 //! fn main() -> WebDriverResult<()> {
 //!     let caps = DesiredCapabilities::chrome();
@@ -177,7 +177,7 @@ mod webdrivercommands;
 mod webelement;
 
 /// Async HTTP client traits.
-pub mod http_async {
+pub mod http {
     pub mod connection_async;
     #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
     pub mod nulldriver_async;
@@ -206,43 +206,6 @@ pub mod common {
     pub mod keys;
     pub mod scriptargs;
     pub mod types;
-}
-
-#[cfg(all(feature = "blocking", not(feature = "async-std-runtime")))]
-/// Allow importing the common sync structs via `use thirtyfour::sync::*`.
-pub mod sync {
-    pub use alert::Alert;
-    pub use session::WebDriverSession;
-    pub use switch_to::SwitchTo;
-    pub use webdriver::GenericWebDriver;
-    pub use webdriver::WebDriver;
-    pub use webdrivercommands::WebDriverCommands;
-    pub use webelement::WebElement;
-
-    pub mod prelude {
-        pub use crate::error::WebDriverResult;
-        pub use crate::sync::alert::Alert;
-        pub use crate::sync::switch_to::SwitchTo;
-        pub use crate::sync::webdriver::WebDriver;
-        pub use crate::sync::webdrivercommands::{ScriptRetSync, WebDriverCommands};
-        pub use crate::sync::webelement::WebElement;
-        pub use crate::{By, Cookie, DesiredCapabilities, Keys, ScriptArgs, TypingData};
-    }
-
-    mod action_chain;
-    mod alert;
-    pub mod http_sync {
-        pub mod connection_sync;
-        #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
-        pub mod nulldriver_sync;
-        #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
-        pub mod reqwest_sync;
-    }
-    mod session;
-    mod switch_to;
-    mod webdriver;
-    mod webdrivercommands;
-    mod webelement;
 }
 
 /// Error types.

@@ -15,8 +15,8 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Build the test website
-      run: docker-compose up -d --build
+      run: docker-compose up -d
     - name: Check running containers
       run: docker ps -a
     - name: Run tests
-      run: cargo test --verbose --features=blocking -- --test-threads=1
+      run: cargo test --verbose -- --test-threads=1

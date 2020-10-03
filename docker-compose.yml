@@ -10,7 +10,6 @@ services:
       - NODE_MAX_INSTANCES=4
       - NODE_MAX_SESSION=4
   webappdemo:
-    build:
-      context: webappdemo
+    image: stevepryde/thirtyfour_testapp:0.1.0
     ports:
       - "8000:80"

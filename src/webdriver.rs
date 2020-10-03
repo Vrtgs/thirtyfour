@@ -8,13 +8,13 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::common::config::WebDriverConfig;
-use crate::http_async::connection_async::WebDriverHttpClientAsync;
+use crate::http::connection_async::WebDriverHttpClientAsync;
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
-use crate::http_async::nulldriver_async::NullDriverAsync;
+use crate::http::nulldriver_async::NullDriverAsync;
 #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
-use crate::http_async::reqwest_async::ReqwestDriverAsync;
+use crate::http::reqwest_async::ReqwestDriverAsync;
 #[cfg(feature = "async-std-runtime")]
-use crate::http_async::surf_async::SurfDriverAsync;
+use crate::http::surf_async::SurfDriverAsync;
 use crate::webdrivercommands::{start_session, WebDriverCommands};
 use crate::{
     common::command::Command, error::WebDriverResult, session::WebDriverSession,

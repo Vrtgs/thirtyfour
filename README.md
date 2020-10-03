@@ -34,7 +34,7 @@ It is named after the atomic number for the Selenium chemical element (Se).
 ## Feature Flags
 
 - `tokio-runtime`: (Default) Use the **tokio** async runtime with the [reqwest](https://docs.rs/reqwest) http client.
-- `blocking`: Enables the synchronous reqwest http client via `thirtyfour::sync::prelude::*`.
+- `blocking`: Enables the synchronous reqwest http client via `thirtyfour_sync::prelude::*`.
 
   The `blocking` flag also enables `tokio-runtime` because the
   synchronous reqwest client uses **tokio** internally.
@@ -98,7 +98,7 @@ To run this example:
     cargo run --example sync --features blocking
 
 ```rust
-use thirtyfour::sync::prelude::*;
+use thirtyfour_sync::prelude::*;
 
 fn main() -> WebDriverResult<()> {
      let caps = DesiredCapabilities::chrome();

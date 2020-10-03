@@ -2,30 +2,26 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 
-use crate::http_async::connection_async::WebDriverHttpClientAsync;
+use crate::http::connection_async::WebDriverHttpClientAsync;
 use crate::{
-    common::{
-        command::{Command, RequestMethod},
-        connection_common::reqwest_support::build_reqwest_headers,
-    },
+    common::command::{Command, RequestMethod},
     error::{WebDriverError, WebDriverResult},
     SessionId,
 };
 
 /// Asynchronous http to the remote WebDriver server.
 #[derive(Debug)]
-pub struct ReqwestDriverAsync {
+pub struct SurfDriverAsync {
     url: String,
-    client: reqwest::Client,
+    client: surf::Client,
 }
 
 #[async_trait]
-impl WebDriverHttpClientAsync for ReqwestDriverAsync {
+impl WebDriverHttpClientAsync for SurfDriverAsync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
-        let headers = build_reqwest_headers(remote_server_addr)?;
-        Ok(ReqwestDriverAsync {
+        Ok(SurfDriverAsync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
-            client: reqwest::Client::builder().default_headers(headers).build()?,
+            client: surf::Client::new(),
         })
     }
 
@@ -43,17 +39,18 @@ impl WebDriverHttpClientAsync for ReqwestDriverAsync {
             RequestMethod::Delete => self.client.delete(&url),
         };
         if let Some(x) = request_data.body {
-            request = request.json(&x);
+            request = request.body(x);
         }
 
-        let resp = request.send().await?;
+        let mut resp = request.await?;
 
-        match resp.status().as_u16() {
-            200..=399 => Ok(resp.json().await?),
-            400..=599 => {
-                let status = resp.status().as_u16();
-                let body: serde_json::Value = resp.json().await.unwrap_or(serde_json::Value::Null);
-                Err(WebDriverError::parse(status, body))
+        match resp.status() {
+            x if x.is_success() || x.is_redirection() => Ok(resp.body_json().await?),
+            x if x.is_client_error() || x.is_server_error() => {
+                let status = resp.status();
+                let body: serde_json::Value =
+                    resp.body_json().await.unwrap_or(serde_json::Value::Null);
+                Err(WebDriverError::parse(status as u16, body))
             }
             _ => unreachable!(),
         }

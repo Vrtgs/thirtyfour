@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 
-use crate::sync::http_sync::connection_sync::WebDriverHttpClientSync;
+use async_trait::async_trait;
+
+use crate::http::connection_async::WebDriverHttpClientAsync;
 use crate::{
     common::{
         command::{Command, RequestMethod},
@@ -10,27 +12,28 @@ use crate::{
     SessionId,
 };
 
-/// Synchronous connection to the remote WebDriver server.
+/// Asynchronous http to the remote WebDriver server.
 #[derive(Debug)]
-pub struct ReqwestDriverSync {
+pub struct ReqwestDriverAsync {
     url: String,
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
 }
 
-impl WebDriverHttpClientSync for ReqwestDriverSync {
+#[async_trait]
+impl WebDriverHttpClientAsync for ReqwestDriverAsync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
         let headers = build_reqwest_headers(remote_server_addr)?;
-        Ok(ReqwestDriverSync {
+        Ok(ReqwestDriverAsync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
-            client: reqwest::blocking::Client::builder().default_headers(headers).build()?,
+            client: reqwest::Client::builder().default_headers(headers).build()?,
         })
     }
 
     /// Execute the specified command and return the data as serde_json::Value.
-    fn execute(
+    async fn execute(
         &self,
         session_id: &SessionId,
-        command: Command,
+        command: Command<'_>,
     ) -> WebDriverResult<serde_json::Value> {
         let request_data = command.format_request(session_id);
         let url = self.url.clone() + &request_data.url;
@@ -39,18 +42,17 @@ impl WebDriverHttpClientSync for ReqwestDriverSync {
             RequestMethod::Post => self.client.post(&url),
             RequestMethod::Delete => self.client.delete(&url),
         };
-
         if let Some(x) = request_data.body {
             request = request.json(&x);
         }
 
-        let resp = request.send()?;
+        let resp = request.send().await?;
 
         match resp.status().as_u16() {
-            200..=399 => Ok(resp.json()?),
+            200..=399 => Ok(resp.json().await?),
             400..=599 => {
                 let status = resp.status().as_u16();
-                let body: serde_json::Value = resp.json().unwrap_or(serde_json::Value::Null);
+                let body: serde_json::Value = resp.json().await.unwrap_or(serde_json::Value::Null);
                 Err(WebDriverError::parse(status, body))
             }
             _ => unreachable!(),

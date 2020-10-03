@@ -1,7 +1,7 @@
 use crate::common::command::Command;
 use crate::common::config::WebDriverConfig;
 use crate::error::WebDriverResult;
-use crate::http_async::connection_async::WebDriverHttpClientAsync;
+use crate::http::connection_async::WebDriverHttpClientAsync;
 use crate::webdrivercommands::WebDriverCommands;
 use crate::SessionId;
 use async_trait::async_trait;
