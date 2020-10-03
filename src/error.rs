@@ -1,15 +1,24 @@
 use base64::DecodeError;
+use displaydoc::Display;
 use serde::export::Formatter;
 use serde::Deserialize;
+use thiserror::Error;
 
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
 
+fn indent_lines(message: &str, indent: usize) -> String {
+    let lines: Vec<String> =
+        message.split("\n").map(|s| format!("{0:i$}{1}", " ", s, i = indent)).collect();
+    lines.join("\n")
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct WebDriverErrorValue {
-    message: String,
-    error: Option<String>,
-    stacktrace: Option<String>,
-    data: Option<serde_json::Value>,
+    pub message: String,
+    pub error: Option<String>,
+    // This stacktrace is returned from the WebDriver.
+    pub stacktrace: Option<String>,
+    pub data: Option<serde_json::Value>,
 }
 
 impl WebDriverErrorValue {
@@ -20,6 +29,27 @@ impl WebDriverErrorValue {
             stacktrace: None,
             data: None,
         }
+    }
+}
+
+impl std::fmt::Display for WebDriverErrorValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let stacktrace = self
+            .stacktrace
+            .as_ref()
+            .map(|x| format!("Stacktrace:\n{}", indent_lines(&x, 4)))
+            .unwrap_or_default();
+        let error = self.error.as_ref().map(|x| format!("Error: {}", x)).unwrap_or_default();
+        let data = self
+            .data
+            .as_ref()
+            .map(|x| format!("Data:\n{}", indent_lines(&format!("{:#?}", x), 4)))
+            .unwrap_or_default();
+        let lines: Vec<String> = vec![self.message.clone(), error, data, stacktrace]
+            .into_iter()
+            .filter(|l| !l.is_empty())
+            .collect();
+        write!(f, "{}", lines.join("\n"))
     }
 }
 
@@ -42,65 +72,99 @@ impl WebDriverErrorInfo {
     }
 }
 
-/// WebDriverError is the main error type
-#[derive(Debug)]
-pub enum WebDriverError {
-    UnknownResponse(String),
-    NotFoundError(String),
-    JsonError(serde_json::error::Error),
-    DecodeError(DecodeError),
-    IOError(std::io::Error),
-    #[cfg(feature = "tokio-runtime")]
-    ReqwestError(reqwest::Error),
-    #[cfg(feature = "async-std-runtime")]
-    SurfError(surf::Error),
-    NotInSpec(WebDriverErrorInfo),
-    ElementClickIntercepted(WebDriverErrorInfo),
-    ElementNotInteractable(WebDriverErrorInfo),
-    InsecureCertificate(WebDriverErrorInfo),
-    InvalidArgument(WebDriverErrorInfo),
-    InvalidCookieDomain(WebDriverErrorInfo),
-    InvalidElementState(WebDriverErrorInfo),
-    InvalidSelector(WebDriverErrorInfo),
-    InvalidSessionId(WebDriverErrorInfo),
-    JavascriptError(WebDriverErrorInfo),
-    MoveTargetOutOfBounds(WebDriverErrorInfo),
-    NoSuchAlert(WebDriverErrorInfo),
-    NoSuchCookie(WebDriverErrorInfo),
-    NoSuchElement(WebDriverErrorInfo),
-    NoSuchFrame(WebDriverErrorInfo),
-    NoSuchWindow(WebDriverErrorInfo),
-    ScriptTimeout(WebDriverErrorInfo),
-    SessionNotCreated(WebDriverErrorInfo),
-    StaleElementReference(WebDriverErrorInfo),
-    Timeout(WebDriverErrorInfo),
-    UnableToSetCookie(WebDriverErrorInfo),
-    UnableToCaptureScreen(WebDriverErrorInfo),
-    UnexpectedAlertOpen(WebDriverErrorInfo),
-    UnknownCommand(WebDriverErrorInfo),
-    UnknownError(WebDriverErrorInfo),
-    UnknownMethod(WebDriverErrorInfo),
-    UnsupportedOperation(WebDriverErrorInfo),
-}
-
-impl std::fmt::Display for WebDriverError {
+impl std::fmt::Display for WebDriverErrorInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:#?}", self)
+        let mut msg = String::new();
+        if self.status != 0 {
+            msg.push_str(&format!("\nStatus: {}\n", self.status));
+        }
+        if !self.error.is_empty() {
+            msg.push_str(&format!("State: {}\n", self.error));
+        }
+        let additional_info =
+            format!("Additional info:\n{}", indent_lines(&self.value.to_string(), 4),);
+        msg.push_str(&additional_info);
+
+        write!(f, "{}", indent_lines(&msg, 4))
     }
 }
 
-impl std::error::Error for WebDriverError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        use WebDriverError::*;
-        match self {
-            JsonError(e) => Some(e),
-            DecodeError(e) => Some(e),
-            IOError(e) => Some(e),
-            #[cfg(feature = "tokio-runtime")]
-            ReqwestError(e) => Some(e),
-            _ => None,
-        }
-    }
+/// WebDriverError is the main error type for thirtyfour
+#[non_exhaustive]
+#[derive(Debug, Error, Display)]
+pub enum WebDriverError {
+    /// The WebDriver server returned an unrecognised response: {0}
+    UnknownResponse(String),
+    /// The requested item '{0}' was not found: {1}
+    NotFound(String, String),
+    /// operation timed out: {0}
+    Timeout(String),
+    /// Unable to parse JSON: {0}
+    JsonError(#[from] serde_json::error::Error),
+    /// Unable to decode base64: {0}
+    DecodeError(#[from] DecodeError),
+    /// IO Error: {0}
+    IOError(#[from] std::io::Error),
+    #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
+    /// The WebDriver request returned an error: {0}
+    ReqwestError(#[from] reqwest::Error),
+    #[cfg(feature = "async-std-runtime")]
+    /// The WebDriver request returned an error: {0}
+    SurfError(surf::Error),
+    /// The WebDriver response does not conform to the W3C WebDriver spec: {0}
+    NotInSpec(WebDriverErrorInfo),
+    /// The click event was intercepted by another element: {0}
+    ElementClickIntercepted(WebDriverErrorInfo),
+    /// The element is not interactable: {0}
+    ElementNotInteractable(WebDriverErrorInfo),
+    /// The certificate is insecure: {0}
+    InsecureCertificate(WebDriverErrorInfo),
+    /// An argument passed to the WebDriver server was invalid: {0}
+    InvalidArgument(WebDriverErrorInfo),
+    /// Invalid cookie domain: {0}
+    InvalidCookieDomain(WebDriverErrorInfo),
+    /// The element is in an invalid state: {0}
+    InvalidElementState(WebDriverErrorInfo),
+    /// The specified element selector is invalid: {0}
+    InvalidSelector(WebDriverErrorInfo),
+    /// The WebDriver session id is invalid: {0}
+    InvalidSessionId(WebDriverErrorInfo),
+    /// The Javascript code returned an error: {0}
+    JavascriptError(WebDriverErrorInfo),
+    /// Unable to scroll the element into the viewport: {0}
+    MoveTargetOutOfBounds(WebDriverErrorInfo),
+    /// Alert not found: {0}
+    NoSuchAlert(WebDriverErrorInfo),
+    /// Cookie not found: {0}
+    NoSuchCookie(WebDriverErrorInfo),
+    /// Element not found: {0}
+    NoSuchElement(WebDriverErrorInfo),
+    /// Frame not found: {0}
+    NoSuchFrame(WebDriverErrorInfo),
+    /// Window not found: {0}
+    NoSuchWindow(WebDriverErrorInfo),
+    /// The Javascript code did not complete within the script timeout (see WebDriver::set_script_timeout()): {0}
+    ScriptTimeout(WebDriverErrorInfo),
+    /// Unable to create WebDriver session: {0}
+    SessionNotCreated(WebDriverErrorInfo),
+    /// Element is stale: {0}
+    StaleElementReference(WebDriverErrorInfo),
+    /// Operation timed out: {0}
+    WebDriverTimeout(WebDriverErrorInfo),
+    /// Unable to set cookie: {0}
+    UnableToSetCookie(WebDriverErrorInfo),
+    /// Unable to capture screenshot: {0}
+    UnableToCaptureScreen(WebDriverErrorInfo),
+    /// An unexpected alert is currently open: {0}
+    UnexpectedAlertOpen(WebDriverErrorInfo),
+    /// Unknown command: {0}
+    UnknownCommand(WebDriverErrorInfo),
+    /// Unknown error: {0}
+    UnknownError(WebDriverErrorInfo),
+    /// Unknown method: {0}
+    UnknownMethod(WebDriverErrorInfo),
+    /// Unsupport operation: {0}
+    UnsupportedOperation(WebDriverErrorInfo),
 }
 
 impl WebDriverError {
@@ -142,7 +206,7 @@ impl WebDriverError {
             "script timeout" => WebDriverError::ScriptTimeout(payload),
             "session not created" => WebDriverError::SessionNotCreated(payload),
             "stale element reference" => WebDriverError::StaleElementReference(payload),
-            "timeout" => WebDriverError::Timeout(payload),
+            "timeout" => WebDriverError::WebDriverTimeout(payload),
             "unable to set cookie" => WebDriverError::UnableToSetCookie(payload),
             "unable to capture screen" => WebDriverError::UnableToCaptureScreen(payload),
             "unexpected alert open" => WebDriverError::UnexpectedAlertOpen(payload),
@@ -155,34 +219,9 @@ impl WebDriverError {
     }
 }
 
-impl From<serde_json::error::Error> for WebDriverError {
-    fn from(value: serde_json::error::Error) -> Self {
-        WebDriverError::JsonError(value)
-    }
-}
-
-impl From<DecodeError> for WebDriverError {
-    fn from(value: DecodeError) -> Self {
-        WebDriverError::DecodeError(value)
-    }
-}
-
-impl From<std::io::Error> for WebDriverError {
-    fn from(value: std::io::Error) -> Self {
-        WebDriverError::IOError(value)
-    }
-}
-
-#[cfg(feature = "tokio-runtime")]
-impl From<reqwest::Error> for WebDriverError {
-    fn from(value: reqwest::Error) -> Self {
-        WebDriverError::ReqwestError(value)
-    }
-}
-
 #[cfg(feature = "async-std-runtime")]
 impl From<surf::Error> for WebDriverError {
-    fn from(value: surf::Error) -> Self {
-        WebDriverError::SurfError(value)
+    fn from(err: surf::Error) -> Self {
+        Self::SurfError(err)
     }
 }

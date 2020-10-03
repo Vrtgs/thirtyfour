@@ -10,10 +10,13 @@ use thirtyfour::prelude::*;
 use tokio;
 
 #[tokio::main]
-async fn main() -> WebDriverResult<()> {
+async fn main() -> color_eyre::Result<()> {
+    // The use of color_eyre gives much nicer error reports, including making
+    // it much easier to locate where the error occurred.
+    color_eyre::install()?;
+
     let caps = DesiredCapabilities::chrome();
     let driver = WebDriver::new("http://localhost:4444", &caps).await?;
-
     // Navigate to https://wikipedia.org.
     driver.get("https://wikipedia.org").await?;
     let elem_form = driver.find_element(By::Id("search-form")).await?;

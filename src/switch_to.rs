@@ -255,6 +255,9 @@ impl<'a> SwitchTo<'a> {
         }
 
         self.window(&original_handle).await?;
-        Err(WebDriverError::NotFoundError(format!("No window handle found matching '{}'", name)))
+        Err(WebDriverError::NotFound(
+            format!("window handle '{}'", name),
+            "No windows with the specified handle were found".to_string(),
+        ))
     }
 }

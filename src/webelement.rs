@@ -8,7 +8,7 @@ use base64::decode;
 #[cfg(feature = "async-std-runtime")]
 use futures::io::AsyncWriteExt;
 use serde::ser::{Serialize, SerializeMap, Serializer};
-#[cfg(feature = "tokio-runtime")]
+#[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::common::command::MAGIC_ELEMENTID;

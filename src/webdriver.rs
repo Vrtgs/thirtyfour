@@ -11,7 +11,7 @@ use crate::common::config::WebDriverConfig;
 use crate::http_async::connection_async::WebDriverHttpClientAsync;
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
 use crate::http_async::nulldriver_async::NullDriverAsync;
-#[cfg(feature = "tokio-runtime")]
+#[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
 use crate::http_async::reqwest_async::ReqwestDriverAsync;
 #[cfg(feature = "async-std-runtime")]
 use crate::http_async::surf_async::SurfDriverAsync;
@@ -27,7 +27,7 @@ use crate::{
 /// For full documentation of all WebDriver methods,
 /// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
 pub type WebDriver = GenericWebDriver<NullDriverAsync>;
-#[cfg(feature = "tokio-runtime")]
+#[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
 /// The WebDriver struct represents a browser session.
 ///
 /// For full documentation of all WebDriver methods,

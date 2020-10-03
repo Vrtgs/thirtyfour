@@ -37,10 +37,7 @@
 //!     synchronous reqwest client uses **tokio** internally.
 //! * `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
 //!
-//!     Make sure you specify `default-features = false` to avoid
-//!     conflicts with the tokio runtime support.
-//!
-//!     **NOTE**: You cannot specify `async-std-runtime` with other feature flags.
+//!     **NOTE**: You cannot combine `async-std-runtime` with other feature flags.
 //!
 //! ## Examples
 //!
@@ -59,7 +56,7 @@
 //! ### Async example:
 //!
 //! ```rust
-//! # #[cfg(feature = "tokio-runtime")] {
+//! # #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))] {
 //! use thirtyfour::prelude::*;
 //! use tokio;
 //!
@@ -99,7 +96,7 @@
 //! ### Sync example:
 //!
 //! ```rust
-//! # #[cfg(feature = "blocking")] {
+//! # #[cfg(all(feature = "blocking", not(feature = "async-std-runtime")))] {
 //! use thirtyfour::sync::prelude::*;
 //!
 //! fn main() -> WebDriverResult<()> {
@@ -184,7 +181,7 @@ pub mod http_async {
     pub mod connection_async;
     #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
     pub mod nulldriver_async;
-    #[cfg(feature = "tokio-runtime")]
+    #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
     pub mod reqwest_async;
     #[cfg(feature = "async-std-runtime")]
     pub mod surf_async;
@@ -210,7 +207,8 @@ pub mod common {
     pub mod scriptargs;
     pub mod types;
 }
-#[cfg(feature = "blocking")]
+
+#[cfg(all(feature = "blocking", not(feature = "async-std-runtime")))]
 /// Allow importing the common sync structs via `use thirtyfour::sync::*`.
 pub mod sync {
     pub use alert::Alert;
@@ -237,7 +235,7 @@ pub mod sync {
         pub mod connection_sync;
         #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
         pub mod nulldriver_sync;
-        #[cfg(feature = "tokio-runtime")]
+        #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
         pub mod reqwest_sync;
     }
     mod session;

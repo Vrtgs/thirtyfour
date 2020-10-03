@@ -40,10 +40,7 @@ It is named after the atomic number for the Selenium chemical element (Se).
   synchronous reqwest client uses **tokio** internally.
 - `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
 
-  Make sure you specify `default-features = false` to avoid
-  conflicts with the tokio runtime support.
-
-  **NOTE**: You cannot specify `async-std-runtime` with other feature flags.
+  **NOTE**: You cannot combine `async-std-runtime` with other feature flags.
 
 ## Examples
 

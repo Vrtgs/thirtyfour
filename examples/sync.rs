@@ -8,7 +8,9 @@
 
 use thirtyfour::sync::prelude::*;
 
-fn main() -> WebDriverResult<()> {
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
+
     let caps = DesiredCapabilities::chrome();
     let driver = WebDriver::new("http://localhost:4444", &caps)?;
 
