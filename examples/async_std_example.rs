@@ -4,12 +4,14 @@
 //!
 //! Run as follows:
 //!
-//!     cargo run --example async_std_example --features async-std-runtime --no-default-features
+//!     cargo run --example async_std_example --features async-std-runtime
 
 use thirtyfour::prelude::*;
 
 #[async_std::main]
 async fn main() -> color_eyre::Result<()> {
+    // The use of color_eyre gives much nicer error reports, including making
+    // it much easier to locate where the error occurred.
     color_eyre::install()?;
 
     let caps = DesiredCapabilities::chrome();

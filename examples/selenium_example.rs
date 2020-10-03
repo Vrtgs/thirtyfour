@@ -4,13 +4,15 @@
 //!
 //! Run as follows:
 //!
-//!     cargo run --example tokio_async
+//!     cargo run --example selenium_example
 
 use thirtyfour::prelude::*;
 use tokio;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
+    // The use of color_eyre gives much nicer error reports, including making
+    // it much easier to locate where the error occurred.
     color_eyre::install()?;
 
     let caps = DesiredCapabilities::chrome();
