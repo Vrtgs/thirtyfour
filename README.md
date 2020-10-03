@@ -145,14 +145,12 @@ For more information on running multiple tasks concurrently, see chapter 6 of [T
 
 In short, if you need to do a lot of I/O (network requests, reading/writing files, handling network connections), and especially if you want to do I/O operations concurrently, choose async. If not, it's really up to your personal preference.
 
-## Lifetimes
+## WebDriverSession Lifetime
 
-As of version 0.8.0, `thirtyfour` uses lifetimes on the SessionId in
-the WebDriver struct, and all derived structs will receive an
-immutable reference to this SessionId. This provides a compile-time
-guarantee that no element or alert struct (for example) will outlast the
-browser, and should prevent issues where something attempts to send
-a command on a session that has already been closed.
+All WebElement structs share a reference to the WebDriverSession which 
+provdes a compile-time guarantee that no element or alert struct (for example)
+will outlast the browser session. This should prevent issues where something 
+attempts to send a command to a browser session that has already been closed.
 
 Note also that the WebDriver struct will attempt to close the
 session / browser on Drop, and hence this struct cannot be cloned.
@@ -162,7 +160,7 @@ convinced this is a requirement. Please raise an issue if you need this
 functionality, and explain your use case.
 
 By embedding a reference to the actual WebDriverSession inside each
-struct such as WebElement, this enables things such as easily adding
+struct such as WebElement, this also enables things such as easily adding
 WebElement methods that run JavaScript internally.
 
 ## Running the tests for `thirtyfour`, including doctests
