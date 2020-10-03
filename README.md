@@ -6,13 +6,13 @@ Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI 
 
 It supports the full W3C WebDriver spec. Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
 
-Both sync and async APIs are included (see examples below).
+Async only (`tokio` and `async-std` runtimes supported via feature flags).
+For synchronous support, use the [thirtyfour_sync](https://docs.rs/thirtyfour_sync) crate instead.
 
 ## Features
 
 - All W3C WebDriver and WebElement methods supported
 - Async / await support (both **tokio** and **async-std** runtimes supported via feature flags)
-- Synchronous support (use the `blocking` feature flag)
 - Create new browser session directly via WebDriver (e.g. chromedriver)
 - Create new browser session via Selenium Standalone or Grid
 - Automatically close browser session on drop
@@ -25,7 +25,6 @@ Both sync and async APIs are included (see examples below).
 - Shadow DOM support
 - Alert support
 - Capture / Save screenshot of browser or individual element as PNG
-- Easy to add support for more HTTP clients using generics
 
 ## Why 'thirtyfour' ?
 
@@ -34,13 +33,9 @@ It is named after the atomic number for the Selenium chemical element (Se).
 ## Feature Flags
 
 - `tokio-runtime`: (Default) Use the **tokio** async runtime with the [reqwest](https://docs.rs/reqwest) http client.
-- `blocking`: Enables the synchronous reqwest http client via `thirtyfour_sync::prelude::*`.
-
-  The `blocking` flag also enables `tokio-runtime` because the
-  synchronous reqwest client uses **tokio** internally.
 - `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
 
-  **NOTE**: You cannot combine `async-std-runtime` with other feature flags.
+  **NOTE**: You cannot combine `async-std-runtime` with `tokio-runtime`
 
 ## Examples
 
@@ -54,7 +49,7 @@ Then run it like this:
 
     chromedriver --port=4444
 
-### Async example:
+### Example (async):
 
 To run this example:
 
@@ -91,40 +86,6 @@ async fn main() -> WebDriverResult<()> {
 }
 ```
 
-### Sync example:
-
-To run this example:
-
-    cargo run --example sync --features blocking
-
-```rust
-use thirtyfour_sync::prelude::*;
-
-fn main() -> WebDriverResult<()> {
-     let caps = DesiredCapabilities::chrome();
-     let driver = WebDriver::new("http://localhost:4444", &caps)?;
-
-     // Navigate to https://wikipedia.org.
-     driver.get("https://wikipedia.org")?;
-     let elem_form = driver.find_element(By::Id("search-form"))?;
-
-     // Find element from element.
-     let elem_text = elem_form.find_element(By::Id("searchInput"))?;
-
-     // Type in the search terms.
-     elem_text.send_keys("selenium")?;
-
-     // Click the search button.
-     let elem_button = elem_form.find_element(By::Css("button[type='submit']"))?;
-     elem_button.click()?;
-
-     // Look for header to implicitly wait for the page to load.
-     driver.find_element(By::ClassName("firstHeading"))?;
-     assert_eq!(driver.title()?, "Selenium - Wikipedia");
-
-     Ok(())
-}
-```
 ## Running against selenium
 
 *NOTE:* To run the selenium example, start selenium (instructions below) then run:
@@ -167,7 +128,7 @@ If you want to run on Firefox instead, or customize the browser setup, see
 
 ### Choosing between Sync and Async
 
-The `thirtyfour` library offers both a sync and async API. Which one you should use really depends on your personal preference and the nature of your application.
+The `thirtyfour` crate provides an async API whereas `thirtyfour_sync` provides sync. Which one you should use really depends on your personal preference and the nature of your application.
 
 For a more in-depth introduction to async programming in rust, see [The Rust Async Book](https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html).
 
@@ -220,7 +181,7 @@ Both can be run easily using docker-compose. To install docker-compose, see [htt
 
 Once you have docker-compose installed, you can start the required containers, as follows:
 
-    docker-compose up -d --build
+    docker-compose up -d
 
 Then, to run the tests:
 

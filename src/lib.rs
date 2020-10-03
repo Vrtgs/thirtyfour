@@ -31,13 +31,9 @@
 //! are provided via feature flags.
 //!
 //! * `tokio-runtime`: (Default) Use the **tokio** async runtime with the [reqwest](https://docs.rs/reqwest) http client.
-//! * `blocking`: Enables the synchronous reqwest http client via `thirtyfour_sync::prelude::*`.
-//!
-//!     The `blocking` flag also enables `tokio-runtime` because the
-//!     synchronous reqwest client uses **tokio** internally.
 //! * `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
 //!
-//!     **NOTE**: You cannot combine `async-std-runtime` with other feature flags.
+//!     **NOTE**: You cannot combine `async-std-runtime` with `tokio-runtime`.
 //!
 //! ## Examples
 //!
@@ -47,13 +43,13 @@
 //! You can set these up using docker-compose, as follows:
 //!
 //! ```ignore
-//! docker-compose up -d --build
+//! docker-compose up -d
 //! ```
 //!
 //! The included web app demo is purely for demonstration / unit testing
 //! purposes and is not required in order to use this library in other projects.
 //!
-//! ### Async example:
+//! ### Example (async):
 //!
 //! ```rust
 //! # #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))] {
@@ -87,44 +83,6 @@
 //!     // Get text value of element.
 //!     let elem_result = driver.find_element(By::Id("input-result")).await?;
 //!     assert_eq!(elem_result.text().await?, "selenium");
-//!
-//!     Ok(())
-//! }
-//! # }
-//! ```
-//!
-//! ### Sync example:
-//!
-//! ```rust
-//! # #[cfg(all(feature = "blocking", not(feature = "async-std-runtime")))] {
-//! use thirtyfour_sync::prelude::*;
-//!
-//! fn main() -> WebDriverResult<()> {
-//!     let caps = DesiredCapabilities::chrome();
-//!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps)?;
-//!
-//!     // Navigate to URL.
-//!     driver.get("http://webappdemo")?;
-//!
-//!     // Navigate to page.
-//!     driver.find_element(By::Id("pagetextinput"))?.click()?;
-//!
-//!     // Find element.
-//!     let elem_div = driver.find_element(By::Css("div[data-section='section-input']"))?;
-//!
-//!     // Find element from element.
-//!     let elem_text = elem_div.find_element(By::Name("input1"))?;
-//!
-//!     // Type in the search terms.
-//!     elem_text.send_keys("selenium")?;
-//!
-//!     // Click the button.
-//!     let elem_button = elem_div.find_element(By::Tag("button"))?;
-//!     elem_button.click()?;
-//!
-//!     // Get text value of element.
-//!     let elem_result = driver.find_element(By::Id("input-result"))?;
-//!     assert_eq!(elem_result.text()?, "selenium");
 //!
 //!     Ok(())
 //! }
