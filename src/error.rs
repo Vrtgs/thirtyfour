@@ -8,7 +8,7 @@ pub type WebDriverResult<T> = Result<T, WebDriverError>;
 
 fn indent_lines(message: &str, indent: usize) -> String {
     let lines: Vec<String> =
-        message.split("\n").map(|s| format!("{0:i$}{1}", " ", s, i = indent)).collect();
+        message.split('\n').map(|s| format!("{0:i$}{1}", " ", s, i = indent)).collect();
     lines.join("\n")
 }
 
