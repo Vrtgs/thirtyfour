@@ -256,12 +256,19 @@ pub enum Proxy {
     Direct,
     #[serde(rename_all = "camelCase")]
     Manual {
+        #[serde(skip_serializing_if = "Option::is_none")]
         ftp_proxy: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         http_proxy: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         ssl_proxy: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         socks_proxy: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         socks_username: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         socks_password: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         no_proxy: Option<String>,
     },
     #[serde(rename = "pac")]
