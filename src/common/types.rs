@@ -27,7 +27,7 @@ pub struct ElementRef {
     pub id: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 pub struct SessionId {
     id: String,
 }
@@ -88,7 +88,7 @@ impl fmt::Display for ElementId {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 pub struct WindowHandle {
     handle: String,
 }

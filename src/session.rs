@@ -1,4 +1,4 @@
-use crate::common::command::Command;
+use crate::common::command::FormatRequestData;
 use crate::common::config::WebDriverConfig;
 use crate::error::WebDriverResult;
 use crate::http::connection_async::WebDriverHttpClientAsync;
@@ -35,8 +35,11 @@ impl WebDriverSession {
         &mut self.config
     }
 
-    pub async fn execute(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.conn.execute(&self.session_id, command).await
+    pub async fn execute(
+        &self,
+        request: Box<dyn FormatRequestData + Send + Sync>,
+    ) -> WebDriverResult<serde_json::Value> {
+        self.conn.execute(request.format_request(&self.session_id)).await
     }
 }
 

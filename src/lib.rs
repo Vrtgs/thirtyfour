@@ -105,12 +105,13 @@ pub use common::{
         firefox::FirefoxCapabilities, ie::InternetExplorerCapabilities, opera::OperaCapabilities,
         safari::SafariCapabilities,
     },
-    command::{By, ExtensionCommand, RequestMethod},
+    command::{By, ExtensionCommand},
     cookie::Cookie,
     keys::{Keys, TypingData},
     scriptargs::ScriptArgs,
     types::*,
 };
+pub use http::connection_async::{RequestData, RequestMethod};
 pub use session::WebDriverSession;
 pub use switch_to::SwitchTo;
 pub use webdriver::GenericWebDriver;

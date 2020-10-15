@@ -14,8 +14,8 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::action_chain::ActionChain;
-use crate::common::command::Command;
 use crate::common::command::ExtensionCommand;
+use crate::common::command::{Command, FormatRequestData};
 use crate::common::connection_common::{convert_json, convert_json_vec};
 use crate::error::{WebDriverError, WebDriverResult};
 use crate::http::connection_async::WebDriverHttpClientAsync;
@@ -36,7 +36,10 @@ where
     C: Serialize,
 {
     let caps = serde_json::to_value(capabilities)?;
-    let v = match conn.execute(&SessionId::null(), Command::NewSession(&caps)).await {
+    let v = match conn
+        .execute(Command::NewSession(caps.clone()).format_request(&SessionId::null()))
+        .await
+    {
         Ok(x) => Ok(x),
         Err(e) => {
             // Selenium sometimes gives a bogus 500 error "Chrome failed to start".
@@ -44,7 +47,7 @@ where
             // will be returned.
             if let WebDriverError::UnknownError(x) = &e {
                 if x.status == 500 {
-                    conn.execute(&SessionId::null(), Command::NewSession(&caps)).await
+                    conn.execute(Command::NewSession(caps).format_request(&SessionId::null())).await
                 } else {
                     Err(e)
                 }
@@ -83,7 +86,7 @@ where
         Some(Duration::new(60, 0)),
         Some(Duration::new(30, 0)),
     );
-    conn.execute(&session_id, Command::SetTimeouts(timeout_config)).await?;
+    conn.execute(Command::SetTimeouts(timeout_config).format_request(&session_id)).await?;
 
     Ok((session_id, data.capabilities))
 }
@@ -136,8 +139,8 @@ pub trait WebDriverCommands {
     /// Convenience wrapper for running WebDriver commands.
     ///
     /// For `thirtyfour` internal use only.
-    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
-        self.session().execute(command).await
+    async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
+        self.session().execute(Box::new(command)).await
     }
 
     /// Close the current window or tab.
@@ -279,7 +282,7 @@ pub trait WebDriverCommands {
     /// # }
     /// ```
     async fn find_element<'a>(&'a self, by: By<'_>) -> WebDriverResult<WebElement<'a>> {
-        let v = self.cmd(Command::FindElement(by)).await?;
+        let v = self.cmd(Command::FindElement(by.get_w3c_selector())).await?;
         convert_element_async(self.session(), &v["value"])
     }
 
@@ -305,7 +308,7 @@ pub trait WebDriverCommands {
     /// # }
     /// ```
     async fn find_elements<'a>(&'a self, by: By<'_>) -> WebDriverResult<Vec<WebElement<'a>>> {
-        let v = self.cmd(Command::FindElements(by)).await?;
+        let v = self.cmd(Command::FindElements(by.get_w3c_selector())).await?;
         convert_elements_async(self.session(), &v["value"])
     }
 
@@ -971,7 +974,7 @@ pub trait WebDriverCommands {
     /// # }
     /// ```
     async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
-        let v = self.cmd(Command::GetNamedCookie(name)).await?;
+        let v = self.cmd(Command::GetNamedCookie(name.to_string())).await?;
         convert_json::<Cookie>(&v["value"])
     }
 
@@ -997,7 +1000,7 @@ pub trait WebDriverCommands {
     /// # }
     /// ```
     async fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
-        self.cmd(Command::DeleteCookie(name)).await.map(|_| ())
+        self.cmd(Command::DeleteCookie(name.to_string())).await.map(|_| ())
     }
 
     /// Delete all cookies.
@@ -1169,7 +1172,7 @@ pub trait WebDriverCommands {
     /// }
     ///
     /// ```
-    async fn extension_command<T: ExtensionCommand + Send>(
+    async fn extension_command<T: ExtensionCommand + Send + Sync + 'static>(
         &self,
         ext_cmd: T,
     ) -> WebDriverResult<serde_json::Value> {

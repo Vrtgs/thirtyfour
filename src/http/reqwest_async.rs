@@ -2,14 +2,10 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 
-use crate::http::connection_async::WebDriverHttpClientAsync;
+use crate::http::connection_async::{RequestData, RequestMethod, WebDriverHttpClientAsync};
 use crate::{
-    common::{
-        command::{Command, RequestMethod},
-        connection_common::reqwest_support::build_reqwest_headers,
-    },
+    common::connection_common::reqwest_support::build_reqwest_headers,
     error::{WebDriverError, WebDriverResult},
-    SessionId,
 };
 
 /// Asynchronous http to the remote WebDriver server.
@@ -30,12 +26,7 @@ impl WebDriverHttpClientAsync for ReqwestDriverAsync {
     }
 
     /// Execute the specified command and return the data as serde_json::Value.
-    async fn execute(
-        &self,
-        session_id: &SessionId,
-        command: Command<'_>,
-    ) -> WebDriverResult<serde_json::Value> {
-        let request_data = command.format_request(session_id);
+    async fn execute(&self, request_data: RequestData) -> WebDriverResult<serde_json::Value> {
         let url = self.url.clone() + &request_data.url;
         let mut request = match request_data.method {
             RequestMethod::Get => self.client.get(&url),

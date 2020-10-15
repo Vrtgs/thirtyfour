@@ -22,7 +22,7 @@ impl<'a> SwitchTo<'a> {
     }
 
     ///Convenience wrapper for executing a WebDriver command.
-    async fn cmd(&self, command: Command<'_>) -> WebDriverResult<serde_json::Value> {
+    async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
         self.session.cmd(command).await
     }
 
@@ -145,7 +145,7 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub async fn frame_element(self, frame_element: &WebElement<'a>) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToFrameElement(&frame_element.element_id)).await.map(|_| ())
+        self.cmd(Command::SwitchToFrameElement(frame_element.element_id.clone())).await.map(|_| ())
     }
 
     /// Switch to the parent frame.
@@ -209,7 +209,7 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub async fn window(self, handle: &WindowHandle) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToWindow(handle)).await.map(|_| ())
+        self.cmd(Command::SwitchToWindow(handle.clone())).await.map(|_| ())
     }
 
     /// Switch to the window with the specified name. This uses the `window.name` property.

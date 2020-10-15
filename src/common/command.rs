@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use serde_json::{json, Value};
 
 use crate::common::{
@@ -8,44 +6,31 @@ use crate::common::{
     keys::TypingData,
     types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
 };
+use crate::http::connection_async::{RequestData, RequestMethod};
 use std::fmt;
 
 pub const MAGIC_ELEMENTID: &str = "element-6066-11e4-a52e-4f735466cecf";
-
-#[derive(Debug, Clone)]
-pub enum RequestMethod {
-    Get,
-    Post,
-    Delete,
-}
-
-#[derive(Debug, Clone)]
-pub struct RequestData {
-    pub method: RequestMethod,
-    pub url: String,
-    pub body: Option<serde_json::Value>,
-}
-
-impl RequestData {
-    pub fn new<S: Into<String>>(method: RequestMethod, url: S) -> Self {
-        RequestData {
-            method,
-            url: url.into(),
-            body: None,
-        }
-    }
-
-    pub fn add_body(mut self, body: serde_json::Value) -> Self {
-        self.body = Some(body);
-        self
-    }
-}
 
 pub struct Actions(serde_json::Value);
 
 impl From<serde_json::Value> for Actions {
     fn from(value: serde_json::Value) -> Self {
         Actions(value)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Selector {
+    pub name: String,
+    pub query: String,
+}
+
+impl Selector {
+    pub fn new(name: &str, query: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            query: query.to_string(),
+        }
     }
 }
 
@@ -77,16 +62,16 @@ impl fmt::Display for By<'_> {
 }
 
 impl<'a> By<'a> {
-    pub fn get_w3c_selector(&self) -> (String, String) {
+    pub fn get_w3c_selector(&self) -> Selector {
         match self {
-            By::Id(x) => (String::from("css selector"), format!("[id=\"{}\"]", x)),
-            By::XPath(x) => (String::from("xpath"), x.deref().to_string()),
-            By::LinkText(x) => (String::from("link text"), x.deref().to_string()),
-            By::PartialLinkText(x) => (String::from("partial link text"), x.deref().to_string()),
-            By::Name(x) => (String::from("css selector"), format!("[name=\"{}\"]", x)),
-            By::Tag(x) => (String::from("css selector"), x.deref().to_string()),
-            By::ClassName(x) => (String::from("css selector"), format!(".{}", x)),
-            By::Css(x) => (String::from("css selector"), x.deref().to_string()),
+            By::Id(x) => Selector::new("css selector", &format!("[id=\"{}\"]", x)),
+            By::XPath(x) => Selector::new("xpath", *x),
+            By::LinkText(x) => Selector::new("link text", *x),
+            By::PartialLinkText(x) => Selector::new("partial link text", *x),
+            By::Name(x) => Selector::new("css selector", &format!("[name=\"{}\"]", x)),
+            By::Tag(x) => Selector::new("css selector", *x),
+            By::ClassName(x) => Selector::new("css selector", &format!(".{}", x)),
+            By::Css(x) => Selector::new("css selector", *x),
         }
     }
 }
@@ -104,8 +89,8 @@ pub trait ExtensionCommand {
     fn endpoint(&self) -> String;
 }
 
-pub enum Command<'a> {
-    NewSession(&'a Value),
+pub enum Command {
+    NewSession(Value),
     DeleteSession,
     Status,
     GetTimeouts,
@@ -118,11 +103,11 @@ pub enum Command<'a> {
     GetTitle,
     GetWindowHandle,
     CloseWindow,
-    SwitchToWindow(&'a WindowHandle),
+    SwitchToWindow(WindowHandle),
     GetWindowHandles,
     SwitchToFrameDefault,
     SwitchToFrameNumber(u16),
-    SwitchToFrameElement(&'a ElementId),
+    SwitchToFrameElement(ElementId),
     SwitchToParentFrame,
     GetWindowRect,
     SetWindowRect(OptionRect),
@@ -130,28 +115,28 @@ pub enum Command<'a> {
     MinimizeWindow,
     FullscreenWindow,
     GetActiveElement,
-    FindElement(By<'a>),
-    FindElements(By<'a>),
-    FindElementFromElement(&'a ElementId, By<'a>),
-    FindElementsFromElement(&'a ElementId, By<'a>),
-    IsElementSelected(&'a ElementId),
-    GetElementAttribute(&'a ElementId, String),
-    GetElementProperty(&'a ElementId, String),
-    GetElementCSSValue(&'a ElementId, String),
-    GetElementText(&'a ElementId),
-    GetElementTagName(&'a ElementId),
-    GetElementRect(&'a ElementId),
-    IsElementEnabled(&'a ElementId),
-    ElementClick(&'a ElementId),
-    ElementClear(&'a ElementId),
-    ElementSendKeys(&'a ElementId, TypingData),
+    FindElement(Selector),
+    FindElements(Selector),
+    FindElementFromElement(ElementId, Selector),
+    FindElementsFromElement(ElementId, Selector),
+    IsElementSelected(ElementId),
+    GetElementAttribute(ElementId, String),
+    GetElementProperty(ElementId, String),
+    GetElementCSSValue(ElementId, String),
+    GetElementText(ElementId),
+    GetElementTagName(ElementId),
+    GetElementRect(ElementId),
+    IsElementEnabled(ElementId),
+    ElementClick(ElementId),
+    ElementClear(ElementId),
+    ElementSendKeys(ElementId, TypingData),
     GetPageSource,
     ExecuteScript(String, Vec<serde_json::Value>),
     ExecuteAsyncScript(String, Vec<serde_json::Value>),
     GetAllCookies,
-    GetNamedCookie(&'a str),
+    GetNamedCookie(String),
     AddCookie(Cookie),
-    DeleteCookie(&'a str),
+    DeleteCookie(String),
     DeleteAllCookies,
     PerformActions(Actions),
     ReleaseActions,
@@ -160,12 +145,16 @@ pub enum Command<'a> {
     GetAlertText,
     SendAlertText(TypingData),
     TakeScreenshot,
-    TakeElementScreenshot(&'a ElementId),
-    ExtensionCommand(Box<dyn ExtensionCommand + Send + 'a>),
+    TakeElementScreenshot(ElementId),
+    ExtensionCommand(Box<dyn ExtensionCommand + Send + Sync>),
 }
 
-impl<'a> Command<'a> {
-    pub fn format_request(&self, session_id: &SessionId) -> RequestData {
+pub trait FormatRequestData {
+    fn format_request(&self, session_id: &SessionId) -> RequestData;
+}
+
+impl FormatRequestData for Command {
+    fn format_request(&self, session_id: &SessionId) -> RequestData {
         match self {
             Command::NewSession(caps) => {
                 let w3c_caps = make_w3c_caps(&caps);
@@ -268,32 +257,24 @@ impl<'a> Command<'a> {
                 RequestMethod::Get,
                 format!("/session/{}/element/active", session_id),
             ),
-            Command::FindElement(by) => {
-                let (selector, value) = by.get_w3c_selector();
+            Command::FindElement(selector) => {
                 RequestData::new(RequestMethod::Post, format!("/session/{}/element", session_id))
-                    .add_body(json!({"using": selector, "value": value}))
+                    .add_body(json!({"using": selector.name, "value": selector.query}))
             }
-            Command::FindElements(by) => {
-                let (selector, value) = by.get_w3c_selector();
+            Command::FindElements(selector) => {
                 RequestData::new(RequestMethod::Post, format!("/session/{}/elements", session_id))
-                    .add_body(json!({"using": selector, "value": value}))
+                    .add_body(json!({"using": selector.name, "value": selector.query}))
             }
-            Command::FindElementFromElement(element_id, by) => {
-                let (selector, value) = by.get_w3c_selector();
-                RequestData::new(
-                    RequestMethod::Post,
-                    format!("/session/{}/element/{}/element", session_id, element_id),
-                )
-                .add_body(json!({"using": selector, "value": value}))
-            }
-            Command::FindElementsFromElement(element_id, by) => {
-                let (selector, value) = by.get_w3c_selector();
-                RequestData::new(
-                    RequestMethod::Post,
-                    format!("/session/{}/element/{}/elements", session_id, element_id),
-                )
-                .add_body(json!({"using": selector, "value": value}))
-            }
+            Command::FindElementFromElement(element_id, selector) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/element/{}/element", session_id, element_id),
+            )
+            .add_body(json!({"using": selector.name, "value": selector.query})),
+            Command::FindElementsFromElement(element_id, selector) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/element/{}/elements", session_id, element_id),
+            )
+            .add_body(json!({"using": selector.name, "value": selector.query})),
             Command::IsElementSelected(element_id) => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/element/{}/selected", session_id, element_id),
