@@ -265,6 +265,8 @@ pub enum Proxy {
         #[serde(skip_serializing_if = "Option::is_none")]
         socks_proxy: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
+        socks_version: Option<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         socks_username: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         socks_password: Option<String>,
