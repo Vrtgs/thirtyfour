@@ -58,6 +58,3 @@ required-features = ["async-std-runtime"]
 [[example]]
 name = "selenium_example"
 required-features = ["tokio-runtime"]
-
-[package.metadata.docs.rs]
-features = [ "blocking" ]
