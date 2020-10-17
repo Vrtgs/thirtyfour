@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.19.0"
+version = "0.19.1"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -18,9 +18,14 @@ keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"
 categories = ["api-bindings", "development-tools::testing", "web-programming::http-client"]
 
 [features]
-default = ["tokio-runtime"]
+default = ["tokio-runtime", "reqwest-default-tls"]
 tokio-runtime = ["tokio", "reqwest"]
 async-std-runtime = ["async-std", "surf"]
+
+reqwest-default-tls = ["reqwest/default-tls"]
+reqwest-native-tls = ["reqwest/native-tls"]
+reqwest-native-tls-vendored = ["reqwest/native-tls-vendored"]
+reqwest-rustls-tls = ["reqwest/rustls-tls"]
 
 [dependencies]
 async-trait = "0.1"
