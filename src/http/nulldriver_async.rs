@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use async_trait::async_trait;
 
 use crate::http::connection_async::WebDriverHttpClientAsync;
-use crate::{common::command::Command, error::WebDriverResult, SessionId};
+use crate::{common::command::Command, error::WebDriverResult, RequestData, SessionId};
 
 /// Null driver that satisfies the build but does nothing.
 #[derive(Debug)]
@@ -19,11 +19,7 @@ impl WebDriverHttpClientAsync for NullDriverAsync {
         })
     }
 
-    async fn execute(
-        &self,
-        _session_id: &SessionId,
-        _command: Command<'_>,
-    ) -> WebDriverResult<serde_json::Value> {
+    async fn execute(&self, _request_data: RequestData) -> WebDriverResult<serde_json::Value> {
         Ok(serde_json::Value::Null)
     }
 }

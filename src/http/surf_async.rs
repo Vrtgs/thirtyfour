@@ -2,11 +2,10 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 
-use crate::http::connection_async::{RequestData, RequestMethod, WebDriverHttpClientAsync};
+use crate::http::connection_async::WebDriverHttpClientAsync;
 use crate::{
-    common::command::Command,
     error::{WebDriverError, WebDriverResult},
-    SessionId,
+    RequestData, RequestMethod,
 };
 
 /// Asynchronous http to the remote WebDriver server.

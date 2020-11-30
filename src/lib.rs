@@ -100,6 +100,7 @@
 #![allow(clippy::needless_doctest_main)]
 
 pub use alert::Alert;
+pub use common::requestdata::{RequestData, RequestMethod};
 pub use common::{
     capabilities::{
         chrome::ChromeCapabilities, desiredcapabilities::*, edge::EdgeCapabilities,
@@ -112,7 +113,6 @@ pub use common::{
     scriptargs::ScriptArgs,
     types::*,
 };
-pub use http::connection_async::{RequestData, RequestMethod};
 pub use session::WebDriverSession;
 pub use switch_to::SwitchTo;
 pub use webdriver::GenericWebDriver;
@@ -170,6 +170,7 @@ pub mod common {
     pub mod connection_common;
     pub mod cookie;
     pub mod keys;
+    pub mod requestdata;
     pub mod scriptargs;
     pub mod types;
 }

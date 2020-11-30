@@ -6,7 +6,7 @@ use crate::common::{
     keys::TypingData,
     types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
 };
-use crate::http::connection_async::{RequestData, RequestMethod};
+use crate::{RequestData, RequestMethod};
 use std::fmt;
 
 pub const MAGIC_ELEMENTID: &str = "element-6066-11e4-a52e-4f735466cecf";
