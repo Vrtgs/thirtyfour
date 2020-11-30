@@ -25,6 +25,7 @@ For synchronous support, use the [thirtyfour_sync](https://docs.rs/thirtyfour_sy
 - Shadow DOM support
 - Alert support
 - Capture / Save screenshot of browser or individual element as PNG
+- Chrome DevTools Protocol (CDP) support
 
 ## Why 'thirtyfour' ?
 

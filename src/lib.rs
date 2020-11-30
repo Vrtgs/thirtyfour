@@ -24,6 +24,7 @@
 //! - Shadow DOM support
 //! - Alert support
 //! - Capture / Save screenshot of browser or individual element as PNG
+//! - Chrome DevTools Protocol (CDP) support
 //!
 //! ## Feature Flags
 //!
@@ -171,6 +172,18 @@ pub mod common {
     pub mod keys;
     pub mod scriptargs;
     pub mod types;
+}
+
+/// Extensions for specific browsers.
+pub mod extensions {
+    /// Extensions for working with Chromium-based browsers.
+    pub mod chrome {
+        mod devtools;
+        mod networkconditions;
+
+        pub use devtools::ChromeDevTools;
+        pub use networkconditions::NetworkConditions;
+    }
 }
 
 /// Error types.
