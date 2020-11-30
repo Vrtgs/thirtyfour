@@ -179,9 +179,11 @@ pub mod common {
 pub mod extensions {
     /// Extensions for working with Chromium-based browsers.
     pub mod chrome {
+        mod chromecommand;
         mod devtools;
         mod networkconditions;
 
+        pub use chromecommand::ChromeCommand;
         pub use devtools::ChromeDevTools;
         pub use networkconditions::NetworkConditions;
     }
