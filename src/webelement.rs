@@ -381,13 +381,13 @@ impl<'a> WebElement<'a> {
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
-    /// let visible = elem.is_visible().await?;
-    /// #         assert_eq!(visible, true);
+    /// let displayed = elem.is_displayed().await?;
+    /// #         assert_eq!(displayed, true);
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn is_visible(&self) -> WebDriverResult<bool> {
+    pub async fn is_displayed(&self) -> WebDriverResult<bool> {
         let v = self.cmd(Command::IsElementDisplayed(self.element_id.clone())).await?;
         convert_json(&v["value"])
     }
@@ -437,7 +437,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn is_clickable(&self) -> WebDriverResult<bool> {
-        Ok(self.is_visible().await? && self.is_enabled().await?)
+        Ok(self.is_displayed().await? && self.is_enabled().await?)
     }
 
     /// Return true if the WebElement is currently (still) present.
