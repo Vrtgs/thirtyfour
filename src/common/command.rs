@@ -120,6 +120,7 @@ pub enum Command {
     FindElementFromElement(ElementId, Selector),
     FindElementsFromElement(ElementId, Selector),
     IsElementSelected(ElementId),
+    IsElementDisplayed(ElementId),
     GetElementAttribute(ElementId, String),
     GetElementProperty(ElementId, String),
     GetElementCSSValue(ElementId, String),
@@ -278,6 +279,10 @@ impl FormatRequestData for Command {
             Command::IsElementSelected(element_id) => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/element/{}/selected", session_id, element_id),
+            ),
+            Command::IsElementDisplayed(element_id) => RequestData::new(
+                RequestMethod::Get,
+                format!("/session/{}/element/{}/displayed", session_id, element_id),
             ),
             Command::GetElementAttribute(element_id, attribute_name) => RequestData::new(
                 RequestMethod::Get,
