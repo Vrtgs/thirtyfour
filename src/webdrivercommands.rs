@@ -301,7 +301,7 @@ pub trait WebDriverCommands {
     /// #         driver.get("http://webappdemo").await?;
     /// let elems = driver.find_elements(By::ClassName("section")).await?;
     /// for elem in elems {
-    ///     assert!(elem.get_attribute("class").await?.contains("section"));
+    ///     assert!(elem.get_attribute("class").await?.expect("Missing class on element").contains("section"));
     /// }
     /// #         Ok(())
     /// #     })

@@ -61,7 +61,7 @@ pub fn convert_elements_async<'a>(
 /// #         driver.get("http://webappdemo").await?;
 /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
 /// let elem = driver.find_element(By::Id("input-result")).await?;
-/// #         assert_eq!(elem.get_attribute("id").await?, "input-result");
+/// #         assert_eq!(elem.get_attribute("id").await?, Some("input-result".to_string()));
 /// #         Ok(())
 /// #     })
 /// # }
@@ -157,13 +157,13 @@ impl<'a> WebElement<'a> {
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
-    /// let class_name = elem.class_name().await?;
-    /// #         assert!(class_name.contains("pure-button"));
+    /// let class_name_option = elem.class_name().await?;  // Option<String>
+    /// #         assert!(class_name_option.expect("Missing class name").contains("pure-button"));
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn class_name(&self) -> WebDriverResult<String> {
+    pub async fn class_name(&self) -> WebDriverResult<Option<String>> {
         self.get_attribute("class").await
     }
 
@@ -180,13 +180,13 @@ impl<'a> WebElement<'a> {
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
-    /// let id = elem.id().await?;
-    /// #         assert_eq!(id, "button1");
+    /// let id_option = elem.id().await?;  // Option<String>
+    /// #         assert_eq!(id_option, Some("button1".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn id(&self) -> WebDriverResult<String> {
+    pub async fn id(&self) -> WebDriverResult<Option<String>> {
         self.get_attribute("id").await
     }
 
@@ -215,8 +215,8 @@ impl<'a> WebElement<'a> {
         convert_json(&v["value"])
     }
 
-    /// Convenience method for getting the value attribute of this element.
-    pub async fn value(&self) -> WebDriverResult<String> {
+    /// Convenience method for getting the (optional) value attribute of this element.
+    pub async fn value(&self) -> WebDriverResult<Option<String>> {
         self.get_attribute("value").await
     }
 
@@ -285,19 +285,23 @@ impl<'a> WebElement<'a> {
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find_element(By::Name("input2")).await?;
-    /// let property_value = elem.get_property("checked").await?;
-    /// assert_eq!(property_value, "true");
+    /// let property_value_option = elem.get_property("checked").await?; // Option<String>
+    /// assert_eq!(property_value_option, Some("true".to_string()));
+    /// #         assert_eq!(elem.get_property("invalid-property").await?, None);
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn get_property(&self, name: &str) -> WebDriverResult<String> {
+    pub async fn get_property(&self, name: &str) -> WebDriverResult<Option<String>> {
         let v =
             self.cmd(Command::GetElementProperty(self.element_id.clone(), name.to_owned())).await?;
-        if !v["value"].is_string() {
-            Ok(v["value"].to_string())
+
+        if v["value"].is_null() {
+            Ok(None)
+        } else if !v["value"].is_string() {
+            Ok(Some(v["value"].to_string()))
         } else {
-            convert_json(&v["value"])
+            convert_json(&v["value"]).map(Some)
         }
     }
 
@@ -315,20 +319,21 @@ impl<'a> WebElement<'a> {
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find_element(By::Name("input2")).await?;
-    /// #         let attribute = elem.get_attribute("name").await?;
-    /// #         assert_eq!(attribute, "input2");
+    /// let attribute_option = elem.get_attribute("name").await?;  // Option<String>
+    /// assert_eq!(attribute_option, Some("input2".to_string()));
+    /// #         assert_eq!(elem.get_attribute("invalid-attribute").await?, None);
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn get_attribute(&self, name: &str) -> WebDriverResult<String> {
+    pub async fn get_attribute(&self, name: &str) -> WebDriverResult<Option<String>> {
         let v = self
             .cmd(Command::GetElementAttribute(self.element_id.clone(), name.to_owned()))
             .await?;
         if !v["value"].is_string() {
-            Ok(v["value"].to_string())
+            Ok(None)
         } else {
-            convert_json(&v["value"])
+            convert_json(&v["value"]).map(Some)
         }
     }
 
@@ -348,6 +353,7 @@ impl<'a> WebElement<'a> {
     /// #         let elem = driver.find_element(By::Name("input2")).await?;
     /// let css_color = elem.get_css_property("color").await?;
     /// assert_eq!(css_color, "rgba(0, 0, 0, 1)");
+    /// #         assert_eq!(elem.get_css_property("invalid-css-property").await?, "");
     /// #         Ok(())
     /// #     })
     /// # }
@@ -356,7 +362,7 @@ impl<'a> WebElement<'a> {
         let v =
             self.cmd(Command::GetElementCSSValue(self.element_id.clone(), name.to_owned())).await?;
         if !v["value"].is_string() {
-            Ok(v["value"].to_string())
+            Ok(String::new())
         } else {
             convert_json(&v["value"])
         }
@@ -547,7 +553,7 @@ impl<'a> WebElement<'a> {
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
-    /// #         assert_eq!(elem.value().await?, "selenium");
+    /// #         assert_eq!(elem.value().await?, Some("selenium".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
@@ -568,7 +574,7 @@ impl<'a> WebElement<'a> {
     /// elem.send_keys("selenium").await?;
     /// elem.send_keys(Keys::Control + "a").await?;
     /// elem.send_keys(TypingData::from("thirtyfour") + Keys::Enter).await?;
-    /// #         assert_eq!(elem.value().await?, "thirtyfour");
+    /// #         assert_eq!(elem.value().await?, Some("thirtyfour".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
@@ -621,7 +627,7 @@ impl<'a> WebElement<'a> {
     /// let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.focus().await?;
     /// #         driver.action_chain().send_keys("selenium").perform().await?;
-    /// #         assert_eq!(elem.value().await?, "selenium");
+    /// #         assert_eq!(elem.value().await?, Some("selenium".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
@@ -678,7 +684,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn inner_html(&self) -> WebDriverResult<String> {
-        self.get_property("innerHTML").await
+        self.get_property("innerHTML").await.map(|x| x.unwrap_or_default())
     }
 
     /// Get the outerHtml property of this element.
@@ -701,7 +707,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn outer_html(&self) -> WebDriverResult<String> {
-        self.get_property("outerHTML").await
+        self.get_property("outerHTML").await.map(|x| x.unwrap_or_default())
     }
 }
 

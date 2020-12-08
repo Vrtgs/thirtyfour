@@ -165,6 +165,8 @@ pub enum WebDriverError {
     UnknownMethod(WebDriverErrorInfo),
     /// Unsupport operation: {0}
     UnsupportedOperation(WebDriverErrorInfo),
+    /// Something caused the session to terminate.
+    FatalError(String),
 }
 
 impl WebDriverError {

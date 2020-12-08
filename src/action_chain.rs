@@ -363,9 +363,9 @@ impl<'a> ActionChain<'a> {
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
-    /// #         assert_eq!(elem.value().await?, "");
+    /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain().click_element(&elem).key_down('a').perform().await?;
-    /// #         assert_eq!(elem.value().await?, "a");
+    /// #         assert_eq!(elem.value().await?, Some("a".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
@@ -393,9 +393,9 @@ impl<'a> ActionChain<'a> {
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
-    /// #         assert_eq!(elem.value().await?, "");
+    /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain().key_down_on_element(&elem, 'a').perform().await?;
-    /// #         assert_eq!(elem.value().await?, "a");
+    /// #         assert_eq!(elem.value().await?, Some("a".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
@@ -421,15 +421,15 @@ impl<'a> ActionChain<'a> {
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
-    /// #         assert_eq!(elem.value().await?, "");
+    /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// elem.send_keys("selenium").await?;
-    /// assert_eq!(elem.value().await?, "selenium");
+    /// assert_eq!(elem.value().await?, Some("selenium".to_string()));
     /// driver.action_chain()
     ///     .key_down_on_element(&elem, Keys::Control).key_down('a')
     ///     .key_up(Keys::Control).key_up('a')
     ///     .key_down('b')
     ///     .perform().await?;
-    /// assert_eq!(elem.value().await?, "b");
+    /// assert_eq!(elem.value().await?, Some("b".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
@@ -457,15 +457,15 @@ impl<'a> ActionChain<'a> {
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
-    /// #         assert_eq!(elem.value().await?, "");
+    /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// elem.send_keys("selenium").await?;
-    /// assert_eq!(elem.value().await?, "selenium");
+    /// assert_eq!(elem.value().await?, Some("selenium".to_string()));
     /// driver.action_chain()
     ///     .key_down_on_element(&elem, Keys::Control).key_down('a')
     ///     .key_up_on_element(&elem, 'a').key_up_on_element(&elem, Keys::Control)
     ///     .key_down('b')
     ///     .perform().await?;
-    /// assert_eq!(elem.value().await?, "b");
+    /// assert_eq!(elem.value().await?, Some("b".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
@@ -600,7 +600,7 @@ impl<'a> ActionChain<'a> {
     /// // Now paste the text into the input field.
     /// let elem_tgt = driver.find_element(By::Name("input1")).await?;
     /// elem_tgt.send_keys(Keys::Control + "v").await?;
-    /// #         assert_eq!(elem_tgt.value().await?, "Button 1 clicked");
+    /// #         assert_eq!(elem_tgt.value().await?, Some("Button 1 clicked".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
@@ -686,7 +686,7 @@ impl<'a> ActionChain<'a> {
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
     /// let button = driver.find_element(By::Id("button-set")).await?;
-    /// #         assert_eq!(elem.value().await?, "");
+    /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain()
     ///     .click_element(&elem)
     ///     .send_keys("selenium")
@@ -724,7 +724,7 @@ impl<'a> ActionChain<'a> {
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
     /// let button = driver.find_element(By::Id("button-set")).await?;
-    /// #         assert_eq!(elem.value().await?, "");
+    /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain()
     ///     .send_keys_to_element(&elem, "selenium")
     ///     .click_element(&button)

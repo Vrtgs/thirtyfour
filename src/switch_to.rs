@@ -49,7 +49,7 @@ impl<'a> SwitchTo<'a> {
     /// let elem = driver.switch_to().active_element().await?;
     /// elem.send_keys("selenium").await?;
     /// #         let elem = driver.find_element(By::Name("input1")).await?;
-    /// #         assert_eq!(elem.value().await?, "selenium");
+    /// #         assert_eq!(elem.value().await?, Some("selenium".to_string()));
     /// #         Ok(())
     /// #     })
     /// # }
