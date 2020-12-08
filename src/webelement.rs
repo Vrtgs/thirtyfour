@@ -12,6 +12,7 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::common::command::MAGIC_ELEMENTID;
+use crate::error::WebDriverError;
 use crate::webdrivercommands::WebDriverCommands;
 use crate::{
     common::{
@@ -333,7 +334,6 @@ impl<'a> WebElement<'a> {
 
     /// Get the specified CSS property.
     ///
-    ///
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
@@ -368,10 +368,107 @@ impl<'a> WebElement<'a> {
         convert_json(&v["value"])
     }
 
+    /// Return true if the WebElement is currently displayed, otherwise false.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         let elem = driver.find_element(By::Id("button1")).await?;
+    /// let displayed = elem.is_displayed().await?;
+    /// #         assert_eq!(displayed, true);
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn is_displayed(&self) -> WebDriverResult<bool> {
+        let v = self.cmd(Command::IsElementDisplayed(self.element_id.clone())).await?;
+        convert_json(&v["value"])
+    }
+
     /// Return true if the WebElement is currently enabled, otherwise false.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         let elem = driver.find_element(By::Id("button1")).await?;
+    /// let enabled = elem.is_enabled().await?;
+    /// #         assert_eq!(enabled, true);
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
     pub async fn is_enabled(&self) -> WebDriverResult<bool> {
         let v = self.cmd(Command::IsElementEnabled(self.element_id.clone())).await?;
         convert_json(&v["value"])
+    }
+
+    /// Return true if the WebElement is currently clickable (visible and enabled),
+    /// otherwise false.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         let elem = driver.find_element(By::Id("button1")).await?;
+    /// let clickable = elem.is_clickable().await?;
+    /// #         assert_eq!(clickable, true);
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn is_clickable(&self) -> WebDriverResult<bool> {
+        Ok(self.is_displayed().await? && self.is_enabled().await?)
+    }
+
+    /// Return true if the WebElement is currently (still) present.
+    ///
+    /// NOTE: This simply queries the tag name in order to determine
+    ///       whether the element is still present.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         let elem = driver.find_element(By::Id("button1")).await?;
+    /// let present = elem.is_present().await?;
+    /// #         assert_eq!(present, true);
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn is_present(&self) -> WebDriverResult<bool> {
+        let present = match self.tag_name().await {
+            Ok(_) => true,
+            Err(WebDriverError::NoSuchElement(_)) => false,
+            Err(e) => return Err(e),
+        };
+        Ok(present)
     }
 
     /// Search for a child element of this WebElement using the specified
