@@ -13,7 +13,7 @@ where
     rt.block_on(future)
 }
 
-#[cfg(all(feature = "async-std-runtime"))]
+#[cfg(feature = "async-std-runtime")]
 pub fn block_on<F, T>(future: F) -> WebDriverResult<T>
 where
     F: Future<Output = WebDriverResult<T>>,
@@ -26,7 +26,7 @@ pub async fn sleep(duration: std::time::Duration) {
     tokio::time::delay_for(duration).await;
 }
 
-#[cfg(all(feature = "async-std-runtime", not(feature = "tokio-runtime")))]
+#[cfg(feature = "async-std-runtime")]
 pub async fn sleep(duration: std::time::Duration) {
     async_std::task::sleep(duration).await;
 }

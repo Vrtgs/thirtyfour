@@ -1,24 +1,65 @@
 use crate::common::command::FormatRequestData;
 use crate::common::config::WebDriverConfig;
-use crate::error::WebDriverResult;
+use crate::error::{WebDriverError, WebDriverResult};
 use crate::http::connection_async::WebDriverHttpClientAsync;
 use crate::webdrivercommands::WebDriverCommands;
-use crate::SessionId;
+use crate::{RequestData, SessionId};
 use async_trait::async_trait;
-use std::sync::Arc;
+use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
+use futures::channel::oneshot;
+use futures::SinkExt;
+use futures::StreamExt;
+
+#[derive(Debug)]
+pub enum SessionMessage {
+    Request(RequestData, oneshot::Sender<WebDriverResult<serde_json::Value>>),
+}
+
+pub fn spawn_session_task(
+    conn: Box<dyn WebDriverHttpClientAsync>,
+) -> UnboundedSender<SessionMessage> {
+    let (tx, rx) = unbounded();
+
+    #[cfg(feature = "async-std-runtime")]
+    {
+        async_std::task::spawn(session_runner(rx, conn));
+    }
+
+    #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
+    {
+        tokio::spawn(session_runner(rx, conn));
+    }
+
+    tx
+}
+
+async fn session_runner(
+    mut rx: UnboundedReceiver<SessionMessage>,
+    conn: Box<dyn WebDriverHttpClientAsync>,
+) {
+    // This will return None when the sender hangs up.
+    while let Some(msg) = rx.next().await {
+        match msg {
+            SessionMessage::Request(data, tx) => {
+                let ret = conn.execute(data).await;
+                tx.send(ret).expect("Failed to send response");
+            }
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct WebDriverSession {
     session_id: SessionId,
-    conn: Arc<dyn WebDriverHttpClientAsync>,
+    tx: UnboundedSender<SessionMessage>,
     config: WebDriverConfig,
 }
 
 impl WebDriverSession {
-    pub fn new(session_id: SessionId, conn: Arc<dyn WebDriverHttpClientAsync>) -> Self {
+    pub fn new(session_id: SessionId, tx: UnboundedSender<SessionMessage>) -> Self {
         Self {
             session_id,
-            conn,
+            tx,
             config: WebDriverConfig::new(),
         }
     }
@@ -39,7 +80,21 @@ impl WebDriverSession {
         &self,
         request: Box<dyn FormatRequestData + Send + Sync>,
     ) -> WebDriverResult<serde_json::Value> {
-        self.conn.execute(request.format_request(&self.session_id)).await
+        let (ret_tx, ret_rx) = oneshot::channel();
+        self.tx
+            .clone()
+            .send(SessionMessage::Request(request.format_request(&self.session_id), ret_tx))
+            .await
+            .map_err(|e| {
+                WebDriverError::UnknownResponse(format!("Failed to send request to server: {}", e))
+            })?;
+
+        match ret_rx.await {
+            Ok(x) => x,
+            Err(oneshot::Canceled) => Err(WebDriverError::UnknownResponse(
+                "Failed to get response from server".to_string(),
+            )),
+        }
     }
 }
 

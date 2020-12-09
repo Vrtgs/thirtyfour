@@ -1,6 +1,5 @@
 #[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
 use std::path::Path;
-use std::sync::Arc;
 use std::time::Duration;
 
 #[cfg(feature = "async-std-runtime")]
@@ -29,7 +28,7 @@ use crate::{
 /// Start a new WebDriver session, returning the session id and the
 /// capabilities JSON that was received back from the server.
 pub async fn start_session<C>(
-    conn: Arc<dyn WebDriverHttpClientAsync>,
+    conn: &dyn WebDriverHttpClientAsync,
     capabilities: C,
 ) -> WebDriverResult<(SessionId, serde_json::Value)>
 where

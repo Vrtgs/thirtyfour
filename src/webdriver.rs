@@ -1,11 +1,8 @@
-use std::marker::PhantomData;
-use std::sync::Arc;
-
 use async_trait::async_trait;
-use futures::executor::block_on;
 use log::error;
 use serde::Serialize;
 use serde_json::Value;
+use std::marker::PhantomData;
 
 use crate::common::config::WebDriverConfig;
 use crate::http::connection_async::WebDriverHttpClientAsync;
@@ -15,11 +12,13 @@ use crate::http::nulldriver_async::NullDriverAsync;
 use crate::http::reqwest_async::ReqwestDriverAsync;
 #[cfg(feature = "async-std-runtime")]
 use crate::http::surf_async::SurfDriverAsync;
+use crate::session::spawn_session_task;
 use crate::webdrivercommands::{start_session, WebDriverCommands};
 use crate::{
     common::command::Command, error::WebDriverResult, session::WebDriverSession,
     DesiredCapabilities, SessionId,
 };
+use futures::executor::block_on;
 
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
 /// The WebDriver struct represents a browser session.
@@ -105,10 +104,12 @@ where
     where
         C: Serialize,
     {
-        let conn = Arc::new(T::create(remote_server_addr)?);
-        let (session_id, session_capabilities) = start_session(conn.clone(), capabilities).await?;
+        let conn = T::create(remote_server_addr)?;
+        let (session_id, session_capabilities) = start_session(&conn, capabilities).await?;
+        let tx = spawn_session_task(Box::new(conn));
+
         let driver = GenericWebDriver {
-            session: WebDriverSession::new(session_id, conn),
+            session: WebDriverSession::new(session_id, tx),
             capabilities: session_capabilities,
             quit_on_drop: true,
             phantom: PhantomData,
