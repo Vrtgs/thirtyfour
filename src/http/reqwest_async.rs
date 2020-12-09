@@ -8,12 +8,14 @@ use crate::{
     error::{WebDriverError, WebDriverResult},
     RequestData, RequestMethod,
 };
+use std::time::Duration;
 
 /// Asynchronous http to the remote WebDriver server.
 #[derive(Debug)]
 pub struct ReqwestDriverAsync {
     url: String,
     client: reqwest::Client,
+    timeout: Duration,
 }
 
 #[async_trait]
@@ -23,7 +25,12 @@ impl WebDriverHttpClientAsync for ReqwestDriverAsync {
         Ok(ReqwestDriverAsync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
             client: reqwest::Client::builder().default_headers(headers).build()?,
+            timeout: Duration::from_secs(120),
         })
+    }
+
+    fn set_request_timeout(&mut self, timeout: Duration) {
+        self.timeout = timeout;
     }
 
     /// Execute the specified command and return the data as serde_json::Value.
@@ -34,6 +41,8 @@ impl WebDriverHttpClientAsync for ReqwestDriverAsync {
             RequestMethod::Post => self.client.post(&url),
             RequestMethod::Delete => self.client.delete(&url),
         };
+        request = request.timeout(self.timeout);
+
         if let Some(x) = request_data.body {
             request = request.json(&x);
         }

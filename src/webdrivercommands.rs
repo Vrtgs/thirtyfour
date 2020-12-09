@@ -774,6 +774,10 @@ pub trait WebDriverCommands {
 
     /// Set all timeouts for the current session.
     ///
+    /// NOTE: If you set timeouts to values greater than 120 seconds,
+    ///       remember to also increase the request timeout.
+    ///       See `WebDriver::set_request_timeout()` for more details.
+    ///
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
@@ -807,6 +811,10 @@ pub trait WebDriverCommands {
     /// find it more reliable to set the implicit wait time to 0 (no wait)
     /// and implement your own polling loop outside of `thirtyfour`.
     ///
+    /// NOTE: If you set timeouts to values greater than 120 seconds,
+    ///       remember to also increase the request timeout.
+    ///       See `WebDriver::set_request_timeout()` for more details.
+    ///
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
@@ -836,6 +844,10 @@ pub trait WebDriverCommands {
     ///
     /// By default this is set to 60 seconds.
     ///
+    /// NOTE: If you set timeouts to values greater than 120 seconds,
+    ///       remember to also increase the request timeout.
+    ///       See `WebDriver::set_request_timeout()` for more details.
+    ///
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
@@ -864,6 +876,10 @@ pub trait WebDriverCommands {
     /// for the page to finish loading.
     ///
     /// By default this is set to 60 seconds.
+    ///
+    /// NOTE: If you set timeouts to values greater than 120 seconds,
+    ///       remember to also increase the request timeout.
+    ///       See `WebDriver::set_request_timeout()` for more details.
     ///
     /// # Example:
     /// ```rust

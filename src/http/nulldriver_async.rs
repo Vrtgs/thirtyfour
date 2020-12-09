@@ -19,6 +19,8 @@ impl WebDriverHttpClientAsync for NullDriverAsync {
         })
     }
 
+    fn set_request_timeout(&mut self, timeout: Duration) {}
+
     async fn execute(&self, _request_data: RequestData) -> WebDriverResult<serde_json::Value> {
         Ok(serde_json::Value::Null)
     }

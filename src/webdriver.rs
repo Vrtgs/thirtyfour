@@ -19,6 +19,7 @@ use crate::{
     DesiredCapabilities, SessionId,
 };
 use futures::executor::block_on;
+use std::time::Duration;
 
 #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
 /// The WebDriver struct represents a browser session.
@@ -140,6 +141,27 @@ where
 
     pub fn config_mut(&mut self) -> &mut WebDriverConfig {
         self.session.config_mut()
+    }
+
+    /// Set the request timeout for the HTTP client.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use std::time::Duration;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// let caps = DesiredCapabilities::chrome();
+    /// let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// driver.set_request_timeout(Duration::from_secs(180)).await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn set_request_timeout(&mut self, timeout: Duration) -> WebDriverResult<()> {
+        self.session.set_request_timeout(timeout).await
     }
 }
 

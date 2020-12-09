@@ -9,10 +9,12 @@ use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use futures::channel::oneshot;
 use futures::SinkExt;
 use futures::StreamExt;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub enum SessionMessage {
     Request(RequestData, oneshot::Sender<WebDriverResult<serde_json::Value>>),
+    SetRequestTimeout(Duration),
 }
 
 pub fn spawn_session_task(
@@ -35,7 +37,7 @@ pub fn spawn_session_task(
 
 async fn session_runner(
     mut rx: UnboundedReceiver<SessionMessage>,
-    conn: Box<dyn WebDriverHttpClientAsync>,
+    mut conn: Box<dyn WebDriverHttpClientAsync>,
 ) {
     // This will return None when the sender hangs up.
     while let Some(msg) = rx.next().await {
@@ -43,6 +45,9 @@ async fn session_runner(
             SessionMessage::Request(data, tx) => {
                 let ret = conn.execute(data).await;
                 tx.send(ret).expect("Failed to send response");
+            }
+            SessionMessage::SetRequestTimeout(timeout) => {
+                conn.set_request_timeout(timeout);
             }
         }
     }
@@ -95,6 +100,13 @@ impl WebDriverSession {
                 "Failed to get response from server".to_string(),
             )),
         }
+    }
+
+    pub async fn set_request_timeout(&mut self, timeout: Duration) -> WebDriverResult<()> {
+        self.tx.clone().send(SessionMessage::SetRequestTimeout(timeout)).await.map_err(|e| {
+            WebDriverError::UnknownResponse(format!("Failed to send request to server: {}", e))
+        })?;
+        Ok(())
     }
 }
 
