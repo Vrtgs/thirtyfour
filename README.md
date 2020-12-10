@@ -87,6 +87,11 @@ async fn main() -> WebDriverResult<()> {
 }
 ```
 
+### Advanced element queries
+
+See the (experimental) [thirtyfour_query](https://github.com/stevepryde/thirtyfour_query) crate for 
+more advanced element queries and polling options.
+
 ## Running against selenium
 
 *NOTE:* To run the selenium example, start selenium (instructions below) then run:
