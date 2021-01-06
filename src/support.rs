@@ -9,7 +9,7 @@ pub fn block_on<F, T>(future: F) -> WebDriverResult<T>
 where
     F: Future<Output = WebDriverResult<T>>,
 {
-    let mut rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
     rt.block_on(future)
 }
 
@@ -23,7 +23,7 @@ where
 
 #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
 pub async fn sleep(duration: std::time::Duration) {
-    tokio::time::delay_for(duration).await;
+    tokio::time::sleep(duration).await;
 }
 
 #[cfg(feature = "async-std-runtime")]

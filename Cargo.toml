@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.21.1"
+version = "0.22.0"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -30,24 +30,24 @@ reqwest-rustls-tls = ["reqwest/rustls-tls"]
 [dependencies]
 async-trait = "0.1"
 futures = "0.3"
-tokio = { version = "0.2", features = ["fs", "macros", "rt-threaded", "io-util"], optional = true }
-reqwest = { version = "0.10", features = ["json"], optional = true }
+tokio = { version = "1.0", features = ["fs", "macros", "rt-multi-thread", "io-util"], optional = true }
+reqwest = { version = "0.11", features = ["json"], optional = true }
 http-client = { version = "6.2", optional = true }
 isahc = { version = "0.9", optional = true }
 async-std = { version = "1.8", features = ["attributes"], optional = true }
-surf = { version = "2.0.0-alpha.5", features = ["curl-client"], optional = true }
+surf = { version = "2.0", features = ["curl-client"], optional = true }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
 log = "0.4"
 urlparse = "0.7"
-base64 = "0.12"
+base64 = "0.13"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
 displaydoc = "0.1"
 
 [dev-dependencies]
-color-eyre = "0.5.6"
+color-eyre = "0.5"
 
 [[example]]
 name = "tokio_async"
