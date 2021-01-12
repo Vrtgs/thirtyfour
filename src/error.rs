@@ -1,7 +1,7 @@
 use base64::DecodeError;
 use displaydoc::Display;
-use serde::export::Formatter;
 use serde::Deserialize;
+use std::fmt::Formatter;
 use thiserror::Error;
 
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
