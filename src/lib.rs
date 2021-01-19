@@ -189,5 +189,11 @@ pub mod extensions {
     }
 }
 
+/// Wrappers for specific component types.
+pub mod components {
+    /// Wrapper for `<select>` elements.
+    pub mod select;
+}
+
 /// Error types.
 pub mod error;

@@ -207,4 +207,6 @@ And finally, to remove them:
 This work is dual-licensed under MIT or Apache 2.0.
 You can choose either license if you use this work.
 
+See the NOTICE file for more details.
+
 `SPDX-License-Identifier: MIT OR Apache-2.0`

@@ -227,3 +227,17 @@ impl From<surf::Error> for WebDriverError {
         Self::SurfError(err)
     }
 }
+
+/// Convenience function to construct a simulated NoSuchElement error.
+pub fn no_such_element(message: &str) -> WebDriverError {
+    WebDriverError::NoSuchElement(WebDriverErrorInfo {
+        status: 400,
+        error: message.to_string(),
+        value: WebDriverErrorValue {
+            message: message.to_string(),
+            error: None,
+            stacktrace: None,
+            data: None,
+        },
+    })
+}
