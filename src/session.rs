@@ -53,7 +53,7 @@ async fn session_runner(
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct WebDriverSession {
     session_id: SessionId,
     tx: UnboundedSender<SessionMessage>,

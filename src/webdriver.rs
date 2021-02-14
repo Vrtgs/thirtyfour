@@ -68,7 +68,7 @@ pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
 ///     })
 /// }
 /// ```
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GenericWebDriver<T: WebDriverHttpClientAsync> {
     pub session: WebDriverSession,
     capabilities: Value,
