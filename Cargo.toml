@@ -27,6 +27,8 @@ reqwest-native-tls = ["reqwest/native-tls"]
 reqwest-native-tls-vendored = ["reqwest/native-tls-vendored"]
 reqwest-rustls-tls = ["reqwest/rustls-tls"]
 
+persist = []
+
 [dependencies]
 async-trait = "0.1"
 futures = "0.3"
