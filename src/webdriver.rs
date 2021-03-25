@@ -105,7 +105,25 @@ where
     where
         C: Serialize,
     {
-        let conn = T::create(remote_server_addr)?;
+        Self::new_with_initial_timeout(remote_server_addr, capabilities, None).await
+    }
+
+    /// Creates a new GenericWebDriver just like the `new` function. Allows a
+    /// configurable timeout for all HTTP requests including the session creation.
+    pub async fn new_with_initial_timeout<C>(
+        remote_server_addr: &str,
+        capabilities: C,
+        timeout: Option<Duration>,
+    ) -> WebDriverResult<Self>
+    where
+        C: Serialize,
+    {
+        let mut conn = T::create(remote_server_addr)?;
+
+        if let Some(timeout) = timeout {
+            conn.set_request_timeout(timeout);
+        }
+
         let (session_id, session_capabilities) = start_session(&conn, capabilities).await?;
         let tx = spawn_session_task(Box::new(conn));
 
