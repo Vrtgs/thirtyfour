@@ -139,9 +139,9 @@ where
     }
 }
 
-impl Into<char> for Keys {
-    fn into(self) -> char {
-        self.value()
+impl From<Keys> for char {
+    fn from(k: Keys) -> Self {
+        k.value()
     }
 }
 

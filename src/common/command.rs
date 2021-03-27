@@ -123,7 +123,7 @@ pub enum Command {
     IsElementDisplayed(ElementId),
     GetElementAttribute(ElementId, String),
     GetElementProperty(ElementId, String),
-    GetElementCSSValue(ElementId, String),
+    GetElementCssValue(ElementId, String),
     GetElementText(ElementId),
     GetElementTagName(ElementId),
     GetElementRect(ElementId),
@@ -298,7 +298,7 @@ impl FormatRequestData for Command {
                     session_id, element_id, property_name
                 ),
             ),
-            Command::GetElementCSSValue(element_id, property_name) => RequestData::new(
+            Command::GetElementCssValue(element_id, property_name) => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/element/{}/css/{}", session_id, element_id, property_name),
             ),
