@@ -25,11 +25,13 @@ jobs:
 
     - uses: actions-rs/cargo@v1
       with:
-        command: build --verbose
+        command: build
+        args: --verbose
     - name: Build the test website
       run: docker-compose up -d
     - name: Check running containers
       run: docker ps -a
     - uses: actions-rs/cargo@v1
       with:
-        command: test --verbose -- --test-threads=1
+        command: test
+        args: --verbose -- --test-threads=1
