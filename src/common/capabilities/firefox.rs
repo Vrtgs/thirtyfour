@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use serde::Serialize;
-use serde_json::{json, to_value, from_value, Value};
+use serde_json::{from_value, json, to_value, Value};
 
 use crate::common::capabilities::desiredcapabilities::Capabilities;
 use crate::error::WebDriverResult;

@@ -10,7 +10,9 @@ pub trait Action {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum NullAction {
-    Pause { duration: u64 },
+    Pause {
+        duration: u64,
+    },
 }
 
 impl Action for NullAction {
@@ -24,9 +26,15 @@ impl Action for NullAction {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum KeyAction {
-    Pause { duration: u64 },
-    KeyUp { value: char },
-    KeyDown { value: char },
+    Pause {
+        duration: u64,
+    },
+    KeyUp {
+        value: char,
+    },
+    KeyDown {
+        value: char,
+    },
 }
 
 impl Action for KeyAction {
@@ -136,11 +144,15 @@ impl ActionSource<KeyAction> {
     }
 
     pub fn key_down(&mut self, value: char) {
-        self.add_action(KeyAction::KeyDown { value });
+        self.add_action(KeyAction::KeyDown {
+            value,
+        });
     }
 
     pub fn key_up(&mut self, value: char) {
-        self.add_action(KeyAction::KeyUp { value });
+        self.add_action(KeyAction::KeyUp {
+            value,
+        });
     }
 
     pub fn send_keys(&mut self, text: TypingData) {
@@ -294,12 +306,16 @@ mod tests {
     #[test]
     fn test_null_action() {
         compare_null_action(
-            NullAction::Pause { duration: 0 },
+            NullAction::Pause {
+                duration: 0,
+            },
             json!({"type": "pause", "duration": 0}),
         );
 
         compare_null_action(
-            NullAction::Pause { duration: 4 },
+            NullAction::Pause {
+                duration: 4,
+            },
             json!({"type": "pause", "duration": 4}),
         );
     }
@@ -323,12 +339,16 @@ mod tests {
     #[test]
     fn test_key_action_pause() {
         compare_key_action(
-            KeyAction::Pause { duration: 0 },
+            KeyAction::Pause {
+                duration: 0,
+            },
             json!({"type": "pause", "duration": 0}),
         );
 
         compare_key_action(
-            KeyAction::Pause { duration: 3 },
+            KeyAction::Pause {
+                duration: 3,
+            },
             json!({"type": "pause", "duration": 3}),
         );
     }
@@ -336,24 +356,32 @@ mod tests {
     #[test]
     fn test_key_action_updown() {
         compare_key_action(
-            KeyAction::KeyDown { value: 'a' },
+            KeyAction::KeyDown {
+                value: 'a',
+            },
             json!({"type": "keyDown", "value": 'a'}),
         );
 
         compare_key_action(
-            KeyAction::KeyDown { value: '\u{e004}' },
+            KeyAction::KeyDown {
+                value: '\u{e004}',
+            },
             json!({
             "type": "keyDown", "value": '\u{e004}'
             }),
         );
 
         compare_key_action(
-            KeyAction::KeyUp { value: 'a' },
+            KeyAction::KeyUp {
+                value: 'a',
+            },
             json!({"type": "keyUp", "value": 'a'}),
         );
 
         compare_key_action(
-            KeyAction::KeyUp { value: '\u{e004}' },
+            KeyAction::KeyUp {
+                value: '\u{e004}',
+            },
             json!({
             "type": "keyUp", "value": '\u{e004}'
             }),
@@ -382,12 +410,16 @@ mod tests {
     #[test]
     fn test_pointer_action_pause() {
         compare_pointer_action(
-            PointerAction::Pause { duration: 0 },
+            PointerAction::Pause {
+                duration: 0,
+            },
             json!({"type": "pause", "duration": 0}),
         );
 
         compare_pointer_action(
-            PointerAction::Pause { duration: 2 },
+            PointerAction::Pause {
+                duration: 2,
+            },
             json!({"type": "pause", "duration": 2}),
         );
     }
@@ -532,9 +564,6 @@ mod tests {
 
     #[test]
     fn test_pointer_action_cancel() {
-        compare_pointer_action(
-            PointerAction::PointerCancel,
-            json!({"type": "pointerCancel"}),
-        );
+        compare_pointer_action(PointerAction::PointerCancel, json!({"type": "pointerCancel"}));
     }
 }

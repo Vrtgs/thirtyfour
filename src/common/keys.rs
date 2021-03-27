@@ -133,7 +133,9 @@ where
 
     fn add(self, rhs: S) -> Self::Output {
         let data = vec![self.value()];
-        Self::Output { data } + rhs
+        Self::Output {
+            data,
+        } + rhs
     }
 }
 
@@ -187,6 +189,8 @@ where
     fn add(self, rhs: S) -> Self::Output {
         let mut data = self.data;
         data.extend(rhs.into().data.iter());
-        Self::Output { data }
+        Self::Output {
+            data,
+        }
     }
 }
