@@ -104,7 +104,7 @@ pub enum WebDriverError {
     /// Unable to decode base64: {0}
     DecodeError(#[from] DecodeError),
     /// IO Error: {0}
-    IOError(#[from] std::io::Error),
+    IoError(#[from] std::io::Error),
     #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
     /// The WebDriver request returned an error: {0}
     ReqwestError(#[from] reqwest::Error),
