@@ -105,12 +105,29 @@ where
     where
         C: Serialize,
     {
-        Self::new_with_initial_timeout(remote_server_addr, capabilities, None).await
+        Self::new_with_timeout(remote_server_addr, capabilities, None).await
     }
 
     /// Creates a new GenericWebDriver just like the `new` function. Allows a
     /// configurable timeout for all HTTP requests including the session creation.
-    pub async fn new_with_initial_timeout<C>(
+    ///
+    /// Create a new WebDriver as follows:
+    ///
+    /// # Example
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// # use std::time::Duration;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// let caps = DesiredCapabilities::chrome();
+    /// let driver = WebDriver::new_with_timeout("http://localhost:4444/wd/hub", &caps, Some(Duration::from_secs(120))).await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn new_with_timeout<C>(
         remote_server_addr: &str,
         capabilities: C,
         timeout: Option<Duration>,
