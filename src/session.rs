@@ -9,6 +9,7 @@ use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use futures::channel::oneshot;
 use futures::SinkExt;
 use futures::StreamExt;
+use log::*;
 use std::time::Duration;
 
 #[derive(Debug)]
@@ -44,7 +45,10 @@ async fn session_runner(
         match msg {
             SessionMessage::Request(data, tx) => {
                 let ret = conn.execute(data).await;
-                tx.send(ret).expect("Failed to send response");
+                if let Err(e) = tx.send(ret) {
+                    // This can happen if the receiver is dropped before it completes.
+                    debug!("Failed to send response: {:?}", e);
+                }
             }
             SessionMessage::SetRequestTimeout(timeout) => {
                 conn.set_request_timeout(timeout);
