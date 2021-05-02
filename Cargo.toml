@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.23.1"
+version = "0.23.2"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -26,12 +26,15 @@ reqwest-default-tls = ["reqwest/default-tls"]
 reqwest-native-tls = ["reqwest/native-tls"]
 reqwest-native-tls-vendored = ["reqwest/native-tls-vendored"]
 reqwest-rustls-tls = ["reqwest/rustls-tls"]
+reqwest-rustls-tls-webpki-roots = ["reqwest/rustls-tls-webpki-roots"]
+reqwest-rustls-tls-native-roots = ["reqwest/rustls-tls-native-roots"]
+reqwest-rustls-tls-manual-roots = ["reqwest/rustls-tls-manual-roots"]
 
 [dependencies]
 async-trait = "0.1"
 futures = "0.3"
 tokio = { version = "1.0", features = ["fs", "macros", "rt-multi-thread", "io-util"], optional = true }
-reqwest = { version = "0.11", features = ["json"], optional = true }
+reqwest = { version = "0.11", default-features = false, features = ["json"], optional = true }
 http-client = { version = "6.2", optional = true }
 isahc = { version = "0.9", optional = true }
 async-std = { version = "1.8", features = ["attributes"], optional = true }
