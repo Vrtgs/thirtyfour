@@ -94,22 +94,22 @@ impl WebDriverSession {
             .clone()
             .send(SessionMessage::Request(request.format_request(&self.session_id), ret_tx))
             .await
-            .map_err(|e| {
-                WebDriverError::UnknownResponse(format!("Failed to send request to server: {}", e))
-            })?;
+            .map_err(|e| WebDriverError::RequestFailed(e.to_string()))?;
 
         match ret_rx.await {
             Ok(x) => x,
-            Err(oneshot::Canceled) => Err(WebDriverError::UnknownResponse(
-                "Failed to get response from server".to_string(),
-            )),
+            Err(oneshot::Canceled) => {
+                Err(WebDriverError::RequestFailed("Failed to get response from server".to_string()))
+            }
         }
     }
 
     pub async fn set_request_timeout(&mut self, timeout: Duration) -> WebDriverResult<()> {
-        self.tx.clone().send(SessionMessage::SetRequestTimeout(timeout)).await.map_err(|e| {
-            WebDriverError::UnknownResponse(format!("Failed to send request to server: {}", e))
-        })?;
+        self.tx
+            .clone()
+            .send(SessionMessage::SetRequestTimeout(timeout))
+            .await
+            .map_err(|e| WebDriverError::RequestFailed(e.to_string()))?;
         Ok(())
     }
 }
