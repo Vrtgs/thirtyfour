@@ -58,9 +58,7 @@ impl WebDriverHttpClientAsync for SurfDriverAsync {
             x if x.is_success() || x.is_redirection() => Ok(resp.body_json().await?),
             x if x.is_client_error() || x.is_server_error() => {
                 let status = resp.status();
-                let body: serde_json::Value =
-                    resp.body_json().await.unwrap_or(serde_json::Value::Null);
-                Err(WebDriverError::parse(status as u16, body))
+                Err(WebDriverError::parse(status as u16, resp.body_string().await?))
             }
             _ => unreachable!(),
         }

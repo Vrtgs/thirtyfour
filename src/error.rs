@@ -93,8 +93,10 @@ impl std::fmt::Display for WebDriverErrorInfo {
 #[non_exhaustive]
 #[derive(Debug, Error, Display)]
 pub enum WebDriverError {
-    /// The WebDriver server returned an unrecognised response: {0}
-    UnknownResponse(String),
+    /// The WebDriver server returned an unrecognised response: {0} :: {1}
+    UnknownResponse(u16, String),
+    /// Failed to send request to webdriver: {0}
+    RequestFailed(String),
     /// The requested item '{0}' was not found: {1}
     NotFound(String, String),
     /// operation timed out: {0}
@@ -170,16 +172,19 @@ pub enum WebDriverError {
 }
 
 impl WebDriverError {
-    pub fn parse(status: u16, body: serde_json::Value) -> Self {
-        let mut payload: WebDriverErrorInfo = match serde_json::from_value(body.clone()) {
+    pub fn parse(status: u16, body: String) -> Self {
+        let body_json = match serde_json::from_str(&body) {
             Ok(x) => x,
             Err(_) => {
-                return WebDriverError::UnknownResponse(format!(
-                    "Server returned unknown response: {}",
-                    body.to_string()
-                ))
+                return WebDriverError::UnknownResponse(status, body);
             }
         };
+
+        let mut payload: WebDriverErrorInfo = match serde_json::from_value(body_json) {
+            Ok(x) => x,
+            Err(_) => return WebDriverError::UnknownResponse(status, body),
+        };
+
         payload.status = status;
         let mut error = payload.error.clone();
         if error.is_empty() {
