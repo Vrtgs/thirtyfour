@@ -4,6 +4,7 @@ use async_trait::async_trait;
 
 use crate::http::connection_async::WebDriverHttpClientAsync;
 use crate::{
+    common::connection_common::surf_support::build_isahc_headers,
     error::{WebDriverError, WebDriverResult},
     RequestData, RequestMethod,
 };
@@ -18,9 +19,14 @@ pub struct SurfDriverAsync {
     client: Client,
 }
 
-fn setup_client(timeout: Duration) -> Client {
-    let backing_client =
-        isahc::HttpClient::builder().timeout(timeout).build().expect("Error creating HTTP client");
+fn setup_client(remote_server_addr: &str, timeout: Duration) -> Client {
+    let headers = build_isahc_headers(remote_server_addr);
+
+    let backing_client = isahc::HttpClient::builder()
+        .timeout(timeout)
+        .default_headers(headers)
+        .build()
+        .expect("Error creating HTTP client");
     let http_client = http_client::isahc::IsahcClient::from_client(backing_client);
     Client::with_http_client(http_client)
 }
@@ -30,14 +36,14 @@ impl WebDriverHttpClientAsync for SurfDriverAsync {
     fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
         Ok(SurfDriverAsync {
             url: remote_server_addr.trim_end_matches('/').to_owned(),
-            client: setup_client(Duration::from_secs(120)),
+            client: setup_client(remote_server_addr, Duration::from_secs(120)),
         })
     }
 
     fn set_request_timeout(&mut self, timeout: Duration) {
         // Currently it looks like the only way to increase the timeout is by recreating the client.
         // https://github.com/http-rs/surf/issues/267
-        self.client = setup_client(timeout);
+        self.client = setup_client(&self.url, timeout);
     }
 
     /// Execute the specified command and return the data as serde_json::Value.
