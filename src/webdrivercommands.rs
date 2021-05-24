@@ -66,7 +66,7 @@ where
 
     #[derive(Debug, Deserialize)]
     struct ConnectionResp {
-        #[serde(default)]
+        #[serde(default, rename(deserialize = "sessionId"))]
         session_id: String,
         value: ConnectionData,
     }
