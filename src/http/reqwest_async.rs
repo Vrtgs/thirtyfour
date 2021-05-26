@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 
-use crate::http::connection_async::WebDriverHttpClientAsync;
+use crate::http::connection_async::{HttpClientCreateParams, WebDriverHttpClientAsync};
 use crate::{
     common::connection_common::reqwest_support::build_reqwest_headers,
     error::{WebDriverError, WebDriverResult},
@@ -20,13 +20,18 @@ pub struct ReqwestDriverAsync {
 
 #[async_trait]
 impl WebDriverHttpClientAsync for ReqwestDriverAsync {
-    fn create(remote_server_addr: &str) -> WebDriverResult<Self> {
-        let headers = build_reqwest_headers(remote_server_addr)?;
-        Ok(ReqwestDriverAsync {
-            url: remote_server_addr.trim_end_matches('/').to_owned(),
+    fn create(params: HttpClientCreateParams) -> WebDriverResult<Self> {
+        let url = params.server_url.trim_end_matches('/').to_owned();
+        let headers = build_reqwest_headers(&url)?;
+        let mut driver = ReqwestDriverAsync {
+            url,
             client: reqwest::Client::builder().default_headers(headers).build()?,
             timeout: Duration::from_secs(120),
-        })
+        };
+        if let Some(timeout) = params.timeout {
+            driver.set_request_timeout(timeout);
+        }
+        Ok(driver)
     }
 
     fn set_request_timeout(&mut self, timeout: Duration) {

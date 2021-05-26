@@ -1,15 +1,10 @@
+#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
+use crate::runtime::imports::{AsyncWriteExt, File};
+use base64::decode;
+use serde::ser::{Serialize, SerializeMap, Serializer};
 use std::fmt;
 #[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
 use std::path::Path;
-
-#[cfg(feature = "async-std-runtime")]
-use async_std::fs::File;
-use base64::decode;
-#[cfg(feature = "async-std-runtime")]
-use futures::io::AsyncWriteExt;
-use serde::ser::{Serialize, SerializeMap, Serializer};
-#[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
-use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::common::command::MAGIC_ELEMENTID;
 use crate::error::WebDriverError;

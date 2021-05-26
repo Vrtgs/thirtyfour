@@ -6,6 +6,12 @@ use crate::error::WebDriverResult;
 use crate::RequestData;
 use std::time::Duration;
 
+#[derive(Debug, Clone)]
+pub struct HttpClientCreateParams {
+    pub server_url: String,
+    pub timeout: Option<Duration>,
+}
+
 /// Trait for executing HTTP requests to selenium/webdriver.
 /// As long as you have some struct that implements WebDriverHttpClientAsync
 /// you can turn it into a WebDriver like this:
@@ -16,7 +22,7 @@ use std::time::Duration;
 /// ```
 #[async_trait]
 pub trait WebDriverHttpClientAsync: Debug + Send + Sync {
-    fn create(remote_server_addr: &str) -> WebDriverResult<Self>
+    fn create(params: HttpClientCreateParams) -> WebDriverResult<Self>
     where
         Self: Sized;
 

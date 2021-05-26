@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.24.2"
+version = "0.25.0"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -57,9 +57,21 @@ name = "tokio_async"
 required-features = ["tokio-runtime"]
 
 [[example]]
+name = "tokio_basic"
+required-features = ["tokio-runtime"]
+
+[[example]]
 name = "async_std_example"
 required-features = ["async-std-runtime"]
 
 [[example]]
 name = "selenium_example"
+required-features = ["tokio-runtime"]
+
+[[example]]
+name = "minimal_async"
+required-features = ["tokio-runtime"]
+
+[[example]]
+name = "chrome_devtools"
 required-features = ["tokio-runtime"]

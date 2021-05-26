@@ -113,6 +113,7 @@ pub use common::{
     scriptargs::ScriptArgs,
     types::*,
 };
+
 pub use session::WebDriverSession;
 pub use switch_to::SwitchTo;
 pub use webdriver::GenericWebDriver;
@@ -134,6 +135,7 @@ pub mod prelude {
 /// Action chains allow for more complex user interactions with the keyboard and mouse.
 pub mod action_chain;
 mod alert;
+mod runtime;
 mod session;
 /// Miscellaneous support functions for `thirtyfour` tests.
 pub mod support;

@@ -109,10 +109,10 @@ pub enum WebDriverError {
     IoError(#[from] std::io::Error),
     #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
     /// The WebDriver request returned an error: {0}
-    ReqwestError(#[from] reqwest::Error),
+    HttpError(#[from] reqwest::Error),
     #[cfg(feature = "async-std-runtime")]
     /// The WebDriver request returned an error: {0}
-    SurfError(surf::Error),
+    HttpError(surf::Error),
     /// The WebDriver response does not conform to the W3C WebDriver spec: {0}
     NotInSpec(WebDriverErrorInfo),
     /// The click event was intercepted by another element: {0}
@@ -229,7 +229,7 @@ impl WebDriverError {
 #[cfg(feature = "async-std-runtime")]
 impl From<surf::Error> for WebDriverError {
     fn from(err: surf::Error) -> Self {
-        Self::SurfError(err)
+        Self::HttpError(err)
     }
 }
 

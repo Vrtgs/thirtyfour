@@ -34,13 +34,13 @@ pub mod surf_support {
     const USER_AGENT: &str = "user-agent";
 
     /// Construct the request headers used for every WebDriver request (surf only).
-    pub fn build_isahc_headers(remote_server_addr: &str) -> HashMap<&'static str, String> {
+    pub fn build_isahc_headers(server_url: &str) -> HashMap<&'static str, String> {
         let mut headers = HashMap::new();
         headers.insert(ACCEPT, "application/json".parse().unwrap());
         headers.insert(CONTENT_TYPE, "application/json;charset=UTF-8".parse().unwrap());
         headers.insert(USER_AGENT, format!("thirtyfour/{} (rust)", VERSION).parse().unwrap());
 
-        let parsed_url = urlparse(remote_server_addr);
+        let parsed_url = urlparse(server_url);
         if let (Some(username), Some(password)) = (parsed_url.username, parsed_url.password) {
             let base64_string = encode(&format!("{}:{}", username, password));
             headers.insert(AUTHORIZATION, format!("Basic {}", base64_string).parse().unwrap());
@@ -66,13 +66,13 @@ pub mod reqwest_support {
     const VERSION: &str = env!("CARGO_PKG_VERSION");
 
     /// Construct the request headers used for every WebDriver request (reqwest only).
-    pub fn build_reqwest_headers(remote_server_addr: &str) -> WebDriverResult<HeaderMap> {
+    pub fn build_reqwest_headers(server_url: &str) -> WebDriverResult<HeaderMap> {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, "application/json".parse().unwrap());
         headers.insert(CONTENT_TYPE, "application/json;charset=UTF-8".parse().unwrap());
         headers.insert(USER_AGENT, format!("thirtyfour/{} (rust)", VERSION).parse().unwrap());
 
-        let parsed_url = urlparse(remote_server_addr);
+        let parsed_url = urlparse(server_url);
         if let (Some(username), Some(password)) = (parsed_url.username, parsed_url.password) {
             let base64_string = encode(&format!("{}:{}", username, password));
             headers.insert(AUTHORIZATION, format!("Basic {}", base64_string).parse().unwrap());

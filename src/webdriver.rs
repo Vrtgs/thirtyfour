@@ -5,40 +5,23 @@ use serde_json::Value;
 use std::marker::PhantomData;
 
 use crate::common::config::WebDriverConfig;
-use crate::http::connection_async::WebDriverHttpClientAsync;
-#[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
-use crate::http::nulldriver_async::NullDriverAsync;
-#[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
-use crate::http::reqwest_async::ReqwestDriverAsync;
-#[cfg(feature = "async-std-runtime")]
-use crate::http::surf_async::SurfDriverAsync;
-use crate::session::spawn_session_task;
+use crate::http::connection_async::{HttpClientCreateParams, WebDriverHttpClientAsync};
+
+use crate::runtime::imports::{HttpClientAsync, Mutex};
 use crate::webdrivercommands::{start_session, WebDriverCommands};
 use crate::{
     common::command::Command, error::WebDriverResult, session::WebDriverSession,
     DesiredCapabilities, SessionId,
 };
 use futures::executor::block_on;
+use std::sync::Arc;
 use std::time::Duration;
 
-#[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
 /// The WebDriver struct represents a browser session.
 ///
 /// For full documentation of all WebDriver methods,
 /// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
-pub type WebDriver = GenericWebDriver<NullDriverAsync>;
-#[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
-/// The WebDriver struct represents a browser session.
-///
-/// For full documentation of all WebDriver methods,
-/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
-pub type WebDriver = GenericWebDriver<ReqwestDriverAsync>;
-#[cfg(feature = "async-std-runtime")]
-/// The WebDriver struct represents a browser session.
-///
-/// For full documentation of all WebDriver methods,
-/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
-pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
+pub type WebDriver = GenericWebDriver<HttpClientAsync>;
 
 /// **NOTE:** For WebDriver method documentation,
 /// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
@@ -69,8 +52,9 @@ pub type WebDriver = GenericWebDriver<SurfDriverAsync>;
 /// }
 /// ```
 #[derive(Debug)]
-pub struct GenericWebDriver<T: WebDriverHttpClientAsync> {
+pub struct GenericWebDriver<T: WebDriverHttpClientAsync + 'static> {
     pub session: WebDriverSession,
+    http_create_params: HttpClientCreateParams,
     capabilities: Value,
     quit_on_drop: bool,
     phantom: PhantomData<T>,
@@ -101,11 +85,11 @@ where
     /// #     })
     /// # }
     /// ```
-    pub async fn new<C>(remote_server_addr: &str, capabilities: C) -> WebDriverResult<Self>
+    pub async fn new<C>(server_url: &str, capabilities: C) -> WebDriverResult<Self>
     where
         C: Serialize,
     {
-        Self::new_with_timeout(remote_server_addr, capabilities, None).await
+        Self::new_with_timeout(server_url, capabilities, None).await
     }
 
     /// Creates a new GenericWebDriver just like the `new` function. Allows a
@@ -128,24 +112,24 @@ where
     /// # }
     /// ```
     pub async fn new_with_timeout<C>(
-        remote_server_addr: &str,
+        server_url: &str,
         capabilities: C,
         timeout: Option<Duration>,
     ) -> WebDriverResult<Self>
     where
         C: Serialize,
     {
-        let mut conn = T::create(remote_server_addr)?;
-
-        if let Some(timeout) = timeout {
-            conn.set_request_timeout(timeout);
-        }
+        let params = HttpClientCreateParams {
+            server_url: server_url.to_string(),
+            timeout,
+        };
+        let conn = T::create(params.clone())?;
 
         let (session_id, session_capabilities) = start_session(&conn, capabilities).await?;
-        let tx = spawn_session_task(Box::new(conn));
 
         let driver = GenericWebDriver {
-            session: WebDriverSession::new(session_id, tx),
+            session: WebDriverSession::new(session_id, Arc::new(Mutex::new(conn))),
+            http_create_params: params,
             capabilities: session_capabilities,
             quit_on_drop: true,
             phantom: PhantomData,
@@ -210,7 +194,7 @@ where
     }
 }
 
-impl<T> Drop for GenericWebDriver<T>
+impl<T: 'static> Drop for GenericWebDriver<T>
 where
     T: WebDriverHttpClientAsync,
 {
