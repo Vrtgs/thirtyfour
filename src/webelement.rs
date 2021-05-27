@@ -57,6 +57,7 @@ pub fn convert_elements_async<'a>(
 /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
 /// let elem = driver.find_element(By::Id("input-result")).await?;
 /// #         assert_eq!(elem.get_attribute("id").await?, Some("input-result".to_string()));
+/// #         driver.quit().await?;
 /// #         Ok(())
 /// #     })
 /// # }
@@ -77,6 +78,7 @@ pub fn convert_elements_async<'a>(
 /// #         child_elem.click().await?;
 /// #         let result_elem = elem.find_element(By::Id("button-result")).await?;
 /// #         assert_eq!(result_elem.text().await?, "Button 1 clicked");
+/// #         driver.quit().await?;
 /// #         Ok(())
 /// #     })
 /// # }
@@ -130,6 +132,7 @@ impl<'a> WebElement<'a> {
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// assert_eq!(elem.tag_name().await?, "button");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -154,6 +157,7 @@ impl<'a> WebElement<'a> {
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// let class_name_option = elem.class_name().await?;  // Option<String>
     /// #         assert!(class_name_option.expect("Missing class name").contains("pure-button"));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -177,6 +181,7 @@ impl<'a> WebElement<'a> {
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// let id_option = elem.id().await?;  // Option<String>
     /// #         assert_eq!(id_option, Some("button1".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -201,6 +206,7 @@ impl<'a> WebElement<'a> {
     /// let elem = driver.find_element(By::Id("button-result")).await?;
     /// let text = elem.text().await?;
     /// #         assert_eq!(text, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -231,6 +237,7 @@ impl<'a> WebElement<'a> {
     /// elem.click().await?;
     /// #         let elem = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -257,6 +264,7 @@ impl<'a> WebElement<'a> {
     /// #         elem.clear().await?;
     /// # let cleared_text = elem.text().await?;
     /// #         assert_eq!(cleared_text, "");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -283,6 +291,7 @@ impl<'a> WebElement<'a> {
     /// let property_value_option = elem.get_property("checked").await?; // Option<String>
     /// assert_eq!(property_value_option, Some("true".to_string()));
     /// #         assert_eq!(elem.get_property("invalid-property").await?, None);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -317,6 +326,7 @@ impl<'a> WebElement<'a> {
     /// let attribute_option = elem.get_attribute("name").await?;  // Option<String>
     /// assert_eq!(attribute_option, Some("input2".to_string()));
     /// #         assert_eq!(elem.get_attribute("invalid-attribute").await?, None);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -349,6 +359,7 @@ impl<'a> WebElement<'a> {
     /// let css_color = elem.get_css_property("color").await?;
     /// assert_eq!(css_color, "rgba(0, 0, 0, 1)");
     /// #         assert_eq!(elem.get_css_property("invalid-css-property").await?, "");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -384,6 +395,7 @@ impl<'a> WebElement<'a> {
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
     /// let displayed = elem.is_displayed().await?;
     /// #         assert_eq!(displayed, true);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -408,6 +420,7 @@ impl<'a> WebElement<'a> {
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
     /// let enabled = elem.is_enabled().await?;
     /// #         assert_eq!(enabled, true);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -433,6 +446,7 @@ impl<'a> WebElement<'a> {
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
     /// let clickable = elem.is_clickable().await?;
     /// #         assert_eq!(clickable, true);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -470,6 +484,7 @@ impl<'a> WebElement<'a> {
     /// #         // Check negative case as well.
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(elem.is_present().await?, false);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -502,6 +517,7 @@ impl<'a> WebElement<'a> {
     /// #         child_elem.click().await?;
     /// #         let result_elem = elem.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(result_elem.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -532,6 +548,7 @@ impl<'a> WebElement<'a> {
     /// for child_elem in child_elems {
     ///     assert_eq!(child_elem.tag_name().await?, "button");
     /// }
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -561,6 +578,7 @@ impl<'a> WebElement<'a> {
     /// #         let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
     /// #         assert_eq!(elem.value().await?, Some("selenium".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -582,6 +600,7 @@ impl<'a> WebElement<'a> {
     /// elem.send_keys(Keys::Control + "a").await?;
     /// elem.send_keys(TypingData::from("thirtyfour") + Keys::Enter).await?;
     /// #         assert_eq!(elem.value().await?, Some("thirtyfour".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -635,6 +654,7 @@ impl<'a> WebElement<'a> {
     /// elem.focus().await?;
     /// #         driver.action_chain().send_keys("selenium").perform().await?;
     /// #         assert_eq!(elem.value().await?, Some("selenium".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -660,6 +680,7 @@ impl<'a> WebElement<'a> {
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// elem.scroll_into_view().await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -686,6 +707,7 @@ impl<'a> WebElement<'a> {
     /// let elem = driver.find_element(By::XPath(r##"//*[@id="button1"]/.."##)).await?;
     /// let html = elem.inner_html().await?;
     /// #         assert_eq!(html, r##"<button class="pure-button pure-button-primary" id="button1">BUTTON 1</button>"##);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -709,6 +731,7 @@ impl<'a> WebElement<'a> {
     /// let elem = driver.find_element(By::XPath(r##"//*[@id="button1"]/.."##)).await?;
     /// let html = elem.outer_html().await?;
     /// #         assert_eq!(html, r##"<div class="pure-u-1-6"><button class="pure-button pure-button-primary" id="button1">BUTTON 1</button></div>"##);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }

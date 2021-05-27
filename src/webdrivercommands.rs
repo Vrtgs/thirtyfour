@@ -120,6 +120,7 @@ where
 /// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 /// driver.get("http://webappdemo").await?;
 /// assert_eq!(driver.current_url().await?, "http://webappdemo/");
+/// #         driver.quit().await?;
 /// #         Ok(())
 /// #     })
 /// # }
@@ -159,6 +160,7 @@ pub trait WebDriverCommands {
     /// driver.get("http://webappdemo").await?;
     /// // Close the tab. This will return to the original tab.
     /// driver.close().await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -179,6 +181,7 @@ pub trait WebDriverCommands {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// driver.get("http://webappdemo").await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -201,6 +204,7 @@ pub trait WebDriverCommands {
     /// driver.get("http://webappdemo").await?;
     /// let url = driver.current_url().await?;
     /// #         assert_eq!(url, "http://webappdemo/");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -224,6 +228,7 @@ pub trait WebDriverCommands {
     /// driver.get("http://webappdemo").await?;
     /// let source = driver.page_source().await?;
     /// #         assert!(source.starts_with(r#"<html lang="en">"#));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -247,6 +252,7 @@ pub trait WebDriverCommands {
     /// driver.get("http://webappdemo").await?;
     /// let title = driver.title().await?;
     /// #         assert_eq!(title, "Demo Web App");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -272,6 +278,7 @@ pub trait WebDriverCommands {
     /// let elem_text = driver.find_element(By::Name("input1")).await?;
     /// let elem_button = driver.find_element(By::Id("button-set")).await?;
     /// let elem_result = driver.find_element(By::Id("input-result")).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -298,6 +305,7 @@ pub trait WebDriverCommands {
     /// for elem in elems {
     ///     assert!(elem.get_attribute("class").await?.expect("Missing class on element").contains("section"));
     /// }
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -331,6 +339,7 @@ pub trait WebDriverCommands {
     /// assert_eq!(elem_out.text().await?, "BUTTON 1");
     /// let elem = driver.find_element(By::Id("button-result")).await?;
     /// assert_eq!(elem.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -365,6 +374,7 @@ pub trait WebDriverCommands {
     /// let elem_out = ret.get_element()?;
     /// assert_eq!(elem_out.element_id, elem.element_id);
     /// assert_eq!(elem_out.text().await?, "TESTING");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -407,6 +417,7 @@ pub trait WebDriverCommands {
     /// assert_eq!(elem_out.text().await?, "BUTTON 1");
     /// let elem = driver.find_element(By::Id("button-result")).await?;
     /// assert_eq!(elem.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -446,6 +457,7 @@ pub trait WebDriverCommands {
     /// let elem_out = ret.get_element()?;
     /// assert_eq!(elem_out.element_id, elem.element_id);
     /// assert_eq!(elem_out.text().await?, "TESTING");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -486,6 +498,7 @@ pub trait WebDriverCommands {
     /// // Switch back to original tab.
     /// driver.switch_to().window(&handle).await?;
     /// assert_eq!(driver.current_window_handle().await?, handle);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -516,6 +529,7 @@ pub trait WebDriverCommands {
     /// let handles = driver.window_handles().await?;
     /// assert_eq!(handles.len(), 2);
     /// driver.switch_to().window(&handles[1]).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -539,6 +553,7 @@ pub trait WebDriverCommands {
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// driver.maximize_window().await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -562,6 +577,7 @@ pub trait WebDriverCommands {
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// driver.minimize_window().await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -583,6 +599,7 @@ pub trait WebDriverCommands {
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// driver.fullscreen_window().await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -611,6 +628,7 @@ pub trait WebDriverCommands {
     /// driver.set_window_rect(option_rect.clone()).await?;
     /// let rect = driver.get_window_rect().await?;
     /// assert_eq!(OptionRect::from(rect), option_rect);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -637,6 +655,7 @@ pub trait WebDriverCommands {
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// let r = OptionRect::new().with_size(1280, 720);
     /// driver.set_window_rect(r).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -656,6 +675,7 @@ pub trait WebDriverCommands {
     /// let rect = driver.get_window_rect().await?;
     /// let option_rect = OptionRect::from(rect);
     /// driver.set_window_rect(option_rect.with_width(1024)).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -679,6 +699,7 @@ pub trait WebDriverCommands {
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// driver.back().await?;
     /// #         assert_eq!(driver.title().await?, "");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -704,6 +725,7 @@ pub trait WebDriverCommands {
     /// #         assert_eq!(driver.title().await?, "");
     /// driver.forward().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -727,6 +749,7 @@ pub trait WebDriverCommands {
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// driver.refresh().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -759,6 +782,7 @@ pub trait WebDriverCommands {
     /// #         assert_eq!(timeouts.script(), Some(Duration::new(1, 0)));
     /// #         assert_eq!(timeouts.page_load(), Some(Duration::new(2, 0)));
     /// #         assert_eq!(timeouts.implicit(), Some(Duration::new(3, 0)));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -790,6 +814,7 @@ pub trait WebDriverCommands {
     /// driver.set_timeouts(timeouts.clone()).await?;
     /// #         let got_timeouts = driver.get_timeouts().await?;
     /// #         assert_eq!(got_timeouts.page_load(), Some(Duration::new(11, 0)));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -826,6 +851,7 @@ pub trait WebDriverCommands {
     /// driver.set_implicit_wait_timeout(delay).await?;
     /// #         let got_timeouts = driver.get_timeouts().await?;
     /// #         assert_eq!(got_timeouts.implicit(), Some(delay));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -859,6 +885,7 @@ pub trait WebDriverCommands {
     /// driver.set_script_timeout(delay).await?;
     /// #         let got_timeouts = driver.get_timeouts().await?;
     /// #         assert_eq!(got_timeouts.script(), Some(delay));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -892,6 +919,7 @@ pub trait WebDriverCommands {
     /// driver.set_page_load_timeout(delay).await?;
     /// #         let got_timeouts = driver.get_timeouts().await?;
     /// #         assert_eq!(got_timeouts.page_load(), Some(delay));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -926,6 +954,7 @@ pub trait WebDriverCommands {
     ///     .perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("input-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "thirtyfour");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -954,6 +983,7 @@ pub trait WebDriverCommands {
     /// }
     /// #         assert_eq!(
     /// #             cookies.iter().filter(|x| x.value() == &serde_json::json!("value")).count(), 1);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -980,6 +1010,7 @@ pub trait WebDriverCommands {
     /// let cookie = driver.get_cookie("key").await?;
     /// println!("Got cookie: {}", cookie.value());
     /// #         assert_eq!(cookie.value(), &serde_json::json!("value"));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -1006,6 +1037,7 @@ pub trait WebDriverCommands {
     /// #         assert!(driver.get_cookie("key").await.is_ok());
     /// driver.delete_cookie("key").await?;
     /// #         assert!(driver.get_cookie("key").await.is_err());
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -1032,6 +1064,7 @@ pub trait WebDriverCommands {
     /// driver.delete_all_cookies().await?;
     /// #         assert!(driver.get_cookie("key").await.is_err());
     /// #         assert!(driver.get_cookies().await?.is_empty());
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -1056,6 +1089,7 @@ pub trait WebDriverCommands {
     /// driver.add_cookie(cookie).await?;
     /// #         let got_cookie = driver.get_cookie("key").await?;
     /// #         assert_eq!(got_cookie.value(), &serde_json::json!("value"));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -1122,6 +1156,7 @@ pub trait WebDriverCommands {
     /// // Switch back to original tab using window name.
     /// driver.switch_to().window_name("main").await?;
     /// assert_eq!(driver.current_window_handle().await?, handle);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }

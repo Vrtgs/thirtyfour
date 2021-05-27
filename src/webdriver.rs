@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use log::error;
 use serde::Serialize;
 use serde_json::Value;
 use std::marker::PhantomData;
@@ -13,7 +12,6 @@ use crate::{
     common::command::Command, error::WebDriverResult, session::WebDriverSession,
     DesiredCapabilities, SessionId,
 };
-use futures::executor::block_on;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -47,6 +45,7 @@ pub type WebDriver = GenericWebDriver<HttpClientAsync>;
 ///         let caps = DesiredCapabilities::chrome();
 ///         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 ///         driver.get("http://webappdemo").await?;
+///         driver.quit().await?;
 ///         Ok(())
 ///     })
 /// }
@@ -54,9 +53,7 @@ pub type WebDriver = GenericWebDriver<HttpClientAsync>;
 #[derive(Debug)]
 pub struct GenericWebDriver<T: WebDriverHttpClientAsync + 'static> {
     pub session: WebDriverSession,
-    http_create_params: HttpClientCreateParams,
     capabilities: Value,
-    quit_on_drop: bool,
     phantom: PhantomData<T>,
 }
 
@@ -81,6 +78,7 @@ where
     /// #     block_on(async {
     /// let caps = DesiredCapabilities::chrome();
     /// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -107,6 +105,7 @@ where
     /// #     block_on(async {
     /// let caps = DesiredCapabilities::chrome();
     /// let driver = WebDriver::new_with_timeout("http://localhost:4444/wd/hub", &caps, Some(Duration::from_secs(120))).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -123,15 +122,13 @@ where
             server_url: server_url.to_string(),
             timeout,
         };
-        let conn = T::create(params.clone())?;
+        let conn = T::create(params)?;
 
         let (session_id, session_capabilities) = start_session(&conn, capabilities).await?;
 
         let driver = GenericWebDriver {
             session: WebDriverSession::new(session_id, Arc::new(Mutex::new(conn))),
-            http_create_params: params,
             capabilities: session_capabilities,
-            quit_on_drop: true,
             phantom: PhantomData,
         };
 
@@ -144,9 +141,8 @@ where
     }
 
     /// End the webdriver session.
-    pub async fn quit(mut self) -> WebDriverResult<()> {
+    pub async fn quit(self) -> WebDriverResult<()> {
         self.cmd(Command::DeleteSession).await?;
-        self.quit_on_drop = false;
         Ok(())
     }
 
@@ -175,6 +171,7 @@ where
     /// let caps = DesiredCapabilities::chrome();
     /// let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// driver.set_request_timeout(Duration::from_secs(180)).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -191,19 +188,5 @@ where
 {
     fn session(&self) -> &WebDriverSession {
         &self.session
-    }
-}
-
-impl<T: 'static> Drop for GenericWebDriver<T>
-where
-    T: WebDriverHttpClientAsync,
-{
-    /// Close the current session when the WebDriver struct goes out of scope.
-    fn drop(&mut self) {
-        if self.quit_on_drop && !self.session.session_id().is_empty() {
-            if let Err(e) = block_on(self.cmd(Command::DeleteSession)) {
-                error!("Failed to close session: {:?}", e);
-            }
-        }
     }
 }

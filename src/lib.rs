@@ -14,7 +14,6 @@
 //! - Synchronous support (use the `thirtyfour_sync` crate)
 //! - Create new browser session directly via WebDriver (e.g. chromedriver)
 //! - Create new browser session via Selenium Standalone or Grid
-//! - Automatically close browser session on drop
 //! - Find elements (via all common selectors e.g. Id, Class, CSS, Tag, XPath)
 //! - Send keys to elements, including key-combinations
 //! - Execute Javascript
@@ -90,6 +89,9 @@
 //!     // Get text value of element.
 //!     let elem_result = driver.find_element(By::Id("input-result")).await?;
 //!     assert_eq!(elem_result.text().await?, "selenium");
+//!
+//!     // Close the browser session.
+//!     driver.quit().await?;
 //!
 //!     Ok(())
 //! }

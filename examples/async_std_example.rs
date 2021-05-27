@@ -35,5 +35,8 @@ async fn main() -> color_eyre::Result<()> {
     driver.find_element(By::ClassName("firstHeading")).await?;
     assert_eq!(driver.title().await?, "Selenium - Wikipedia");
 
+    // Always explicitly close the browser. There are no async destructors.
+    driver.quit().await?;
+
     Ok(())
 }

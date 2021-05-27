@@ -69,6 +69,7 @@ impl<'a> ActionChain<'a> {
     /// driver.action_chain().reset_actions().await?;
     /// // Mouse button is now released.
     /// assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -102,6 +103,7 @@ impl<'a> ActionChain<'a> {
     /// driver.action_chain().move_to_element_center(&elem).click().perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -130,6 +132,7 @@ impl<'a> ActionChain<'a> {
     /// driver.action_chain().click_element(&elem).perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -157,6 +160,7 @@ impl<'a> ActionChain<'a> {
     /// #         assert_eq!(elem_result.text().await?, "Button 1 down");
     /// #         driver.action_chain().release().perform().await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -187,6 +191,7 @@ impl<'a> ActionChain<'a> {
     /// #         assert_eq!(elem_result.text().await?, "Button 1 down");
     /// #         driver.action_chain().release().perform().await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -211,6 +216,7 @@ impl<'a> ActionChain<'a> {
     /// driver.action_chain().move_to_element_center(&elem).context_click().perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 right-clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -239,6 +245,7 @@ impl<'a> ActionChain<'a> {
     /// driver.action_chain().context_click_element(&elem).perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 right-clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -263,6 +270,7 @@ impl<'a> ActionChain<'a> {
     /// driver.action_chain().move_to_element_center(&elem).double_click().perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 double-clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -292,6 +300,7 @@ impl<'a> ActionChain<'a> {
     /// driver.action_chain().double_click_element(&elem).perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 double-clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -366,6 +375,7 @@ impl<'a> ActionChain<'a> {
     /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain().click_element(&elem).key_down('a').perform().await?;
     /// #         assert_eq!(elem.value().await?, Some("a".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -396,6 +406,7 @@ impl<'a> ActionChain<'a> {
     /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain().key_down_on_element(&elem, 'a').perform().await?;
     /// #         assert_eq!(elem.value().await?, Some("a".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -430,6 +441,7 @@ impl<'a> ActionChain<'a> {
     ///     .key_down('b')
     ///     .perform().await?;
     /// assert_eq!(elem.value().await?, Some("b".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -466,6 +478,7 @@ impl<'a> ActionChain<'a> {
     ///     .key_down('b')
     ///     .perform().await?;
     /// assert_eq!(elem.value().await?, Some("b".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -497,6 +510,7 @@ impl<'a> ActionChain<'a> {
     ///     .perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -531,6 +545,7 @@ impl<'a> ActionChain<'a> {
     ///     .perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 2 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -560,6 +575,7 @@ impl<'a> ActionChain<'a> {
     ///     .perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -601,6 +617,7 @@ impl<'a> ActionChain<'a> {
     /// let elem_tgt = driver.find_element(By::Name("input1")).await?;
     /// elem_tgt.send_keys(Keys::Control + "v").await?;
     /// #         assert_eq!(elem_tgt.value().await?, Some("Button 1 clicked".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -634,6 +651,7 @@ impl<'a> ActionChain<'a> {
     /// #         assert_eq!(elem_result.text().await?, "Button 1 down");
     /// driver.action_chain().release().perform().await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -662,6 +680,7 @@ impl<'a> ActionChain<'a> {
     /// #         assert_eq!(elem_result.text().await?, "Button 1 down");
     /// driver.action_chain().release_on_element(&elem).perform().await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -694,6 +713,7 @@ impl<'a> ActionChain<'a> {
     ///     .perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("input-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "selenium");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -731,6 +751,7 @@ impl<'a> ActionChain<'a> {
     ///     .perform().await?;
     /// #         let elem_result = driver.find_element(By::Id("input-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "selenium");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }

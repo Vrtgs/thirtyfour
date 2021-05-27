@@ -50,6 +50,7 @@ impl<'a> SwitchTo<'a> {
     /// elem.send_keys("selenium").await?;
     /// #         let elem = driver.find_element(By::Name("input1")).await?;
     /// #         assert_eq!(elem.value().await?, Some("selenium".to_string()));
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -85,6 +86,7 @@ impl<'a> SwitchTo<'a> {
     /// driver.switch_to().default_content().await?;
     /// // We are now back in the original window.
     /// #         driver.find_element(By::Id("iframeid1")).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -112,6 +114,7 @@ impl<'a> SwitchTo<'a> {
     /// elem.click().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -140,6 +143,7 @@ impl<'a> SwitchTo<'a> {
     /// elem.click().await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -172,6 +176,7 @@ impl<'a> SwitchTo<'a> {
     /// driver.switch_to().parent_frame().await?;
     /// // We are now back in the parent document.
     /// #         driver.find_element(By::Id("iframeid1")).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -204,6 +209,7 @@ impl<'a> SwitchTo<'a> {
     /// #         driver.find_element(By::Id("button1")).await?;
     /// #         driver.switch_to().window(&handles[0]).await?;
     /// #         driver.find_element(By::Name("input1")).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -238,6 +244,7 @@ impl<'a> SwitchTo<'a> {
     /// driver.switch_to().window_name("mywindow").await?;
     /// // We are now back in the original tab.
     /// assert_eq!(driver.title().await?, "Demo Web App");
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }

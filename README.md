@@ -15,7 +15,6 @@ For synchronous support, use the [thirtyfour_sync](https://docs.rs/thirtyfour_sy
 - Async / await support (both **tokio** and **async-std** runtimes supported via feature flags)
 - Create new browser session directly via WebDriver (e.g. chromedriver)
 - Create new browser session via Selenium Standalone or Grid
-- Automatically close browser session on drop
 - Find elements (via all common selectors e.g. Id, Class, CSS, Tag, XPath)
 - Send keys to elements, including key-combinations
 - Execute Javascript
@@ -82,6 +81,8 @@ async fn main() -> WebDriverResult<()> {
      // Look for header to implicitly wait for the page to load.
      driver.find_element(By::ClassName("firstHeading")).await?;
      assert_eq!(driver.title().await?, "Selenium - Wikipedia");
+    
+     driver.quit().await?;
 
      Ok(())
 }
@@ -157,13 +158,6 @@ All WebElement structs share a reference to the WebDriverSession which
 provdes a compile-time guarantee that no element or alert struct (for example)
 will outlast the browser session. This should prevent issues where something 
 attempts to send a command to a browser session that has already been closed.
-
-Note also that the WebDriver struct will attempt to close the
-session / browser on Drop, and hence this struct cannot be cloned.
-There are ways to allow cloning, for example, by making sure none of
-the clones will attempt to close the session on Drop. I'm not yet
-convinced this is a requirement. Please raise an issue if you need this
-functionality, and explain your use case.
 
 By embedding a reference to the actual WebDriverSession inside each
 struct such as WebElement, this also enables things such as easily adding
