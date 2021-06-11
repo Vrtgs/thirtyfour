@@ -522,7 +522,7 @@ impl<'a> WebElement<'a> {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement<'a>> {
+    pub async fn find_element(&self, by: By<'_>) -> WebDriverResult<WebElement<'a>> {
         let v = self
             .cmd(Command::FindElementFromElement(self.element_id.clone(), by.get_w3c_selector()))
             .await?;
