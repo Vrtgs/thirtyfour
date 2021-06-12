@@ -48,8 +48,10 @@ base64 = "0.13"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
 displaydoc = "0.1"
+stringmatch = "0.3"
 
 [dev-dependencies]
+regex = "1"
 color-eyre = "0.5"
 
 [[example]]
@@ -75,3 +77,8 @@ required-features = ["tokio-runtime"]
 [[example]]
 name = "chrome_devtools"
 required-features = ["tokio-runtime"]
+
+[[example]]
+name = "wikipedia"
+path = "examples/query/wikipedia.rs"
+required-features = []

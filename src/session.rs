@@ -30,7 +30,7 @@ impl WebDriverSession {
         Self {
             session_id,
             conn,
-            config: WebDriverConfig::new(),
+            config: WebDriverConfig::default(),
         }
     }
 
@@ -44,6 +44,11 @@ impl WebDriverSession {
 
     pub fn config_mut(&mut self) -> &mut WebDriverConfig {
         &mut self.config
+    }
+
+    /// Reset the WebDriver configuration back to the defaults.
+    pub fn config_clear(&mut self) {
+        self.config = WebDriverConfig::default()
     }
 
     pub async fn execute(

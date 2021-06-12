@@ -25,6 +25,7 @@ For synchronous support, use the [thirtyfour_sync](https://docs.rs/thirtyfour_sy
 - Alert support
 - Capture / Save screenshot of browser or individual element as PNG
 - Chrome DevTools Protocol (CDP) support
+- Advanced query interface including explicit waits and various predicates
 
 ## Why 'thirtyfour' ?
 
@@ -35,7 +36,7 @@ It is named after the atomic number for the Selenium chemical element (Se).
 - `tokio-runtime`: (Default) Use the **tokio** async runtime with the [reqwest](https://docs.rs/reqwest) http client.
 - `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
 
-  **NOTE**: You cannot combine `async-std-runtime` with `tokio-runtime`
+  **NOTE:** There are also additional features for enabling TLS. See the API documentation for details.
 
 ## Examples
 
@@ -90,12 +91,72 @@ async fn main() -> WebDriverResult<()> {
 
 ### Advanced element queries
 
-See the (experimental) [thirtyfour_query](https://github.com/stevepryde/thirtyfour_query) crate for 
-more advanced element queries and polling options.
+#### ElementQuery
+
+The `WebDriver::query()` and `WebElement::query()` methods return an `ElementQuery` struct.
+
+Using `ElementQuery`, you can do things like:
+
+```rust
+let elem_text =
+    driver.query(By::Css("match.this")).or(By::Id("orThis")).first().await?;
+```
+
+This will execute both queries once per poll iteration and return the first one that matches.
+You can also filter on one or both query branches like this:
+
+```rust
+driver.query(By::Css("branch.one")).with_text("testing")
+    .or(By::Id("branchTwo")).with_class("search").and_not_enabled()
+    .first().await?;
+```
+
+The `all()` method will return an empty Vec if no elements were found.
+In order to return an error in this scenario, use the `all_required()` method instead.
+
+`ElementQuery` also allows the use of custom predicates that take a `&WebElement` argument
+and return a `WebDriverResult<bool>`.
+
+As noted above, the `query()` method is also available on `WebElement` structs as well for querying elements
+in relation to a particular element in the DOM.
+
+#### ElementWaiter
+
+The `WebElement::wait_until()` method returns an `ElementWaiter` struct.
+
+Using `ElementWaiter` you can do things like this:
+
+```rust
+elem.wait_until().displayed().await?;
+// You can optionally provide a nicer error message like this.
+elem.wait_until().error("Timed out waiting for element to disappear").not_displayed().await?;
+
+elem.wait_until().enabled().await?;
+elem.wait_until().clickable().await?;
+```
+
+And so on. See the `ElementWaiter` docs for the full list of predicates available.
+
+`ElementWaiter` also allows the use of custom predicates that take a `&WebElement` argument
+and return a `WebDriverResult<bool>`.
+
+A range of pre-defined predicates are also supplied for convenience in the
+`thirtyfour::query::conditions` module.
+
+```rust
+use thirtyfour::query::conditions;
+
+elem.wait_until().conditions(vec![
+    conditions::element_is_displayed(true),
+    conditions::element_is_clickable(true)
+]).await?;
+```
+
+These predicates (or your own) can also be supplied as filters to `ElementQuery`.
 
 ## Running against selenium
 
-*NOTE:* To run the selenium example, start selenium (instructions below) then run:
+**NOTE:** To run the selenium example, start selenium (instructions below) then run:
 
     cargo run --example selenium_example
 

@@ -24,6 +24,7 @@
 //! - Alert support
 //! - Capture / Save screenshot of browser or individual element as PNG
 //! - Chrome DevTools Protocol (CDP) support
+//! - Advanced query interface including explicit waits and various predicates
 //!
 //! ## Feature Flags
 //!
@@ -127,6 +128,7 @@ pub use webelement::WebElement;
 pub mod prelude {
     pub use crate::alert::Alert;
     pub use crate::error::WebDriverResult;
+    pub use crate::query::{ElementQueryable, ElementWaitable};
     pub use crate::switch_to::SwitchTo;
     pub use crate::webdriver::WebDriver;
     pub use crate::webdrivercommands::{ScriptRet, WebDriverCommands};
@@ -201,3 +203,6 @@ pub mod components {
 
 /// Error types.
 pub mod error;
+
+// ElementQuery and ElementWaiter interfaces.
+pub mod query;

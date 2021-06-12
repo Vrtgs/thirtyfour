@@ -1,0 +1,166 @@
+//! Advanced query interface featuring powerful filtering and polling options.
+//!
+//! See examples for more details.
+//!
+//! ## Usage
+//!
+//! ### ElementQuery
+//!
+//! First, import the following:
+//! ```ignore
+//! use thirtyfour::query::{ElementPoller, ElementQueryable};
+//! ```
+//!
+//! Optionally, you can change the default polling behaviour. By default it will
+//! poll every 500 milliseconds for up to 20 seconds.
+//! ```rust
+//! # use thirtyfour::prelude::*;
+//! # use thirtyfour::support::block_on;
+//! # use thirtyfour::query::ElementPoller;
+//! # use std::time::Duration;
+//! #
+//! # fn main() -> WebDriverResult<()> {
+//! #     block_on(async {
+//! #         let caps = DesiredCapabilities::chrome();
+//! #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+//! let poller = ElementPoller::TimeoutWithInterval(Duration::new(10, 0), Duration::from_millis(500));
+//! driver.set_query_poller(poller);
+//! #         driver.quit().await?;
+//! #         Ok(())
+//! #     })
+//! # }
+//! ```
+//!
+//! Other ElementPoller options are also available, such as NoWait and NumTriesWithInterval.
+//! These can also be overridden on a per-query basis if needed.
+//!
+//! Now, using the query interface you can do things like this:
+//!
+//! ```rust
+//! # use thirtyfour::prelude::*;
+//! # use thirtyfour::support::block_on;
+//! #
+//! # fn main() -> WebDriverResult<()> {
+//! #     block_on(async {
+//! #         let caps = DesiredCapabilities::chrome();
+//! #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+//! # driver.get("http://webappdemo").await?;
+//! // This will only poll once and then return immediately.
+//! let elem_found = driver.query(By::Id("button1")).nowait().exists().await?;
+//! # assert_eq!(elem_found, true);
+//!
+//! // This will poll until either branch matches at least one element.
+//! // Only the first matched element will be returned.
+//! let elem = driver.query(By::Css("thiswont.match")).or(By::Id("button1")).first().await?;
+//! #         assert_eq!(elem.tag_name().await?, "button");
+//! #         driver.quit().await?;
+//! #         Ok(())
+//! #     })
+//! # }
+//! ```
+//!
+//! This will execute both queries once per poll iteration and return the first one that matches.
+//!
+//! You can also filter on one or both query branches like this:
+//!
+//! ```rust
+//! # use thirtyfour::prelude::*;
+//! # use thirtyfour::support::block_on;
+//! # use thirtyfour::query::StringMatch;
+//! # use std::time::Duration;
+//! #
+//! # fn main() -> WebDriverResult<()> {
+//! #     block_on(async {
+//! #         let caps = DesiredCapabilities::chrome();
+//! #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+//! # driver.get("http://webappdemo").await?;
+//! let elem = driver.query(By::Css("thiswont.match")).with_text("testing")
+//!     .or(By::Id("button1")).with_class(StringMatch::new("pure-button").word()).and_enabled()
+//!     .first().await?;
+//! #         assert_eq!(elem.tag_name().await?, "button");
+//! #         driver.quit().await?;
+//! #         Ok(())
+//! #     })
+//! # }
+//! ```
+//!
+//! Note the use of `StringMatch` to provide a partial (whole-word) match on the class name.
+//! See the documentation for [StringMatch](https://crates.io/crates/stringmatch) for more info.
+//!
+//! **NOTE:** Each filter will trigger an additional request to the WebDriver server for every poll
+//! iteration. It is therefore strongly recommended to use `By::*` selectors to perform filtering,
+//! if possible.
+//!
+//! To fetch all matching elements instead of just the first one, simply change `first()` to `all()`
+//! and you'll get a Vec instead. Note that `all()` will return only the elements from the query
+//! branch that first matched something. In the above example, if the
+//! `(By::Css("branch.one")).with_text("testing")` branch returned at least one element, then only
+//! those elements will be returned from an `all()` call even if the other branch would have
+//! matched something. If you want to fetch all elements matched by all branches,
+//! it's probably best to execute multiple queries.
+//!
+//! All timeout, interval and ElementPoller details can be overridden on a per-call basis if
+//! desired. See the `ElementQuery` documentation for more details.
+//!
+//! ### ElementWaiter
+//!
+//! First, import the following:
+//! ```ignore
+//! use thirtyfour::query::{ElementPoller, ElementWaitable};
+//! ```
+//!
+//! Now you can do things like this:
+//! ```ignore
+//! elem.wait_until().displayed().await?;
+//! // You can optionally provide a nicer error message like this.
+//! elem.wait_until().error("Timed out waiting for element to disappear").not_displayed().await?;
+//!
+//! elem.wait_until().enabled().await?;
+//! elem.wait_until().clickable().await?;
+//! ```
+//!
+//! And so on. See the `ElementWaiter` docs for the full list of predicates available.
+//!
+//! ElementWaiter also allows the user of custom predicates that take a `&WebElement` argument
+//! and return a `WebDriverResult<bool>`.
+//!
+//! A range of pre-defined predicates are also supplied for convenience in the
+//! `thirtyfour::query::conditions` module.
+//!
+//! ```ignore
+//! use thirtyfour_query::conditions;
+//!
+//! elem.wait_until().conditions(vec![
+//!     conditions::element_is_displayed(true),
+//!     conditions::element_is_clickable(true)
+//! ]).await?;
+//! ```
+//! Take a look at the `conditions` module for the full list of predicates available.
+//! NOTE: Predicates require you to specify whether or not errors should be ignored.
+//!
+//! These predicates (or your own) can also be supplied as filters to `ElementQuery`.
+//!
+
+pub mod conditions;
+mod element_query;
+mod element_waiter;
+mod poller;
+pub use element_query::*;
+pub use element_waiter::*;
+pub use poller::*;
+
+use futures::Future;
+use std::pin::Pin;
+/// Re-export stringmatch::StringMatch for convenience.
+pub use stringmatch::StringMatch;
+
+/// Function signature for element predicates.
+pub type ElementPredicate = Box<
+    dyn for<'a> Fn(
+            &'a crate::webelement::WebElement<'a>,
+        )
+            -> Pin<Box<dyn Future<Output = crate::error::WebDriverResult<bool>> + Send + 'a>>
+        + Send
+        + Sync
+        + 'static,
+>;

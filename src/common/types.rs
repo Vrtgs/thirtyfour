@@ -215,6 +215,17 @@ pub struct TimeoutConfiguration {
     implicit: Option<u64>,
 }
 
+impl Default for TimeoutConfiguration {
+    fn default() -> Self {
+        TimeoutConfiguration::new(
+            Some(Duration::from_secs(60)),
+            Some(Duration::from_secs(60)),
+            // NOTE: Implicit wait must default to zero in order to support ElementQuery.
+            Some(Duration::from_secs(0)),
+        )
+    }
+}
+
 impl TimeoutConfiguration {
     pub fn new(
         script: Option<Duration>,

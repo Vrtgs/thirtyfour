@@ -76,12 +76,8 @@ where
     });
 
     // Set default timeouts.
-    let timeout_config = TimeoutConfiguration::new(
-        Some(Duration::new(60, 0)),
-        Some(Duration::new(60, 0)),
-        Some(Duration::new(30, 0)),
-    );
-    conn.execute(Command::SetTimeouts(timeout_config).format_request(&session_id)).await?;
+    conn.execute(Command::SetTimeouts(TimeoutConfiguration::default()).format_request(&session_id))
+        .await?;
 
     Ok((session_id, data.capabilities))
 }
