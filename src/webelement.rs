@@ -522,7 +522,7 @@ impl<'a> WebElement<'a> {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_element(&self, by: By<'a>) -> WebDriverResult<WebElement<'a>> {
+    pub async fn find_element(&self, by: By<'_>) -> WebDriverResult<WebElement<'a>> {
         let v = self
             .cmd(Command::FindElementFromElement(self.element_id.clone(), by.get_w3c_selector()))
             .await?;
@@ -553,7 +553,7 @@ impl<'a> WebElement<'a> {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_elements(&self, by: By<'a>) -> WebDriverResult<Vec<WebElement<'a>>> {
+    pub async fn find_elements(&self, by: By<'_>) -> WebDriverResult<Vec<WebElement<'a>>> {
         let v = self
             .cmd(Command::FindElementsFromElement(self.element_id.clone(), by.get_w3c_selector()))
             .await?;
