@@ -57,9 +57,9 @@ pub struct GenericWebDriver<T: WebDriverHttpClientAsync + 'static> {
     phantom: PhantomData<T>,
 }
 
-impl<T: 'static> GenericWebDriver<T>
+impl<T> GenericWebDriver<T>
 where
-    T: WebDriverHttpClientAsync,
+    T: WebDriverHttpClientAsync + 'static,
 {
     /// The GenericWebDriver struct is not intended to be created directly.
     ///
