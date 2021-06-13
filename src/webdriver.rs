@@ -140,7 +140,11 @@ where
         DesiredCapabilities::new(self.capabilities.clone())
     }
 
-    /// End the webdriver session.
+    /// End the webdriver session and close the browser.
+    ///
+    /// **NOTE:** The browser will not close automatically when `WebDriver` goes out of scope.
+    ///           Thus if you intend for the browser to close once you are done with it, then
+    ///           you must call this method at that point, and await it.
     pub async fn quit(self) -> WebDriverResult<()> {
         self.cmd(Command::DeleteSession).await?;
         Ok(())
