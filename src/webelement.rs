@@ -502,6 +502,9 @@ impl<'a> WebElement<'a> {
     /// Search for a child element of this WebElement using the specified
     /// selector.
     ///
+    /// **NOTE**: For more powerful element queries including polling and filters, see the
+    ///  [WebElement::query()](struct.WebElement.html#impl-ElementQueryable) method instead.
+    ///
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
@@ -531,6 +534,9 @@ impl<'a> WebElement<'a> {
 
     /// Search for all child elements of this WebElement that match the
     /// specified selector.
+    ///
+    /// **NOTE**: For more powerful element queries including polling and filters, see the
+    /// [WebElement::query()](struct.WebElement.html#impl-ElementQueryable) method instead.
     ///
     /// # Example:
     /// ```rust

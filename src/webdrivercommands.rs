@@ -86,14 +86,6 @@ where
 ///
 /// ----
 ///
-/// **NOTE:** Due to the use of `async_trait`, the documentation for this
-/// trait can be difficult to read. If you are finding it difficult to parse
-/// all the lifetime annotations etc you may find it easier to follow
-/// the [sync documentation](sync/trait.WebDriverCommands.html) instead.
-/// Just remember to add `.await` after each method call.
-///
-/// ----
-///
 /// `Thirtyfour` is structured as follows:
 /// - The `WebDriverCommands` trait contains all of the methods you would
 ///   typically call in order to interact with the browser.
@@ -260,6 +252,9 @@ pub trait WebDriverCommands {
 
     /// Search for an element on the current page using the specified selector.
     ///
+    /// **NOTE**: For more powerful element queries including polling and filters, see the
+    /// [WebDriver::query()](type.WebDriver.html) method instead.
+    ///
     /// # Example:
     /// ```rust
     /// # use thirtyfour::prelude::*;
@@ -284,8 +279,10 @@ pub trait WebDriverCommands {
         convert_element_async(self.session(), &v["value"])
     }
 
-    /// Search for all elements on the current page that match the specified
-    /// selector.
+    /// Search for all elements on the current page that match the specified selector.
+    ///
+    /// **NOTE**: For more powerful element queries including polling and filters, see the
+    /// [WebDriver::query()](type.WebDriver.html) method instead.
     ///
     /// # Example:
     /// ```rust
@@ -790,9 +787,15 @@ pub trait WebDriverCommands {
 
     /// Set all timeouts for the current session.
     ///
-    /// NOTE: If you set timeouts to values greater than 120 seconds,
-    ///       remember to also increase the request timeout.
-    ///       See `WebDriver::set_request_timeout()` for more details.
+    /// **NOTE:** Setting the implicit wait timeout to a non-zero value will interfere with the use
+    /// of [WebDriver::query()](query/index.html), [WebElement::query()](query/index.html) and
+    /// [WebElement::wait_until()](query/index.html).
+    /// It is therefore recommended to use these methods (which provide polling
+    /// and explicit waits) instead rather than increasing the implicit wait timeout.
+    ///
+    /// **NOTE:** If you set timeouts to values greater than 120 seconds,
+    ///           remember to also increase the request timeout.
+    ///           See `WebDriver::set_request_timeout()` for more details.
     ///
     /// # Example:
     /// ```rust
@@ -822,15 +825,17 @@ pub trait WebDriverCommands {
     /// Set the implicit wait timeout. This is how long the WebDriver will
     /// wait when querying elements.
     ///
-    /// By default this is set to 30 seconds.
+    /// By default this is set to 0 seconds.
     ///
-    /// **NOTE:** Depending on the kind of testing you want to do, you may
-    /// find it more reliable to set the implicit wait time to 0 (no wait)
-    /// and implement your own polling loop outside of `thirtyfour`.
+    /// **NOTE:** Setting this to a higher number will interfere with the use of
+    /// [WebDriver::query()](query/index.html), [WebElement::query()](query/index.html) and
+    /// [WebElement::wait_until()](query/index.html).
+    /// It is therefore recommended to use these methods (which provide polling
+    /// and explicit waits) instead rather than increasing the implicit wait timeout.
     ///
-    /// NOTE: If you set timeouts to values greater than 120 seconds,
-    ///       remember to also increase the request timeout.
-    ///       See `WebDriver::set_request_timeout()` for more details.
+    /// **NOTE:** If you set timeouts to values greater than 120 seconds,
+    ///           remember to also increase the request timeout.
+    ///           See `WebDriver::set_request_timeout()` for more details.
     ///
     /// # Example:
     /// ```rust
@@ -862,9 +867,9 @@ pub trait WebDriverCommands {
     ///
     /// By default this is set to 60 seconds.
     ///
-    /// NOTE: If you set timeouts to values greater than 120 seconds,
-    ///       remember to also increase the request timeout.
-    ///       See `WebDriver::set_request_timeout()` for more details.
+    /// **NOTE:** If you set timeouts to values greater than 120 seconds,
+    ///           remember to also increase the request timeout.
+    ///           See `WebDriver::set_request_timeout()` for more details.
     ///
     /// # Example:
     /// ```rust
@@ -896,9 +901,9 @@ pub trait WebDriverCommands {
     ///
     /// By default this is set to 60 seconds.
     ///
-    /// NOTE: If you set timeouts to values greater than 120 seconds,
-    ///       remember to also increase the request timeout.
-    ///       See `WebDriver::set_request_timeout()` for more details.
+    /// **NOTE:** If you set timeouts to values greater than 120 seconds,
+    ///           remember to also increase the request timeout.
+    ///           See `WebDriver::set_request_timeout()` for more details.
     ///
     /// # Example:
     /// ```rust

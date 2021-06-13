@@ -118,13 +118,15 @@ pub enum ElementQuerySource<'a> {
 /// #
 /// # fn main() -> WebDriverResult<()> {
 /// #     use thirtyfour::query::ElementPoller;
-/// block_on(async {
+/// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-/// driver.get("http://webappdemo").await?;
-///
-/// let elem = driver.query(By::Id("button1")).first().await?;
-/// #         assert_eq!(elem.tag_name().await?, "button");
+/// #         driver.get("http://webappdemo").await?;
+/// // WebDriver::query() example.
+/// let elem = driver.query(By::Css("div[data-section='section-buttons']")).first().await?;
+/// // WebElement::query() example.
+/// let elem_button = elem.query(By::Id("button1")).first().await?;
+/// #         assert_eq!(elem_button.tag_name().await?, "button");
 /// #         Ok(())
 /// #     })
 /// # }
@@ -343,7 +345,7 @@ impl<'a> ElementQuery<'a> {
     }
 
     /// Set the previous selector to only return the first matched element.
-    /// WARNING: Use with caution! This can result in (slightly) faster lookups, but will probably
+    /// WARNING: Use with caution! This may result in (slightly) faster lookups, but will probably
     ///          break any filters on this selector.
     ///
     /// If you are simply want to get the first element after filtering from a list,
@@ -695,6 +697,11 @@ pub trait ElementQueryable {
 
 impl ElementQueryable for WebElement<'_> {
     /// Return an ElementQuery instance for more executing powerful element queries.
+    ///
+    /// This uses the builder pattern to construct queries that will return one or
+    /// more elements, depending on the method specified at the end of the chain.
+    ///
+    /// See [ElementQuery](query/struct.ElementQuery.html) for more documentation.
     fn query<'a>(&'a self, by: By<'a>) -> ElementQuery<'a> {
         let poller: ElementPoller = self.session.config().query_poller.clone();
         ElementQuery::new(ElementQuerySource::Element(&self), poller, by)
@@ -703,6 +710,11 @@ impl ElementQueryable for WebElement<'_> {
 
 impl ElementQueryable for WebDriver {
     /// Return an ElementQuery instance for more executing powerful element queries.
+    ///
+    /// This uses the builder pattern to construct queries that will return one or
+    /// more elements, depending on the method specified at the end of the chain.
+    ///
+    /// See [ElementQuery](query/struct.ElementQuery.html) for more documentation.
     fn query<'a>(&'a self, by: By<'a>) -> ElementQuery<'a> {
         let poller: ElementPoller = self.session.config().query_poller.clone();
         ElementQuery::new(ElementQuerySource::Driver(&self.session), poller, by)

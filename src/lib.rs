@@ -98,6 +98,17 @@
 //! }
 //! # }
 //! ```
+//!
+//! ### Advanced element queries and explicit waits
+//!
+//! You can use `WebDriver::query()` and `WebElement::query()` to perform more advanced queries
+//! including polling and filtering. Custom filter functions are also supported.
+//!
+//! Also the `WebElement::wait_until()` method provides additional support for explicit waits
+//! using a variety of built-in predicates. You can also provide your own custom predicate if
+//! desired.
+//!
+//! See the [query](query/index.html) module documentation for more details.
 
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_doctest_main)]

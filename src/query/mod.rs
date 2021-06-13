@@ -6,33 +6,8 @@
 //!
 //! ### ElementQuery
 //!
-//! First, import the following:
-//! ```ignore
-//! use thirtyfour::query::{ElementPoller, ElementQueryable};
-//! ```
-//!
-//! Optionally, you can change the default polling behaviour. By default it will
-//! poll every 500 milliseconds for up to 20 seconds.
-//! ```rust
-//! # use thirtyfour::prelude::*;
-//! # use thirtyfour::support::block_on;
-//! # use thirtyfour::query::ElementPoller;
-//! # use std::time::Duration;
-//! #
-//! # fn main() -> WebDriverResult<()> {
-//! #     block_on(async {
-//! #         let caps = DesiredCapabilities::chrome();
-//! #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-//! let poller = ElementPoller::TimeoutWithInterval(Duration::new(10, 0), Duration::from_millis(500));
-//! driver.set_query_poller(poller);
-//! #         driver.quit().await?;
-//! #         Ok(())
-//! #     })
-//! # }
-//! ```
-//!
-//! Other ElementPoller options are also available, such as NoWait and NumTriesWithInterval.
-//! These can also be overridden on a per-query basis if needed.
+//! The `WebDriver::query()` and `WebElement::query()` methods work out-of-the-box with no
+//! additional setup required. However, you can customize some of the behaviour if needed.
 //!
 //! Now, using the query interface you can do things like this:
 //!
@@ -45,9 +20,9 @@
 //! #         let caps = DesiredCapabilities::chrome();
 //! #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
 //! # driver.get("http://webappdemo").await?;
-//! // This will only poll once and then return immediately.
-//! let elem_found = driver.query(By::Id("button1")).nowait().exists().await?;
-//! # assert_eq!(elem_found, true);
+//! // This will only poll once and then return a bool immediately.
+//! let is_found = driver.query(By::Id("button1")).nowait().exists().await?;
+//! # assert_eq!(is_found, true);
 //!
 //! // This will poll until either branch matches at least one element.
 //! // Only the first matched element will be returned.
@@ -89,7 +64,8 @@
 //!
 //! **NOTE:** Each filter will trigger an additional request to the WebDriver server for every poll
 //! iteration. It is therefore strongly recommended to use `By::*` selectors to perform filtering,
-//! if possible.
+//! if possible. The `By::Css` and `By::XPath` selectors may be required for more complex
+//! filters.
 //!
 //! To fetch all matching elements instead of just the first one, simply change `first()` to `all()`
 //! and you'll get a Vec instead. Note that `all()` will return only the elements from the query
@@ -139,6 +115,35 @@
 //! NOTE: Predicates require you to specify whether or not errors should be ignored.
 //!
 //! These predicates (or your own) can also be supplied as filters to `ElementQuery`.
+//!
+//! ### ElementPoller
+//!
+//! You can optionally change the default polling behaviour. The same poller will apply to
+//! both `ElementQuery` and `ElementWaiter`.
+//!
+//! See [ElementPoller::default()](query/enum.ElementPoller.html#impl-Default) for more details
+//! about the default polling behaviour.
+//! ```rust
+//! # use thirtyfour::prelude::*;
+//! # use thirtyfour::support::block_on;
+//! # use thirtyfour::query::ElementPoller;
+//! # use std::time::Duration;
+//! #
+//! # fn main() -> WebDriverResult<()> {
+//! #     block_on(async {
+//! #         let caps = DesiredCapabilities::chrome();
+//! #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+//! let poller = ElementPoller::TimeoutWithInterval(Duration::new(10, 0), Duration::from_millis(500));
+//! driver.set_query_poller(poller);
+//! #         driver.quit().await?;
+//! #         Ok(())
+//! #     })
+//! # }
+//! ```
+//!
+//! Other [ElementPoller](query/enum.ElementPoller.html) options are also available, such as
+//! `NoWait` and `NumTriesWithInterval`.
+//! These can also be overridden on a per-query basis if needed.
 //!
 
 pub mod conditions;

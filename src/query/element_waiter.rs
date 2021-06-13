@@ -6,6 +6,27 @@ use crate::WebElement;
 use std::time::Duration;
 use stringmatch::Needle;
 
+/// High-level interface for performing explicit waits using the builder pattern.
+///
+/// # Example:
+/// ```rust
+/// # use thirtyfour::prelude::*;
+/// # use thirtyfour::support::block_on;
+/// #
+/// # fn main() -> WebDriverResult<()> {
+/// #     use thirtyfour::query::ElementPoller;
+/// #     block_on(async {
+/// #         let caps = DesiredCapabilities::chrome();
+/// #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+/// #         driver.get("http://webappdemo").await?;
+/// #         let elem = driver.query(By::Id("button1")).first().await?;
+/// // Wait until the element is displayed.
+/// elem.wait_until().displayed().await?;
+/// #         assert!(elem.is_displayed().await?);
+/// #         Ok(())
+/// #     })
+/// # }
+/// ```
 #[derive(Debug, Clone)]
 pub struct ElementWaiter<'a> {
     element: &'a WebElement<'a>,
@@ -337,7 +358,12 @@ pub trait ElementWaitable {
 }
 
 impl ElementWaitable for WebElement<'_> {
-    /// Return an ElementQuery instance for more executing powerful element queries.
+    /// Return an ElementWaiter instance for more executing powerful explicit waits.
+    ///
+    /// This uses the builder pattern to construct explicit waits using one of the
+    /// provided predicates. Or you can provide your own custom predicate if desired.
+    ///
+    /// See [ElementWaiter](query/struct.ElementWaiter.html) for more documentation.
     fn wait_until(&self) -> ElementWaiter {
         let poller: ElementPoller = self.session.config().query_poller.clone();
         ElementWaiter::new(&self, poller)
