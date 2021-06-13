@@ -76,16 +76,11 @@
 //! it's probably best to execute multiple queries.
 //!
 //! All timeout, interval and ElementPoller details can be overridden on a per-call basis if
-//! desired. See the `ElementQuery` documentation for more details.
+//! desired. See the [ElementQuery](struct.ElementQuery.html) documentation for more details.
 //!
 //! ### ElementWaiter
 //!
-//! First, import the following:
-//! ```ignore
-//! use thirtyfour::query::{ElementPoller, ElementWaitable};
-//! ```
-//!
-//! Now you can do things like this:
+//! With `ElementWaiter` you can do things like this:
 //! ```ignore
 //! elem.wait_until().displayed().await?;
 //! // You can optionally provide a nicer error message like this.
@@ -95,9 +90,10 @@
 //! elem.wait_until().clickable().await?;
 //! ```
 //!
-//! And so on. See the `ElementWaiter` docs for the full list of predicates available.
+//! And so on. See the [ElementWaiter](struct.ElementWaiter.html) docs for the full
+//! list of predicates available.
 //!
-//! ElementWaiter also allows the user of custom predicates that take a `&WebElement` argument
+//! `ElementWaiter` also allows the user of custom predicates that take a `&WebElement` argument
 //! and return a `WebDriverResult<bool>`.
 //!
 //! A range of pre-defined predicates are also supplied for convenience in the
@@ -121,7 +117,7 @@
 //! You can optionally change the default polling behaviour. The same poller will apply to
 //! both `ElementQuery` and `ElementWaiter`.
 //!
-//! See [ElementPoller::default()](query/enum.ElementPoller.html#impl-Default) for more details
+//! See [ElementPoller::default()](enum.ElementPoller.html#impl-Default) for more details
 //! about the default polling behaviour.
 //! ```rust
 //! # use thirtyfour::prelude::*;
@@ -141,7 +137,7 @@
 //! # }
 //! ```
 //!
-//! Other [ElementPoller](query/enum.ElementPoller.html) options are also available, such as
+//! Other [ElementPoller](enum.ElementPoller.html) options are also available, such as
 //! `NoWait` and `NumTriesWithInterval`.
 //! These can also be overridden on a per-query basis if needed.
 //!
