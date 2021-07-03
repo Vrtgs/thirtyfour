@@ -61,7 +61,7 @@ impl FirefoxCapabilities {
 
     /// Set the firefox profile settings to use.
     pub fn set_profile(&mut self, profile: FirefoxProfile) -> WebDriverResult<()> {
-        self.add_firefox_option("profile", profile)
+        self.add_firefox_option("prefs", profile)
     }
 
     /// Add the specified command-line argument to `geckodriver`.
