@@ -59,7 +59,7 @@ impl FirefoxCapabilities {
         self.add("pageLoadingStrategy", strategy)
     }
 
-    /// Set the firefox profile settings to use.
+    /// Set the firefox preferences to use.
     pub fn set_preferences(&mut self, preferences: FirefoxPreferences) -> WebDriverResult<()> {
         self.add_firefox_option("prefs", preferences)
     }
