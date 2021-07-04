@@ -151,9 +151,9 @@ impl FirefoxPreferences {
         Ok(())
     }
 
-    /// Resets the specified firefox preference. This is a helper method for the various
+    /// Unsets the specified firefox preference. This is a helper method for the various
     /// specific option methods.
-    pub fn reset(&mut self, key: &str) -> WebDriverResult<()> {
+    pub fn unset(&mut self, key: &str) -> WebDriverResult<()> {
         self.preferences.remove(key);
         Ok(())
     }
@@ -163,9 +163,9 @@ impl FirefoxPreferences {
         self.set("webdriver_accept_untrusted_certs", value)
     }
 
-    /// Resets accept untrusted certs
-    pub fn reset_accept_untrusted_certs(&mut self) -> WebDriverResult<()> {
-        self.reset("webdriver_accept_untrusted_certs")
+    /// Unsets accept untrusted certs
+    pub fn unset_accept_untrusted_certs(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver_accept_untrusted_certs")
     }
 
     /// Sets assume untrusted issuer
@@ -173,9 +173,9 @@ impl FirefoxPreferences {
         self.set("webdriver_assume_untrusted_issuer", value)
     }
 
-    /// Resets assume untrusted issuer
-    pub fn reset_assume_untrusted_issuer(&mut self) -> WebDriverResult<()> {
-        self.reset("webdriver_assume_untrusted_issuer")
+    /// Unsets assume untrusted issuer
+    pub fn unset_assume_untrusted_issuer(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver_assume_untrusted_issuer")
     }
 
     /// Sets the log driver
@@ -183,9 +183,9 @@ impl FirefoxPreferences {
         self.set("webdriver.log.driver", value)
     }
 
-    /// Resets the log driver
-    pub fn reset_log_driver(&mut self) -> WebDriverResult<()> {
-        self.reset("webdriver.log.driver")
+    /// Unsets the log driver
+    pub fn unset_log_driver(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver.log.driver")
     }
 
     /// Sets the log file
@@ -193,9 +193,9 @@ impl FirefoxPreferences {
         self.set("webdriver.log.file", value)
     }
 
-    /// Resets the log file
-    pub fn reset_log_file(&mut self) -> WebDriverResult<()> {
-        self.reset("webdriver.log.file")
+    /// Unsets the log file
+    pub fn unset_log_file(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver.log.file")
     }
 
     /// Sets the load strategy
@@ -203,9 +203,9 @@ impl FirefoxPreferences {
         self.set("webdriver.load.strategy", value)
     }
 
-    /// Resets the load strategy
-    pub fn reset_load_strategy(&mut self) -> WebDriverResult<()> {
-        self.reset("webdriver.load.strategy")
+    /// Unsets the load strategy
+    pub fn unset_load_strategy(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver.load.strategy")
     }
 
     /// Sets the webdriver port
@@ -213,9 +213,9 @@ impl FirefoxPreferences {
         self.set("webdriver_firefox_port", value)
     }
 
-    /// Resets the webdriver port
-    pub fn reset_webdriver_port(&mut self) -> WebDriverResult<()> {
-        self.reset("webdriver_firefox_port")
+    /// Unsets the webdriver port
+    pub fn unset_webdriver_port(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver_firefox_port")
     }
 
     /// Sets the user agent
@@ -223,9 +223,9 @@ impl FirefoxPreferences {
         self.set("general.useragent.override", value)
     }
 
-    /// Resets the user agent
-    pub fn reset_user_agent(&mut self) -> WebDriverResult<()> {
-        self.reset("general.useragent.override")
+    /// Unsets the user agent
+    pub fn unset_user_agent(&mut self) -> WebDriverResult<()> {
+        self.unset("general.useragent.override")
     }
 }
 
