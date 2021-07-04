@@ -60,8 +60,8 @@ impl FirefoxCapabilities {
     }
 
     /// Set the firefox profile settings to use.
-    pub fn set_profile(&mut self, profile: FirefoxProfile) -> WebDriverResult<()> {
-        self.add_firefox_option("profile", profile)
+    pub fn set_preferences(&mut self, preferences: FirefoxPreferences) -> WebDriverResult<()> {
+        self.add_firefox_option("prefs", preferences)
     }
 
     /// Add the specified command-line argument to `geckodriver`.
@@ -123,19 +123,103 @@ pub enum LoggingPrefsLogLevel {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct FirefoxProfile {
-    #[serde(rename = "webdriver_accept_untrusted_certs", skip_serializing_if = "Option::is_none")]
-    pub accept_untrusted_certs: Option<bool>,
-    #[serde(rename = "webdriver_assume_untrusted_issuer", skip_serializing_if = "Option::is_none")]
-    pub assume_untrusted_issuer: Option<bool>,
-    #[serde(rename = "webdriver.log.driver", skip_serializing_if = "Option::is_none")]
-    pub log_driver: Option<FirefoxProfileLogDriver>,
-    #[serde(rename = "webdriver.log.file", skip_serializing_if = "Option::is_none")]
-    pub log_file: Option<String>,
-    #[serde(rename = "webdriver.load.strategy", skip_serializing_if = "Option::is_none")]
-    pub load_strategy: Option<String>,
-    #[serde(rename = "webdriver_firefox_port", skip_serializing_if = "Option::is_none")]
-    pub webdriver_port: Option<u16>,
+#[serde(transparent)]
+pub struct FirefoxPreferences {
+    preferences: Value,
+}
+
+impl Default for FirefoxPreferences {
+    fn default() -> Self {
+        FirefoxPreferences {
+            preferences: json!({}),
+        }
+    }
+}
+
+impl FirefoxPreferences {
+    pub fn get(&self) -> &Value {
+        &self.preferences
+    }
+
+    pub fn get_mut(&mut self) -> &mut Value {
+        &mut self.preferences
+    }
+}
+
+impl FirefoxPreferences {
+    pub fn new() -> Self {
+        FirefoxPreferences::default()
+    }
+
+    pub fn set<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
+    where
+        T: Serialize,
+    {
+        let v = self.get_mut();
+        v[key] = to_value(value)?;
+        Ok(())
+    }
+    pub fn unset(&mut self, key: &str) -> WebDriverResult<()> {
+        let v = self.get_mut().as_object_mut().unwrap(); // This is safe because it should allways be an object
+        v.remove(key);
+        Ok(())
+    }
+
+    pub fn set_accept_untrusted_certs(&mut self, value: bool) -> WebDriverResult<()> {
+        self.set("webdriver_accept_untrusted_certs", value)
+    }
+
+    pub fn unset_accept_untrusted_certs(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver_accept_untrusted_certs")
+    }
+
+    pub fn set_assume_untrusted_issuer(&mut self, value: bool) -> WebDriverResult<()> {
+        self.set("webdriver_assume_untrusted_issuer", value)
+    }
+
+    pub fn unset_assume_untrusted_issuer(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver_assume_untrusted_issuer")
+    }
+
+    pub fn set_log_driver(&mut self, value: FirefoxProfileLogDriver) -> WebDriverResult<()> {
+        self.set("webdriver.log.driver", value)
+    }
+
+    pub fn unset_log_driver(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver.log.driver")
+    }
+
+    pub fn set_log_file(&mut self, value: String) -> WebDriverResult<()> {
+        self.set("webdriver.log.file", value)
+    }
+
+    pub fn unset_log_file(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver.log.file")
+    }
+
+    pub fn set_load_strategy(&mut self, value: String) -> WebDriverResult<()> {
+        self.set("webdriver.load.strategy", value)
+    }
+
+    pub fn unset_load_strategy(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver.load.strategy")
+    }
+
+    pub fn set_webdriver_port(&mut self, value: u16) -> WebDriverResult<()> {
+        self.set("webdriver_firefox_port", value)
+    }
+
+    pub fn unset_webdriver_port(&mut self) -> WebDriverResult<()> {
+        self.unset("webdriver_firefox_port")
+    }
+
+    pub fn set_user_agent(&mut self, value: String) -> WebDriverResult<()> {
+        self.set("general.useragent.override", value)
+    }
+
+    pub fn unset_user_agent(&mut self) -> WebDriverResult<()> {
+        self.unset("general.useragent.override")
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
