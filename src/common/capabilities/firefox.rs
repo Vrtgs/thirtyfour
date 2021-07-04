@@ -147,7 +147,7 @@ impl FirefoxPreferences {
     where
         T: Serialize,
     {
-        self.preferences[key] = to_value(value)?;
+        self.preferences.insert(key.into(), to_value(value)?);
         Ok(())
     }
 
