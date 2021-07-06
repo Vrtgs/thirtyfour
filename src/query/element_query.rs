@@ -1,4 +1,3 @@
-use std::mem;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -83,7 +82,7 @@ impl<'a> ElementSelector<'a> {
         mut elements: Vec<WebElement<'b>>,
     ) -> WebDriverResult<Vec<WebElement<'b>>> {
         for func in &self.filters {
-            let tmp_elements = mem::replace(&mut elements, Vec::new());
+            let tmp_elements = std::mem::take(&mut elements);
             for element in tmp_elements {
                 if func(&element).await? {
                     elements.push(element);
