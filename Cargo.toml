@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.25.1"
+version = "0.26.0"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -81,4 +81,9 @@ required-features = ["tokio-runtime"]
 [[example]]
 name = "wikipedia"
 path = "examples/query/wikipedia.rs"
-required-features = []
+required-features = ["tokio-runtime"]
+
+[[example]]
+name = "firefox_preferences"
+path = "examples/firefox_preferences.rs"
+required-features = ["tokio-runtime"]
