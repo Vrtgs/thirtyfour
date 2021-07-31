@@ -217,26 +217,25 @@ impl<'a> ElementQuery<'a> {
 
     /// Return true if an element matches any selector, otherwise false.
     pub async fn exists(&self) -> WebDriverResult<bool> {
-        let elements = self.run_poller(false).await?;
-        Ok(!elements.is_empty())
+        Ok(self.first_opt().await?.is_some())
     }
 
     /// Return true if no element matches any selector, otherwise false.
     pub async fn not_exists(&self) -> WebDriverResult<bool> {
-        let elements = self.run_poller(true).await?;
-        Ok(elements.is_empty())
+        Ok(self.first_opt().await?.is_none())
+    }
+
+    /// Return only the first WebElement that matches any selector (including all of
+    /// the filters for that selector) .
+    pub async fn first_opt(&self) -> WebDriverResult<Option<WebElement<'a>>> {
+        let elements = self.run_poller(false).await?;
+        Ok(elements.into_iter().next())
     }
 
     /// Return only the first WebElement that matches any selector (including all of
     /// the filters for that selector).
     pub async fn first(&self) -> WebDriverResult<WebElement<'a>> {
-        let mut elements = self.run_poller(false).await?;
-
-        if elements.is_empty() {
-            Err(no_such_element(&self.selectors, &self.description))
-        } else {
-            Ok(elements.remove(0))
-        }
+        self.first_opt().await?.ok_or_else(|| no_such_element(&self.selectors, &self.description))
     }
 
     /// Return all WebElements that match any one selector (including all of the
