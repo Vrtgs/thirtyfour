@@ -69,6 +69,6 @@ impl WebDriverSession {
 #[async_trait]
 impl WebDriverCommands for WebDriverSession {
     fn session(&self) -> &WebDriverSession {
-        &self
+        self
     }
 }

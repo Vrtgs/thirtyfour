@@ -703,7 +703,7 @@ impl ElementQueryable for WebElement<'_> {
     /// See [ElementQuery](query/struct.ElementQuery.html) for more documentation.
     fn query<'a>(&'a self, by: By<'a>) -> ElementQuery<'a> {
         let poller: ElementPoller = self.session.config().query_poller.clone();
-        ElementQuery::new(ElementQuerySource::Element(&self), poller, by)
+        ElementQuery::new(ElementQuerySource::Element(self), poller, by)
     }
 }
 

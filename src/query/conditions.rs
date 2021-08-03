@@ -236,7 +236,7 @@ where
         let desired_attributes = desired_attributes.clone();
         Box::pin(async move {
             for (attribute_name, value) in &desired_attributes {
-                match elem.get_attribute(&attribute_name).await {
+                match elem.get_attribute(attribute_name).await {
                     Ok(Some(x)) => {
                         if !value.is_match(&x) {
                             return Ok(false);
@@ -267,7 +267,7 @@ where
         let desired_attributes = desired_attributes.clone();
         Box::pin(async move {
             for (attribute_name, value) in &desired_attributes {
-                match elem.get_attribute(&attribute_name).await {
+                match elem.get_attribute(attribute_name).await {
                     Ok(Some(x)) => {
                         if value.is_match(&x) {
                             return Ok(false);

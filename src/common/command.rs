@@ -158,7 +158,7 @@ impl FormatRequestData for Command {
     fn format_request(&self, session_id: &SessionId) -> RequestData {
         match self {
             Command::NewSession(caps) => {
-                let w3c_caps = make_w3c_caps(&caps);
+                let w3c_caps = make_w3c_caps(caps);
                 RequestData::new(RequestMethod::Post, "/session").add_body(json!({
                     "capabilities": w3c_caps,
                     "desiredCapabilities": caps

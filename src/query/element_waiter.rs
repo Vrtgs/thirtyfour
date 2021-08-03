@@ -78,7 +78,7 @@ impl<'a> ElementWaiter<'a> {
         loop {
             let mut conditions_met = true;
             for f in &conditions {
-                if !f(&self.element).await? {
+                if !f(self.element).await? {
                     conditions_met = false;
                     break;
                 }
@@ -366,7 +366,7 @@ impl ElementWaitable for WebElement<'_> {
     /// See [ElementWaiter](query/struct.ElementWaiter.html) for more documentation.
     fn wait_until(&self) -> ElementWaiter {
         let poller: ElementPoller = self.session.config().query_poller.clone();
-        ElementWaiter::new(&self, poller)
+        ElementWaiter::new(self, poller)
     }
 }
 

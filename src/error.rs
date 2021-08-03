@@ -37,7 +37,7 @@ impl std::fmt::Display for WebDriverErrorValue {
         let stacktrace = self
             .stacktrace
             .as_ref()
-            .map(|x| format!("Stacktrace:\n{}", indent_lines(&x, 4)))
+            .map(|x| format!("Stacktrace:\n{}", indent_lines(x, 4)))
             .unwrap_or_default();
         let error = self.error.as_ref().map(|x| format!("Error: {}", x)).unwrap_or_default();
         let data = self

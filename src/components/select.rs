@@ -156,7 +156,7 @@ impl<'a> SelectElement<'a> {
 
         let mut matched = false;
         for option in &options {
-            set_selected(&option, select).await?;
+            set_selected(option, select).await?;
             if !self.multiple {
                 return Ok(());
             }

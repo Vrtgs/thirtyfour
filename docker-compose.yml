@@ -1,11 +1,12 @@
 version: "3"
 services:
   selenium:
-    image: selenium/standalone-chrome:latest
+    image: selenium/standalone-chrome-debug:3.141.59-20210607
     volumes:
       - "/dev/shm:/dev/shm"
     ports:
       - "4444:4444"
+      - "5901:5900"
     environment:
       - NODE_MAX_INSTANCES=4
       - NODE_MAX_SESSION=4
