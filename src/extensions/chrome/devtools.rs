@@ -26,6 +26,7 @@ use crate::WebDriverSession;
 /// // Create a ChromeDevTools struct like this.
 /// let dev_tools = ChromeDevTools::new(driver.session());
 /// dev_tools.execute_cdp("Network.clearBrowserCache").await?;
+/// #         driver.quit().await?;
 /// #         Ok(())
 /// #     })
 /// # }
@@ -49,6 +50,7 @@ impl<'a> ChromeDevTools<'a> {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// let dev_tools = ChromeDevTools::new(driver.session());
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -93,6 +95,7 @@ impl<'a> ChromeDevTools<'a> {
     /// // Now we can get the network conditions.
     /// let conditions_out = dev_tools.get_network_conditions().await?;
     /// assert_eq!(conditions_out.download_throughput, conditions.download_throughput);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -130,6 +133,7 @@ impl<'a> ChromeDevTools<'a> {
     /// #         assert_eq!(conditions_out.upload_throughput, conditions.upload_throughput);
     /// #         assert_eq!(conditions_out.latency, conditions.latency);
     /// #         assert_eq!(conditions_out.offline, conditions.offline);
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -165,6 +169,7 @@ impl<'a> ChromeDevTools<'a> {
     /// // execute_cdp() can also return values as well.
     /// let version_info = dev_tools.execute_cdp("Browser.getVersion").await?;
     /// let user_agent = version_info["userAgent"].as_str().unwrap();
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
@@ -191,6 +196,7 @@ impl<'a> ChromeDevTools<'a> {
     /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
     /// let dev_tools = ChromeDevTools::new(driver.session());
     /// dev_tools.execute_cdp_with_params("Network.setCacheDisabled", json!({"cacheDisabled": true})).await?;
+    /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }

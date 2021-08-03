@@ -23,6 +23,7 @@ use stringmatch::Needle;
 /// // Wait until the element is displayed.
 /// elem.wait_until().displayed().await?;
 /// #         assert!(elem.is_displayed().await?);
+/// #         driver.quit().await?;
 /// #         Ok(())
 /// #     })
 /// # }

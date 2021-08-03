@@ -126,6 +126,7 @@ pub enum ElementQuerySource<'a> {
 /// // WebElement::query() example.
 /// let elem_button = elem.query(By::Id("button1")).first().await?;
 /// #         assert_eq!(elem_button.tag_name().await?, "button");
+/// #         driver.quit().await?;
 /// #         Ok(())
 /// #     })
 /// # }

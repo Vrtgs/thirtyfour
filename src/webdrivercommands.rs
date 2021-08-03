@@ -1213,6 +1213,7 @@ pub trait WebDriverCommands {
     ///         let response = driver.extension_command(install_command).await?;
     ///
     ///         assert_eq!(response.is_string(), true);
+    ///         driver.quit().await?;
     ///
     ///         Ok(())
     ///     })
