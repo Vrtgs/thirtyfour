@@ -229,6 +229,13 @@ impl<'a> ElementQuery<'a> {
     }
 
     /// Return only the first WebElement that matches any selector (including all of
+    /// the filters for that selector) .
+    pub async fn first_opt(&self) -> WebDriverResult<Option<WebElement<'a>>> {
+        let elements = self.run_poller(false).await?;
+        Ok(elements.into_iter().next())
+    }
+
+    /// Return only the first WebElement that matches any selector (including all of
     /// the filters for that selector).
     pub async fn first(&self) -> WebDriverResult<WebElement<'a>> {
         let mut elements = self.run_poller(false).await?;
