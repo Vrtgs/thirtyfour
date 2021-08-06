@@ -83,6 +83,9 @@ where
     /// #     })
     /// # }
     /// ```
+    ///
+    /// **NOTE:** If the webdriver appears to hang or give no response, please check that the
+    ///     capabilities object is of the correct type for that webdriver.
     pub async fn new<C>(server_url: &str, capabilities: C) -> WebDriverResult<Self>
     where
         C: Serialize,
