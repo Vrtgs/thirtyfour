@@ -87,7 +87,7 @@ where
     where
         C: Serialize,
     {
-        Self::new_with_timeout(server_url, capabilities, None).await
+        Self::new_with_timeout(server_url, capabilities, Some(Duration::from_secs(120))).await
     }
 
     /// Creates a new GenericWebDriver just like the `new` function. Allows a
