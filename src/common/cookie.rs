@@ -1,6 +1,13 @@
 use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum SameSite {
+    Strict,
+    Lax,
+    None,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cookie {
     name: String,
@@ -13,6 +20,8 @@ pub struct Cookie {
     secure: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     expiry: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "sameSite")]
+    same_site: Option<SameSite>,
 }
 
 impl Cookie {
@@ -25,6 +34,7 @@ impl Cookie {
             domain: None,
             secure: None,
             expiry: None,
+            same_site: None,
         }
     }
 
@@ -86,5 +96,15 @@ impl Cookie {
     /// Set the cookie expiry date/time. This will not modify the actual cookie in the browser.
     pub fn set_expiry<TZ: TimeZone>(&mut self, expiry: Option<DateTime<TZ>>) {
         self.expiry = expiry.map(|x| x.timestamp());
+    }
+
+    /// Get the cookie same site.
+    pub fn same_site(&self) -> Option<SameSite> {
+        self.same_site
+    }
+
+    /// Set the cookie same site.
+    pub fn set_same_site(&mut self, same_site: Option<SameSite>) {
+        self.same_site = same_site;
     }
 }
