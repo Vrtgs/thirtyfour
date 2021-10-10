@@ -6,9 +6,7 @@
 //!
 //!     cargo run --example wikipedia
 
-use std::time::Duration;
 use thirtyfour::prelude::*;
-use thirtyfour::support::sleep;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
@@ -39,15 +37,6 @@ async fn main() -> color_eyre::Result<()> {
     let elem_button =
         elem_form.query(By::Css("button[type='submit']")).desc("search button").first().await?;
     elem_button.click().await?;
-
-    let t = driver
-        .in_new_tab(|| async {
-            driver.get("https://www.google.com").await?;
-            sleep(Duration::from_secs(5)).await;
-            driver.title().await
-        })
-        .await?;
-    println!("Window title: {}", t);
 
     // Wait until the button no longer exists (two different ways).
     elem_button.wait_until().error("Timed out waiting for button to become stale").stale().await?;
