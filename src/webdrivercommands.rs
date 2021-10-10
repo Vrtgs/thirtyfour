@@ -20,6 +20,7 @@ use crate::{
     By, Cookie, OptionRect, Rect, ScriptArgs, SessionId, SwitchTo, TimeoutConfiguration,
     WebElement, WindowHandle,
 };
+use std::future::Future;
 
 /// Start a new WebDriver session, returning the session id and the
 /// capabilities JSON that was received back from the server.
@@ -1226,6 +1227,30 @@ pub trait WebDriverCommands {
     ) -> WebDriverResult<serde_json::Value> {
         let response = self.cmd(Command::ExtensionCommand(Box::new(ext_cmd))).await?;
         Ok(response["value"].clone())
+    }
+
+    // Execute the specified function in a new browser tab, closing the tab when complete.
+    // The return value will be that of the supplied function, unless an error occurs while
+    // opening or closing the tab.
+    async fn in_new_tab<F, Fut, T>(&self, f: F) -> WebDriverResult<T>
+    where
+        F: FnOnce() -> Fut + Send,
+        Fut: Future<Output = WebDriverResult<T>> + Send,
+        T: Send,
+    {
+        let handle = self.current_window_handle().await?;
+
+        // Open new tab.
+        self.execute_script(r#"window.open("about:blank", target="_blank");"#).await?;
+        let handles = self.window_handles().await?;
+        self.switch_to().window(&handles[1]).await?;
+        let result = f().await;
+
+        // Close tab.
+        self.execute_script(r#"window.close();"#).await?;
+        self.switch_to().window(&handle).await?;
+
+        result
     }
 }
 
