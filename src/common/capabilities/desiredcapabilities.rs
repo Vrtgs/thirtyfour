@@ -160,6 +160,15 @@ pub trait Capabilities {
         Ok(())
     }
 
+    /// Remove a subkey from the specified key, if it exists.
+    fn remove_subkey(&mut self, key: &str, subkey: &str) -> WebDriverResult<()> {
+        let v = self.get_mut();
+        if let Some(obj) = v[key].as_object_mut() {
+            obj.remove(subkey);
+        }
+        Ok(())
+    }
+
     /// Add all keys of the specified object into the capabilities, overwriting any
     /// matching keys that already exist.
     fn update(&mut self, value: Value) {

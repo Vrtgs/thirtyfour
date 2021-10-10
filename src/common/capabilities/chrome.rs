@@ -38,6 +38,16 @@ impl ChromeCapabilities {
         self.add_chrome_option("args", to_value(args)?)
     }
 
+    pub fn remove_chrome_arg(&mut self, arg: &str) -> WebDriverResult<()> {
+        let mut args = self.get_args();
+        if args.is_empty() {
+            Ok(())
+        } else {
+            args.retain(|v| v != arg);
+            self.add_chrome_option("args", to_value(args)?)
+        }
+    }
+
     /// Add the specified chrome option. This is a helper method for `add_chrome_arg()`.
     pub fn add_chrome_option<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
     where
@@ -56,9 +66,24 @@ impl ChromeCapabilities {
         self.add_chrome_arg("--headless")
     }
 
-    /// Disable web security.
+    /// Set disable web security.
     pub fn set_disable_web_security(&mut self) -> WebDriverResult<()> {
         self.add_chrome_arg("--disable-web-security")
+    }
+
+    /// Unset disable web security.
+    pub fn unset_disable_web_security(&mut self) -> WebDriverResult<()> {
+        self.remove_chrome_arg("--disable-web-security")
+    }
+
+    /// Sets accept untrusted certs.
+    pub fn set_ignore_certificate_errors(&mut self) -> WebDriverResult<()> {
+        self.add_chrome_arg("--ignore-certificate-errors")
+    }
+
+    /// Unsets accept untrusted certs.
+    pub fn unset_ignore_certificate_errors(&mut self) -> WebDriverResult<()> {
+        self.remove_chrome_arg("--ignore-certificate-errors")
     }
 }
 
