@@ -1229,21 +1229,54 @@ pub trait WebDriverCommands {
         Ok(response["value"].clone())
     }
 
-    // Execute the specified function in a new browser tab, closing the tab when complete.
-    // The return value will be that of the supplied function, unless an error occurs while
-    // opening or closing the tab.
+    /// Execute the specified function in a new browser tab, closing the tab when complete.
+    /// The return value will be that of the supplied function, unless an error occurs while
+    /// opening or closing the tab.
+    ///
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         assert_eq!(driver.title().await?, "Demo Web App");
+    /// #         // Get the current window handle.
+    /// #         let handle = driver.current_window_handle().await?;
+    /// let window_title = driver.in_new_tab(|| async {
+    ///     driver.get("https://www.google.com").await?;
+    ///     driver.title().await
+    /// }).await?;
+    /// #         assert_eq!(window_title, "Google");
+    /// #         assert_eq!(driver.current_window_handle().await?, handle);
+    /// #         driver.quit().await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
     async fn in_new_tab<F, Fut, T>(&self, f: F) -> WebDriverResult<T>
     where
         F: FnOnce() -> Fut + Send,
         Fut: Future<Output = WebDriverResult<T>> + Send,
         T: Send,
     {
+        let existing_handles = self.window_handles().await?;
         let handle = self.current_window_handle().await?;
 
         // Open new tab.
         self.execute_script(r#"window.open("about:blank", target="_blank");"#).await?;
-        let handles = self.window_handles().await?;
-        self.switch_to().window(&handles[1]).await?;
+        let mut new_handles = self.window_handles().await?;
+        new_handles.retain(|h| !existing_handles.contains(h));
+        if new_handles.len() != 1 {
+            return Err(WebDriverError::NotFound(
+                "new tab".to_string(),
+                "Unable to find window handle for new tab".to_string(),
+            ));
+        }
+        self.switch_to().window(&new_handles[0]).await?;
         let result = f().await;
 
         // Close tab.
