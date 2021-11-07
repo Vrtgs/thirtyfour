@@ -146,6 +146,11 @@ impl<'a> SelectElement<'a> {
     /// That is, when given "Bar" this would select an option like:
     ///
     /// `<option value="foo">Bar</option>`
+    ///
+    /// NOTE: This will attempt to first select by exact match. However if no exact match was
+    ///       found it will attempt to select options that contain the longest word in the
+    ///       specified search text. This particular behaviour is patterned after the python
+    ///       selenium library.
     async fn set_selection_by_visible_text(&self, text: &str, select: bool) -> WebDriverResult<()> {
         let mut xpath = format!(".//option[normalize-space(.) = {}]", escape_string(text));
         let options = match self.element.find_elements(By::XPath(&xpath)).await {
@@ -190,6 +195,43 @@ impl<'a> SelectElement<'a> {
         }
     }
 
+    /// Set the selection state of options that match the specified XPath condition.
+    async fn set_selection_by_xpath_condition(
+        &self,
+        condition: &str,
+        select: bool,
+    ) -> WebDriverResult<()> {
+        let xpath = format!(".//option[{}]", condition);
+        let options = self.element.find_elements(By::XPath(&xpath)).await?;
+        if options.is_empty() {
+            return Err(no_such_element(&format!(
+                "Could not locate element matching XPath condition: {:?}",
+                xpath
+            )));
+        }
+
+        for option in &options {
+            set_selected(option, select).await?;
+            if !self.multiple {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Set the selection state of options that display text exactly matching the specified text.
+    async fn set_selection_by_exact_text(&self, text: &str, select: bool) -> WebDriverResult<()> {
+        let condition = format!("text() = {}", escape_string(text));
+        self.set_selection_by_xpath_condition(&condition, select).await
+    }
+
+    /// Set the selection state of options that display text containing the specified substring.
+    async fn set_selection_by_partial_text(&self, text: &str, select: bool) -> WebDriverResult<()> {
+        let condition = format!("contains(text(), {})", escape_string(text));
+        self.set_selection_by_xpath_condition(&condition, select).await
+    }
+
     /// Select all options for this select tag.
     pub async fn select_all(&self) -> WebDriverResult<()> {
         assert!(self.multiple, "You may only select all options of a multi-select");
@@ -211,8 +253,39 @@ impl<'a> SelectElement<'a> {
     /// That is, when given "Bar" this would select an option like:
     ///
     /// `<option value="foo">Bar</option>`
+    ///
+    /// This will attempt to select by exact match, but if no option is found it will also
+    /// attempt to select based on the longest contiguous word in the text.
+    /// See also `select_by_exact_text()` and `select_by_partial_text()`.
     pub async fn select_by_visible_text(&self, text: &str) -> WebDriverResult<()> {
         self.set_selection_by_visible_text(text, true).await
+    }
+
+    /// Select options matching the specified XPath condition.
+    /// E.g. The specified condition replaces `{}` in this XPath: `.//option[{}]`
+    ///
+    /// The following example would match `.//option[starts-with(text(), 'pre')]`:
+    /// ```ignore
+    /// select_by_xpath_condition("starts-with(text(), 'pre')").await?;
+    /// ```
+    /// For multi-select, all options matching the condition will be selected.
+    /// For single-select, only the first matching option will be selected.
+    pub async fn select_by_xpath_condition(&self, condition: &str) -> WebDriverResult<()> {
+        self.set_selection_by_xpath_condition(condition, true).await
+    }
+
+    /// Select options with visible text exactly matching the specified text.
+    /// For multi-select, all options whose text exactly matches will be selected.
+    /// For single-select, only the first exact match will be selected.
+    pub async fn select_by_exact_text(&self, text: &str) -> WebDriverResult<()> {
+        self.set_selection_by_exact_text(text, true).await
+    }
+
+    /// Select options with visible text partially matching the specified text.
+    /// For multi-select, all options whose text contains the specified substring will be selected.
+    /// For single-select, only the first option containing the substring will be selected.
+    pub async fn select_by_partial_text(&self, text: &str) -> WebDriverResult<()> {
+        self.set_selection_by_partial_text(text, true).await
     }
 
     /// Deselect all options for this select tag.
@@ -235,11 +308,38 @@ impl<'a> SelectElement<'a> {
     }
 
     /// Deselect options with visible text matching the specified text.
-    /// That is, when given "Bar" this would select an option like:
+    /// That is, when given "Bar" this would deselect an option like:
     ///
     /// `<option value="foo">Bar</option>`
+    ///
+    /// See also `deselect_by_exact_text()` and `deselect_by_partial_text()`.
     pub async fn deselect_by_visible_text(&self, text: &str) -> WebDriverResult<()> {
         assert!(self.multiple, "You may only deselect options of a multi-select");
         self.set_selection_by_visible_text(text, false).await
+    }
+
+    /// Deselect options matching the specified XPath condition.
+    /// E.g. The specified condition replaces `{}` in this XPath: `.//option[{}]`
+    ///
+    /// The following example would match `.//option[starts-with(text(), 'pre')]`:
+    /// ```ignore
+    /// deselect_by_xpath_condition("starts-with(text(), 'pre')").await?;
+    /// ```
+    /// For multi-select, all options matching the condition will be deselected.
+    /// For single-select, only the first matching option will be deselected.
+    pub async fn deselect_by_xpath_condition(&self, condition: &str) -> WebDriverResult<()> {
+        self.set_selection_by_xpath_condition(condition, false).await
+    }
+
+    /// Deselect all options with visible text exactly matching the specified text.
+    pub async fn deselect_by_exact_text(&self, text: &str) -> WebDriverResult<()> {
+        assert!(self.multiple, "You may only deselect options of a multi-select");
+        self.set_selection_by_exact_text(text, false).await
+    }
+
+    /// Deselect all options with visible text partially matching the specified text.
+    pub async fn deselect_by_partial_text(&self, text: &str) -> WebDriverResult<()> {
+        assert!(self.multiple, "You may only deselect options of a multi-select");
+        self.set_selection_by_partial_text(text, false).await
     }
 }
