@@ -4,19 +4,10 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct WebDriverConfig {
     pub query_poller: ElementPoller,
     pub custom_settings: HashMap<String, serde_json::Value>,
-}
-
-impl Default for WebDriverConfig {
-    fn default() -> Self {
-        Self {
-            query_poller: ElementPoller::default(),
-            custom_settings: HashMap::new(),
-        }
-    }
 }
 
 impl WebDriverConfig {

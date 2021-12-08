@@ -173,7 +173,7 @@ pub trait Capabilities {
     /// matching keys that already exist.
     fn update(&mut self, value: Value) {
         assert!(value.is_object());
-        merge(&mut self.get_mut(), value);
+        merge(self.get_mut(), value);
     }
 
     /// Set the desired browser version.

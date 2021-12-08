@@ -122,18 +122,10 @@ pub enum LoggingPrefsLogLevel {
     All,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Default)]
 #[serde(transparent)]
 pub struct FirefoxPreferences {
     preferences: serde_json::Map<String, Value>,
-}
-
-impl Default for FirefoxPreferences {
-    fn default() -> Self {
-        FirefoxPreferences {
-            preferences: serde_json::Map::<String, Value>::default(),
-        }
-    }
 }
 
 impl FirefoxPreferences {
