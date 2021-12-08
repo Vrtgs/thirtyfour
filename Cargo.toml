@@ -79,6 +79,10 @@ name = "chrome_devtools"
 required-features = ["tokio-runtime"]
 
 [[example]]
+name = "chrome_options"
+required-features = ["tokio-runtime"]
+
+[[example]]
 name = "wikipedia"
 path = "examples/query/wikipedia.rs"
 required-features = ["tokio-runtime"]
