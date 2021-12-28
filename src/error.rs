@@ -3,6 +3,7 @@ use displaydoc::Display;
 use serde::Deserialize;
 use std::fmt::Formatter;
 use thiserror::Error;
+use tokio::sync::{mpsc, oneshot};
 
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
 
@@ -169,6 +170,12 @@ pub enum WebDriverError {
     UnsupportedOperation(WebDriverErrorInfo),
     /// Something caused the session to terminate.
     FatalError(String),
+    /// Failed to receive command: {0}
+    CommandRecvError(String),
+    /// The command could not be sent to the session: {0}
+    CommandSendError(String),
+    /// Could not create session: {0}
+    SessionCreateError(String),
 }
 
 impl WebDriverError {
@@ -230,6 +237,18 @@ impl WebDriverError {
 impl From<surf::Error> for WebDriverError {
     fn from(err: surf::Error) -> Self {
         Self::HttpError(err)
+    }
+}
+
+impl From<oneshot::error::RecvError> for WebDriverError {
+    fn from(err: oneshot::error::RecvError) -> Self {
+        Self::CommandRecvError(err.to_string())
+    }
+}
+
+impl<T> From<mpsc::error::SendError<T>> for WebDriverError {
+    fn from(err: mpsc::error::SendError<T>) -> Self {
+        Self::CommandSendError(err.to_string())
     }
 }
 

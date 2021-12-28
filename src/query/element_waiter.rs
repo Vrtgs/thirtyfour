@@ -29,15 +29,15 @@ use stringmatch::Needle;
 /// # }
 /// ```
 #[derive(Debug, Clone)]
-pub struct ElementWaiter<'a> {
-    element: &'a WebElement<'a>,
+pub struct ElementWaiter<'handle> {
+    element: WebElement<'handle>,
     poller: ElementPoller,
     message: String,
     ignore_errors: bool,
 }
 
-impl<'a> ElementWaiter<'a> {
-    fn new(element: &'a WebElement<'a>, poller: ElementPoller) -> Self {
+impl<'handle> ElementWaiter<'handle> {
+    fn new(element: WebElement<'handle>, poller: ElementPoller) -> Self {
         Self {
             element,
             poller,
@@ -79,7 +79,7 @@ impl<'a> ElementWaiter<'a> {
         loop {
             let mut conditions_met = true;
             for f in &conditions {
-                if !f(self.element).await? {
+                if !f(&self.element).await? {
                     conditions_met = false;
                     break;
                 }
@@ -366,8 +366,8 @@ impl ElementWaitable for WebElement<'_> {
     ///
     /// See [ElementWaiter](query/struct.ElementWaiter.html) for more documentation.
     fn wait_until(&self) -> ElementWaiter {
-        let poller: ElementPoller = self.session.config().query_poller.clone();
-        ElementWaiter::new(self, poller)
+        let poller: ElementPoller = self.handle.config.get_query_poller();
+        ElementWaiter::new(self.clone(), poller)
     }
 }
 

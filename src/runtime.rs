@@ -5,8 +5,16 @@ pub mod imports {
     pub use futures::executor::block_on;
     pub use futures::io::AsyncWriteExt;
     pub use futures::lock::Mutex;
+    pub use futures::Future;
     pub use std::fs::File;
-    pub use std::thread::sleep;
+
+    // No-op spawn method to avoid compilation errors.
+    pub fn spawn<T>(_future: T)
+    where
+        T: Future + Send + 'static,
+    {
+    }
+    pub async fn sleep(_duration: std::time::Duration) {}
 }
 
 #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
@@ -17,6 +25,7 @@ pub mod imports {
 
     pub use crate::http::reqwest_async::ReqwestDriverAsync as HttpClientAsync;
     pub use tokio::sync::Mutex;
+    pub use tokio::task::spawn;
     pub use tokio::{fs::File, io::AsyncWriteExt};
 
     pub fn block_on<F, T>(future: F) -> WebDriverResult<T>
@@ -42,6 +51,7 @@ pub mod imports {
     pub use async_std::fs::File;
 
     pub use async_std::sync::Mutex;
+    pub use async_std::task::spawn;
     pub use futures::io::AsyncWriteExt;
 
     pub fn block_on<F, T>(future: F) -> WebDriverResult<T>

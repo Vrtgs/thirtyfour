@@ -104,9 +104,9 @@
 //! Rust does not have [async destructors](https://boats.gitlab.io/blog/post/poll-drop/),
 //! which means there is no reliable way to execute an async HTTP request on Drop and wait for
 //! it to complete. This means you are in charge of closing the browser at the end of your code,
-//! via a call to `WebDriver::quit()` as in the above example.
+//! via a call to `WebDriver::quit().await` as in the above example.
 //!
-//! If you do not call `WebDriver::quit()` then the browser will stay open until it is
+//! If you do not call `WebDriver::quit().await` then the browser will stay open until it is
 //! either explicitly closed later outside your code, or the session times out.
 //!
 //! ### Advanced element queries and explicit waits
@@ -138,11 +138,8 @@ pub use common::{
     types::*,
 };
 
-pub use session::WebDriverSession;
 pub use switch_to::SwitchTo;
-pub use webdriver::GenericWebDriver;
-pub use webdriver::WebDriver;
-pub use webdrivercommands::WebDriverCommands;
+pub use webdriver::{WebDriver, WebDriverBuilder};
 pub use webelement::WebElement;
 
 /// Allow importing the common async structs via `use thirtyfour::prelude::*`.
@@ -150,9 +147,9 @@ pub mod prelude {
     pub use crate::alert::Alert;
     pub use crate::error::WebDriverResult;
     pub use crate::query::{ElementQueryable, ElementWaitable};
+    pub use crate::session::scriptret::ScriptRet;
     pub use crate::switch_to::SwitchTo;
-    pub use crate::webdriver::WebDriver;
-    pub use crate::webdrivercommands::{ScriptRet, WebDriverCommands};
+    pub use crate::webdriver::{WebDriver, WebDriverBuilder};
     pub use crate::webelement::WebElement;
     pub use crate::{By, Cookie, DesiredCapabilities, Keys, ScriptArgs, TypingData};
 }
@@ -161,12 +158,17 @@ pub mod prelude {
 pub mod action_chain;
 mod alert;
 mod runtime;
-mod session;
+pub mod session {
+    pub mod handle;
+    pub mod scriptret;
+    pub mod start;
+    pub mod task;
+}
+
 /// Miscellaneous support functions for `thirtyfour` tests.
 pub mod support;
 mod switch_to;
 mod webdriver;
-mod webdrivercommands;
 mod webelement;
 
 /// Async HTTP client traits.

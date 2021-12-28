@@ -1,131 +1,113 @@
-#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
-use crate::runtime::imports::{AsyncWriteExt, File};
-use async_trait::async_trait;
-use base64::decode;
-
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::fmt;
+use std::fmt::{Debug, Formatter};
+use std::future::Future;
 #[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
+use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::oneshot;
+
 use crate::action_chain::ActionChain;
-use crate::common::command::ExtensionCommand;
-use crate::common::command::{Command, FormatRequestData};
+use crate::common::command::Command;
+use crate::common::config::WebDriverConfig;
 use crate::common::connection_common::{convert_json, convert_json_vec};
 use crate::error::{WebDriverError, WebDriverResult};
-use crate::http::connection_async::WebDriverHttpClientAsync;
-use crate::session::WebDriverSession;
+#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
+use crate::runtime::imports::{AsyncWriteExt, File};
+use crate::session::scriptret::ScriptRet;
+use crate::session::task::{InternalCommand, SessionCommand};
 use crate::webelement::{convert_element_async, convert_elements_async};
 use crate::{
-    By, Cookie, OptionRect, Rect, ScriptArgs, SessionId, SwitchTo, TimeoutConfiguration,
-    WebElement, WindowHandle,
+    By, Cookie, DesiredCapabilities, ExtensionCommand, OptionRect, Rect, ScriptArgs, SessionId,
+    SwitchTo, TimeoutConfiguration, WebElement, WindowHandle,
 };
-use std::future::Future;
 
-/// Start a new WebDriver session, returning the session id and the
-/// capabilities JSON that was received back from the server.
-pub async fn start_session<C>(
-    conn: &dyn WebDriverHttpClientAsync,
-    capabilities: C,
-) -> WebDriverResult<(SessionId, serde_json::Value)>
-where
-    C: Serialize,
-{
-    let caps = serde_json::to_value(capabilities)?;
-    let v = match conn
-        .execute(Command::NewSession(caps.clone()).format_request(&SessionId::null()))
-        .await
-    {
-        Ok(x) => Ok(x),
-        Err(e) => {
-            // Selenium sometimes gives a bogus 500 error "Chrome failed to start".
-            // Retry if we get a 500. If it happens twice in a row then the second error
-            // will be returned.
-            if let WebDriverError::UnknownError(x) = &e {
-                if x.status == 500 {
-                    conn.execute(Command::NewSession(caps).format_request(&SessionId::null())).await
-                } else {
-                    Err(e)
-                }
-            } else {
-                Err(e)
-            }
-        }
-    }?;
-
-    #[derive(Debug, Deserialize)]
-    struct ConnectionData {
-        #[serde(default, rename(deserialize = "sessionId"))]
-        session_id: String,
-        #[serde(default)]
-        capabilities: serde_json::Value,
-    }
-
-    #[derive(Debug, Deserialize)]
-    struct ConnectionResp {
-        #[serde(default, rename(deserialize = "sessionId"))]
-        session_id: String,
-        value: ConnectionData,
-    }
-
-    let resp: ConnectionResp = serde_json::from_value(v)?;
-    let data = resp.value;
-    let session_id = SessionId::from(if resp.session_id.is_empty() {
-        data.session_id
-    } else {
-        resp.session_id
-    });
-
-    // Set default timeouts.
-    conn.execute(Command::SetTimeouts(TimeoutConfiguration::default()).format_request(&session_id))
-        .await?;
-
-    Ok((session_id, data.capabilities))
+/// The SessionHandle contains a shared reference to the `WebDriverConfig` as well
+/// as a sender to send commands to the async task that runs the session.
+///
+/// `SessionHandle` is intended to be stored in `WebDriver` and a reference to it
+/// passed around to all elements or anything that needs to communicate with the session.
+///
+/// The reason elements contain a reference rather than a clone is specifically so that
+/// Rust will not let you "use" the session after you call `WebDriver::quit()`
+/// (because that will consume the `WebDriver` instance and drop the `SessionHandle`).
+pub struct SessionHandle {
+    pub tx: UnboundedSender<SessionCommand>,
+    pub config: Arc<WebDriverConfig>,
 }
 
-/// All browser-level W3C WebDriver commands are implemented under this trait.
-///
-/// ----
-///
-/// `Thirtyfour` is structured as follows:
-/// - The `WebDriverCommands` trait contains all of the methods you would
-///   typically call in order to interact with the browser.
-/// - The `GenericWebDriver` struct implements the `WebDriverCommands` trait
-///   for a generic HTTP client.
-/// - The `WebDriver` struct is the `GenericWebDriver` implemented for a
-///   specific HTTP client.
-///
-/// You only need to use `WebDriver` in your code. Just create an instance
-/// of the `WebDriver` struct and it will have access to all of the methods
-/// from the `WebDriverCommands` trait.
-///
-/// For example:
-/// ```rust
-/// # use thirtyfour::prelude::*;
-/// # use thirtyfour::support::block_on;
-/// # fn main() -> WebDriverResult<()> {
-/// #     block_on(async {
-/// let caps = DesiredCapabilities::chrome();
-/// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-/// driver.get("http://webappdemo").await?;
-/// assert_eq!(driver.current_url().await?, "http://webappdemo/");
-/// #         driver.quit().await?;
-/// #         Ok(())
-/// #     })
-/// # }
-/// ```
-#[async_trait]
-pub trait WebDriverCommands {
-    /// Get the current session and http client.
-    ///
-    /// For `thirtyfour` internal use only.
-    fn session(&self) -> &WebDriverSession;
+impl Debug for SessionHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.config.get_session_id())
+    }
+}
 
+impl SessionHandle {
     /// Convenience wrapper for running WebDriver commands.
     ///
     /// For `thirtyfour` internal use only.
-    async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
-        self.session().execute(Box::new(command)).await
+    pub async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
+        let (ret_tx, ret_rx) = oneshot::channel();
+        self.tx.send(SessionCommand::WebDriverCommand(Box::new(command), ret_tx))?;
+        ret_rx.await?
+    }
+
+    /// Return a clone of the capabilities as returned by Selenium.
+    pub async fn capabilities(&mut self) -> WebDriverResult<DesiredCapabilities> {
+        let (ret_tx, ret_rx) = oneshot::channel();
+        self.tx.send(SessionCommand::Internal(InternalCommand::GetCapabilities(ret_tx)))?;
+        Ok(ret_rx.await?)
+    }
+
+    /// Get the session ID.
+    pub async fn session_id(&self) -> WebDriverResult<SessionId> {
+        let (ret_tx, ret_rx) = oneshot::channel();
+        self.tx.send(SessionCommand::Internal(InternalCommand::GetSessionId(ret_tx)))?;
+        Ok(ret_rx.await?)
+    }
+
+    /// Get a clone of the `WebDriverConfig`. You can update the config by modifying
+    /// it and passing it to `set_config()`.
+    pub async fn config(&self) -> WebDriverResult<WebDriverConfig> {
+        let (ret_tx, ret_rx) = oneshot::channel();
+        self.tx.send(SessionCommand::Internal(InternalCommand::GetConfig(ret_tx)))?;
+        Ok(ret_rx.await?)
+    }
+
+    /// Set the `WebDriverConfig` for this session. Currently this allows you to set
+    /// the default `ElementPoller` used by `WebDriver::query()` and `WebElement::wait_until()`.
+    ///
+    /// If you implement your own Trait in order to extend `WebDriver`, this lets you store
+    /// configuration inside the inner `SessionHandle` that can be accessed by any instance
+    /// that contains a reference to it.
+    pub async fn set_config(&self, config: WebDriverConfig) -> WebDriverResult<()> {
+        self.tx.send(SessionCommand::Internal(InternalCommand::SetConfig(config)))?;
+        Ok(())
+    }
+
+    /// Set the request timeout for the HTTP client.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use std::time::Duration;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// let caps = DesiredCapabilities::chrome();
+    /// let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// driver.set_request_timeout(Duration::from_secs(180)).await?;
+    /// #         driver.quit().await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn set_request_timeout(&mut self, timeout: Duration) -> WebDriverResult<()> {
+        self.tx.send(SessionCommand::Internal(InternalCommand::SetRequestTimeout(timeout)))?;
+        Ok(())
     }
 
     /// Close the current window or tab.
@@ -154,7 +136,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn close(&self) -> WebDriverResult<()> {
+    pub async fn close(&self) -> WebDriverResult<()> {
         self.cmd(Command::CloseWindow).await.map(|_| ())
     }
 
@@ -175,7 +157,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn get<S: Into<String> + Send>(&self, url: S) -> WebDriverResult<()> {
+    pub async fn get<S: Into<String> + Send>(&self, url: S) -> WebDriverResult<()> {
         self.cmd(Command::NavigateTo(url.into())).await.map(|_| ())
     }
 
@@ -198,7 +180,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn current_url(&self) -> WebDriverResult<String> {
+    pub async fn current_url(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetCurrentUrl).await?;
         convert_json(&v["value"])
     }
@@ -222,7 +204,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn page_source(&self) -> WebDriverResult<String> {
+    pub async fn page_source(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetPageSource).await?;
         convert_json(&v["value"])
     }
@@ -246,7 +228,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn title(&self) -> WebDriverResult<String> {
+    pub async fn title(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::GetTitle).await?;
         Ok(v["value"].as_str().unwrap_or_default().to_owned())
     }
@@ -275,9 +257,9 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn find_element<'a>(&'a self, by: By<'_>) -> WebDriverResult<WebElement<'a>> {
-        let v = self.cmd(Command::FindElement(by.get_w3c_selector())).await?;
-        convert_element_async(self.session(), &v["value"])
+    pub async fn find_element(&self, by: By<'_>) -> WebDriverResult<WebElement<'_>> {
+        let v = self.cmd(Command::FindElement(by.into())).await?;
+        convert_element_async(self, &v["value"])
     }
 
     /// Search for all elements on the current page that match the specified selector.
@@ -304,9 +286,9 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn find_elements<'a>(&'a self, by: By<'_>) -> WebDriverResult<Vec<WebElement<'a>>> {
-        let v = self.cmd(Command::FindElements(by.get_w3c_selector())).await?;
-        convert_elements_async(self.session(), &v["value"])
+    pub async fn find_elements(&self, by: By<'_>) -> WebDriverResult<Vec<WebElement<'_>>> {
+        let v = self.cmd(Command::FindElements(by.into())).await?;
+        convert_elements_async(self, &v["value"])
     }
 
     /// Execute the specified Javascript synchronously and return the result.
@@ -338,9 +320,9 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn execute_script<'a>(&'a self, script: &str) -> WebDriverResult<ScriptRet<'a>> {
+    pub async fn execute_script(&self, script: &str) -> WebDriverResult<ScriptRet<'_>> {
         let v = self.cmd(Command::ExecuteScript(script.to_owned(), Vec::new())).await?;
-        Ok(ScriptRet::new(self.session(), v["value"].clone()))
+        Ok(ScriptRet::new(self, v["value"].clone()))
     }
 
     /// Execute the specified Javascript synchronously and return the result.
@@ -373,13 +355,13 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn execute_script_with_args<'a>(
-        &'a self,
+    pub async fn execute_script_with_args(
+        &self,
         script: &str,
         args: &ScriptArgs,
-    ) -> WebDriverResult<ScriptRet<'a>> {
+    ) -> WebDriverResult<ScriptRet<'_>> {
         let v = self.cmd(Command::ExecuteScript(script.to_owned(), args.get_args())).await?;
-        Ok(ScriptRet::new(self.session(), v["value"].clone()))
+        Ok(ScriptRet::new(self, v["value"].clone()))
     }
 
     /// Execute the specified Javascrypt asynchronously and return the result.
@@ -416,9 +398,9 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn execute_async_script<'a>(&'a self, script: &str) -> WebDriverResult<ScriptRet<'a>> {
+    pub async fn execute_async_script(&self, script: &str) -> WebDriverResult<ScriptRet<'_>> {
         let v = self.cmd(Command::ExecuteAsyncScript(script.to_owned(), Vec::new())).await?;
-        Ok(ScriptRet::new(self.session(), v["value"].clone()))
+        Ok(ScriptRet::new(self, v["value"].clone()))
     }
 
     /// Execute the specified Javascrypt asynchronously and return the result.
@@ -456,13 +438,13 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn execute_async_script_with_args<'a>(
-        &'a self,
+    pub async fn execute_async_script_with_args(
+        &self,
         script: &str,
         args: &ScriptArgs,
-    ) -> WebDriverResult<ScriptRet<'a>> {
+    ) -> WebDriverResult<ScriptRet<'_>> {
         let v = self.cmd(Command::ExecuteAsyncScript(script.to_owned(), args.get_args())).await?;
-        Ok(ScriptRet::new(self.session(), v["value"].clone()))
+        Ok(ScriptRet::new(self, v["value"].clone()))
     }
 
     /// Get the current window handle.
@@ -497,7 +479,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
+    pub async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
         let v = self.cmd(Command::GetWindowHandle).await?;
         convert_json::<String>(&v["value"]).map(WindowHandle::from)
     }
@@ -528,7 +510,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
+    pub async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
         let v = self.cmd(Command::GetWindowHandles).await?;
         let strings: Vec<String> = convert_json_vec(&v["value"])?;
         Ok(strings.iter().map(WindowHandle::from).collect())
@@ -552,7 +534,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn maximize_window(&self) -> WebDriverResult<()> {
+    pub async fn maximize_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::MaximizeWindow).await.map(|_| ())
     }
 
@@ -576,7 +558,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn minimize_window(&self) -> WebDriverResult<()> {
+    pub async fn minimize_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::MinimizeWindow).await.map(|_| ())
     }
 
@@ -598,7 +580,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn fullscreen_window(&self) -> WebDriverResult<()> {
+    pub async fn fullscreen_window(&self) -> WebDriverResult<()> {
         self.cmd(Command::FullscreenWindow).await.map(|_| ())
     }
 
@@ -627,7 +609,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn get_window_rect(&self) -> WebDriverResult<Rect> {
+    pub async fn get_window_rect(&self) -> WebDriverResult<Rect> {
         let v = self.cmd(Command::GetWindowRect).await?;
         convert_json(&v["value"])
     }
@@ -674,7 +656,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
+    pub async fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
         self.cmd(Command::SetWindowRect(rect)).await.map(|_| ())
     }
 
@@ -698,7 +680,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn back(&self) -> WebDriverResult<()> {
+    pub async fn back(&self) -> WebDriverResult<()> {
         self.cmd(Command::Back).await.map(|_| ())
     }
 
@@ -724,7 +706,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn forward(&self) -> WebDriverResult<()> {
+    pub async fn forward(&self) -> WebDriverResult<()> {
         self.cmd(Command::Forward).await.map(|_| ())
     }
 
@@ -748,7 +730,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn refresh(&self) -> WebDriverResult<()> {
+    pub async fn refresh(&self) -> WebDriverResult<()> {
         self.cmd(Command::Refresh).await.map(|_| ())
     }
 
@@ -781,7 +763,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn get_timeouts(&self) -> WebDriverResult<TimeoutConfiguration> {
+    pub async fn get_timeouts(&self) -> WebDriverResult<TimeoutConfiguration> {
         let v = self.cmd(Command::GetTimeouts).await?;
         convert_json(&v["value"])
     }
@@ -819,7 +801,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
+    pub async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
         self.cmd(Command::SetTimeouts(timeouts)).await.map(|_| ())
     }
 
@@ -858,7 +840,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn set_implicit_wait_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    pub async fn set_implicit_wait_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, None, Some(time_to_wait));
         self.set_timeouts(timeouts).await
     }
@@ -892,7 +874,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn set_script_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    pub async fn set_script_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(Some(time_to_wait), None, None);
         self.set_timeouts(timeouts).await
     }
@@ -926,7 +908,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn set_page_load_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
+    pub async fn set_page_load_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, Some(time_to_wait), None);
         self.set_timeouts(timeouts).await
     }
@@ -961,8 +943,8 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    fn action_chain(&self) -> ActionChain {
-        ActionChain::new(self.session())
+    pub fn action_chain(&self) -> ActionChain {
+        ActionChain::new(self)
     }
 
     /// Get all cookies.
@@ -990,7 +972,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
+    pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
         let v = self.cmd(Command::GetAllCookies).await?;
         convert_json_vec::<Cookie>(&v["value"])
     }
@@ -1017,7 +999,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
+    pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
         let v = self.cmd(Command::GetNamedCookie(name.to_string())).await?;
         convert_json::<Cookie>(&v["value"])
     }
@@ -1044,7 +1026,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
+    pub async fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
         self.cmd(Command::DeleteCookie(name.to_string())).await.map(|_| ())
     }
 
@@ -1071,7 +1053,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn delete_all_cookies(&self) -> WebDriverResult<()> {
+    pub async fn delete_all_cookies(&self) -> WebDriverResult<()> {
         self.cmd(Command::DeleteAllCookies).await.map(|_| ())
     }
 
@@ -1096,28 +1078,28 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
+    pub async fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
         self.cmd(Command::AddCookie(cookie)).await.map(|_| ())
     }
 
     /// Take a screenshot of the current window and return it as a
     /// base64-encoded String.
-    async fn screenshot_as_base64(&self) -> WebDriverResult<String> {
+    pub async fn screenshot_as_base64(&self) -> WebDriverResult<String> {
         let v = self.cmd(Command::TakeScreenshot).await?;
         convert_json(&v["value"])
     }
 
     /// Take a screenshot of the current window and return it as PNG bytes.
-    async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
+    pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
         let s = self.screenshot_as_base64().await?;
-        let bytes: Vec<u8> = decode(&s)?;
+        let bytes: Vec<u8> = base64::decode(&s)?;
         Ok(bytes)
     }
 
     /// Take a screenshot of the current window and write it to the specified
     /// filename.
     #[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
-    async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
+    pub async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
         let mut file = File::create(path).await?;
         file.write_all(&png).await?;
@@ -1125,8 +1107,8 @@ pub trait WebDriverCommands {
     }
 
     /// Return a SwitchTo struct for switching to another window or frame.
-    fn switch_to(&self) -> SwitchTo {
-        SwitchTo::new(self.session())
+    pub fn switch_to(&self) -> SwitchTo {
+        SwitchTo::new(self)
     }
 
     /// Set the current window name.
@@ -1163,7 +1145,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
+    pub async fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
         let script = format!(r#"window.name = "{}""#, window_name);
         self.execute_script(&script).await?;
         Ok(())
@@ -1180,7 +1162,7 @@ pub trait WebDriverCommands {
     /// use thirtyfour::support::block_on;
     /// use serde::Serialize;
     ///
-    /// #[derive(Serialize)]
+    /// #[derive(Debug, Serialize)]
     /// pub struct AddonInstallCommand {
     ///     pub path: String,
     ///     pub temporary: Option<bool>
@@ -1221,7 +1203,7 @@ pub trait WebDriverCommands {
     /// }
     ///
     /// ```
-    async fn extension_command<T: ExtensionCommand + Send + Sync + 'static>(
+    pub async fn extension_command<T: ExtensionCommand + Send + Sync + 'static>(
         &self,
         ext_cmd: T,
     ) -> WebDriverResult<serde_json::Value> {
@@ -1257,7 +1239,7 @@ pub trait WebDriverCommands {
     /// #     })
     /// # }
     /// ```
-    async fn in_new_tab<F, Fut, T>(&self, f: F) -> WebDriverResult<T>
+    pub async fn in_new_tab<F, Fut, T>(&self, f: F) -> WebDriverResult<T>
     where
         F: FnOnce() -> Fut + Send,
         Fut: Future<Output = WebDriverResult<T>> + Send,
@@ -1284,50 +1266,5 @@ pub trait WebDriverCommands {
         self.switch_to().window(&handle).await?;
 
         result
-    }
-}
-
-/// Helper struct for getting return values from scripts.
-/// See the examples for [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
-/// and [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script).
-pub struct ScriptRet<'a> {
-    session: &'a WebDriverSession,
-    value: serde_json::Value,
-}
-
-impl<'a> ScriptRet<'a> {
-    /// Create a new ScriptRet. This is typically done automatically via
-    /// [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
-    /// or [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script)
-    pub fn new(session: &'a WebDriverSession, value: serde_json::Value) -> Self {
-        ScriptRet {
-            session,
-            value,
-        }
-    }
-
-    /// Get the raw JSON value.
-    pub fn value(&self) -> &serde_json::Value {
-        &self.value
-    }
-
-    pub fn convert<T>(&self) -> WebDriverResult<T>
-    where
-        T: DeserializeOwned,
-    {
-        let v: T = serde_json::from_value(self.value.clone())?;
-        Ok(v)
-    }
-
-    /// Get a single WebElement return value.
-    /// Your script must return only a single element for this to work.
-    pub fn get_element(&self) -> WebDriverResult<WebElement> {
-        convert_element_async(self.session, &self.value)
-    }
-
-    /// Get a vec of WebElements from the return value.
-    /// Your script must return an array of elements for this to work.
-    pub fn get_elements(&self) -> WebDriverResult<Vec<WebElement>> {
-        convert_elements_async(self.session, &self.value)
     }
 }

@@ -1,27 +1,28 @@
-use crate::webdrivercommands::WebDriverCommands;
+use crate::session::handle::SessionHandle;
 use crate::{
     common::{command::Command, connection_common::convert_json, keys::TypingData},
     error::WebDriverResult,
-    session::WebDriverSession,
 };
 
 /// Struct for managing alerts.
 pub struct Alert<'a> {
-    session: &'a WebDriverSession,
+    handle: &'a SessionHandle,
 }
 
 impl<'a> Alert<'a> {
     /// Create a new Alert struct. This is typically created internally
     /// via a call to `WebDriver::switch_to().alert()`.
-    pub fn new(session: &'a WebDriverSession) -> Self {
-        Alert {
-            session,
+    pub fn new(handle: &'a SessionHandle) -> Self {
+        Self {
+            handle,
         }
     }
 
-    ///Convenience wrapper for executing a WebDriver command.
+    /// Convenience wrapper for running WebDriver commands.
+    ///
+    /// For `thirtyfour` internal use only.
     async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
-        self.session.cmd(command).await
+        self.handle.cmd(command).await
     }
 
     /// Get the active alert text.

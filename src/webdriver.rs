@@ -1,39 +1,63 @@
-use async_trait::async_trait;
-use serde::Serialize;
-use serde_json::Value;
-use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
 
-use crate::common::config::WebDriverConfig;
 use crate::http::connection_async::{HttpClientCreateParams, WebDriverHttpClientAsync};
 
-use crate::runtime::imports::{HttpClientAsync, Mutex};
-use crate::webdrivercommands::{start_session, WebDriverCommands};
-use crate::{
-    common::command::Command, error::WebDriverResult, session::WebDriverSession,
-    DesiredCapabilities, SessionId,
-};
-use std::sync::Arc;
+use crate::error::WebDriverError;
+use crate::runtime::imports::HttpClientAsync;
+use crate::session::handle::SessionHandle;
+use crate::session::start::start_session;
+use crate::{common::command::Command, error::WebDriverResult};
+use serde::Serialize;
 use std::time::Duration;
 
-/// The WebDriver struct represents a browser session.
-///
-/// For full documentation of all WebDriver methods,
-/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
-pub type WebDriver = GenericWebDriver<HttpClientAsync>;
+#[derive(Debug, Clone)]
+pub struct WebDriverBuilder {
+    create_params: HttpClientCreateParams,
+    capabilities: Result<serde_json::Value, String>,
+}
 
-/// **NOTE:** For WebDriver method documentation,
-/// see the [WebDriverCommands](trait.WebDriverCommands.html) trait.
-///
-/// The `thirtyfour` crate uses a generic struct that implements the
-/// `WebDriverCommands` trait. The generic struct is then implemented for
-/// a specific HTTP client. This enables `thirtyfour` to support different
-/// HTTP clients in order to target different async runtimes. If you do not
-/// require a specific async runtime or if you are using tokio then the
-/// default will work fine.
-///
-/// The `GenericWebDriver` struct encapsulates an async Selenium WebDriver browser
-/// session. For the sync driver, see
-/// [sync::GenericWebDriver](sync/struct.GenericWebDriver.html).
+impl WebDriverBuilder {
+    /// Create a new WebDriverBuilder instance. You can use this to
+    /// customize the WebDriver parameters before building it.
+    pub fn new<C>(server_url: &str, capabilities: C) -> Self
+    where
+        C: Serialize,
+    {
+        Self {
+            create_params: HttpClientCreateParams {
+                server_url: server_url.to_string(),
+                timeout: Some(Duration::from_secs(120)),
+            },
+            capabilities: serde_json::to_value(capabilities).map_err(|e| e.to_string()),
+        }
+    }
+
+    /// Set the request timeout for the HTTP client.
+    pub fn timeout(&mut self, timeout: Option<Duration>) -> &mut Self {
+        self.create_params.timeout = timeout;
+        self
+    }
+
+    /// Build a WebDriver instance that uses the default HTTP client.
+    pub async fn build<'a>(&self) -> WebDriverResult<WebDriver> {
+        self.build_custom_client::<HttpClientAsync>().await
+    }
+
+    /// Build a WebDriver instance that uses a HTTP client that implements WebDriverHttpClientAsync.
+    pub async fn build_custom_client<T: 'static + WebDriverHttpClientAsync>(
+        &self,
+    ) -> WebDriverResult<WebDriver> {
+        let capabilities = self.capabilities.clone().map_err(WebDriverError::SessionCreateError)?;
+        let http_client = T::create(self.create_params.clone())?;
+        let handle = start_session(Box::new(http_client), capabilities).await?;
+        Ok(WebDriver {
+            handle,
+        })
+    }
+}
+
+/// The `WebDriver` struct encapsulates an async Selenium WebDriver browser
+/// session.
 ///
 /// # Example:
 /// ```rust
@@ -51,22 +75,11 @@ pub type WebDriver = GenericWebDriver<HttpClientAsync>;
 /// }
 /// ```
 #[derive(Debug)]
-pub struct GenericWebDriver<T: WebDriverHttpClientAsync + 'static> {
-    pub session: WebDriverSession,
-    capabilities: Value,
-    phantom: PhantomData<T>,
+pub struct WebDriver {
+    pub handle: SessionHandle,
 }
 
-impl<T> GenericWebDriver<T>
-where
-    T: WebDriverHttpClientAsync + 'static,
-{
-    /// The GenericWebDriver struct is not intended to be created directly.
-    ///
-    /// Instead you would use the WebDriver struct, which wires up the
-    /// GenericWebDriver with a HTTP client for making requests to the
-    /// WebDriver server.
-    ///
+impl WebDriver {
     /// Create a new WebDriver as follows:
     ///
     /// # Example
@@ -90,10 +103,10 @@ where
     where
         C: Serialize,
     {
-        Self::new_with_timeout(server_url, capabilities, Some(Duration::from_secs(120))).await
+        WebDriverBuilder::new(server_url, capabilities).build().await
     }
 
-    /// Creates a new GenericWebDriver just like the `new` function. Allows a
+    /// Creates a new WebDriver just like the `new` function. Allows a
     /// configurable timeout for all HTTP requests including the session creation.
     ///
     /// Create a new WebDriver as follows:
@@ -121,26 +134,22 @@ where
     where
         C: Serialize,
     {
-        let params = HttpClientCreateParams {
-            server_url: server_url.to_string(),
-            timeout,
-        };
-        let conn = T::create(params)?;
-
-        let (session_id, session_capabilities) = start_session(&conn, capabilities).await?;
-
-        let driver = GenericWebDriver {
-            session: WebDriverSession::new(session_id, Arc::new(Mutex::new(conn))),
-            capabilities: session_capabilities,
-            phantom: PhantomData,
-        };
-
-        Ok(driver)
+        WebDriverBuilder::new(server_url, capabilities).timeout(timeout).build().await
     }
 
-    /// Return a clone of the capabilities as returned by Selenium.
-    pub fn capabilities(&self) -> DesiredCapabilities {
-        DesiredCapabilities::new(self.capabilities.clone())
+    pub async fn new_with_client<C>(
+        client: Box<dyn WebDriverHttpClientAsync>,
+        capabilities: C,
+    ) -> WebDriverResult<Self>
+    where
+        C: Serialize,
+    {
+        let caps = serde_json::to_value(capabilities)
+            .map_err(|e| WebDriverError::SessionCreateError(e.to_string()))?;
+        let handle = start_session(client, caps).await?;
+        Ok(Self {
+            handle,
+        })
     }
 
     /// End the webdriver session and close the browser.
@@ -149,51 +158,24 @@ where
     ///           Thus if you intend for the browser to close once you are done with it, then
     ///           you must call this method at that point, and await it.
     pub async fn quit(self) -> WebDriverResult<()> {
-        self.cmd(Command::DeleteSession).await?;
+        self.handle.cmd(Command::DeleteSession).await?;
         Ok(())
-    }
-
-    pub fn session_id(&self) -> &SessionId {
-        self.session.session_id()
-    }
-
-    pub fn config(&self) -> &WebDriverConfig {
-        self.session.config()
-    }
-
-    pub fn config_mut(&mut self) -> &mut WebDriverConfig {
-        self.session.config_mut()
-    }
-
-    /// Set the request timeout for the HTTP client.
-    ///
-    /// # Example
-    /// ```rust
-    /// # use thirtyfour::prelude::*;
-    /// # use std::time::Duration;
-    /// # use thirtyfour::support::block_on;
-    /// #
-    /// # fn main() -> WebDriverResult<()> {
-    /// #     block_on(async {
-    /// let caps = DesiredCapabilities::chrome();
-    /// let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// driver.set_request_timeout(Duration::from_secs(180)).await?;
-    /// #         driver.quit().await?;
-    /// #         Ok(())
-    /// #     })
-    /// # }
-    /// ```
-    pub async fn set_request_timeout(&mut self, timeout: Duration) -> WebDriverResult<()> {
-        self.session.set_request_timeout(timeout).await
     }
 }
 
-#[async_trait]
-impl<T> WebDriverCommands for GenericWebDriver<T>
-where
-    T: WebDriverHttpClientAsync,
-{
-    fn session(&self) -> &WebDriverSession {
-        &self.session
+/// The Deref implementation allows the WebDriver to "fall back" to SessionHandle and
+/// exposes all of the methods there without requiring us to use an async_trait.
+/// See documentation at the top of this module for more details on the design.
+impl Deref for WebDriver {
+    type Target = SessionHandle;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
+    }
+}
+
+impl DerefMut for WebDriver {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.handle
     }
 }

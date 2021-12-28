@@ -8,9 +8,11 @@ use crate::common::{
 };
 use crate::{RequestData, RequestMethod};
 use std::fmt;
+use std::fmt::Debug;
 
 pub const MAGIC_ELEMENTID: &str = "element-6066-11e4-a52e-4f735466cecf";
 
+#[derive(Debug)]
 pub struct Actions(serde_json::Value);
 
 impl From<serde_json::Value> for Actions {
@@ -61,22 +63,22 @@ impl fmt::Display for By<'_> {
     }
 }
 
-impl<'a> By<'a> {
-    pub fn get_w3c_selector(&self) -> Selector {
-        match self {
+impl<'a> From<By<'a>> for Selector {
+    fn from(by: By<'a>) -> Self {
+        match by {
             By::Id(x) => Selector::new("css selector", &format!("[id=\"{}\"]", x)),
-            By::XPath(x) => Selector::new("xpath", *x),
-            By::LinkText(x) => Selector::new("link text", *x),
-            By::PartialLinkText(x) => Selector::new("partial link text", *x),
+            By::XPath(x) => Selector::new("xpath", x),
+            By::LinkText(x) => Selector::new("link text", x),
+            By::PartialLinkText(x) => Selector::new("partial link text", x),
             By::Name(x) => Selector::new("css selector", &format!("[name=\"{}\"]", x)),
-            By::Tag(x) => Selector::new("css selector", *x),
+            By::Tag(x) => Selector::new("css selector", x),
             By::ClassName(x) => Selector::new("css selector", &format!(".{}", x)),
-            By::Css(x) => Selector::new("css selector", *x),
+            By::Css(x) => Selector::new("css selector", x),
         }
     }
 }
 
-pub trait ExtensionCommand {
+pub trait ExtensionCommand: Debug {
     /// Request Body
     fn parameters_json(&self) -> Option<serde_json::Value>;
 
@@ -89,6 +91,7 @@ pub trait ExtensionCommand {
     fn endpoint(&self) -> String;
 }
 
+#[derive(Debug)]
 pub enum Command {
     NewSession(Value),
     DeleteSession,
@@ -150,7 +153,7 @@ pub enum Command {
     ExtensionCommand(Box<dyn ExtensionCommand + Send + Sync>),
 }
 
-pub trait FormatRequestData {
+pub trait FormatRequestData: Debug {
     fn format_request(&self, session_id: &SessionId) -> RequestData;
 }
 

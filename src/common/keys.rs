@@ -145,6 +145,7 @@ impl From<Keys> for char {
     }
 }
 
+#[derive(Debug)]
 pub struct TypingData {
     data: Vec<char>,
 }

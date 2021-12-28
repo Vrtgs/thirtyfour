@@ -3,6 +3,7 @@ use crate::extensions::chrome::NetworkConditions;
 use crate::{RequestData, RequestMethod, SessionId};
 use serde_json::{json, Value};
 
+#[derive(Debug)]
 pub enum ChromeCommand {
     LaunchApp(String),
     GetNetworkConditions,

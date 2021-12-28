@@ -1,6 +1,5 @@
-use crate::http::connection_async::WebDriverHttpClientAsync;
 use crate::support::sleep;
-use crate::GenericWebDriver;
+use crate::WebDriver;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -103,11 +102,8 @@ impl ElementPollerTicker {
     }
 }
 
-impl<T> GenericWebDriver<T>
-where
-    T: WebDriverHttpClientAsync,
-{
-    pub fn set_query_poller(&mut self, poller: ElementPoller) {
-        self.config_mut().query_poller = poller;
+impl WebDriver {
+    pub fn set_query_poller(&self, poller: ElementPoller) {
+        self.handle.config.set_query_poller(poller);
     }
 }

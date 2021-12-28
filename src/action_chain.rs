@@ -1,4 +1,4 @@
-use crate::webdrivercommands::WebDriverCommands;
+use crate::session::handle::SessionHandle;
 use crate::{
     common::{
         action::{ActionSource, KeyAction, PointerAction, PointerActionType},
@@ -6,7 +6,6 @@ use crate::{
         keys::TypingData,
     },
     error::WebDriverResult,
-    session::WebDriverSession,
     WebElement,
 };
 
@@ -22,7 +21,7 @@ use crate::{
 /// driver.action_chain().drag_and_drop_element(elem_src, elem_target).perform().await?;
 /// ```
 pub struct ActionChain<'a> {
-    session: &'a WebDriverSession,
+    handle: &'a SessionHandle,
     key_actions: ActionSource<KeyAction>,
     pointer_actions: ActionSource<PointerAction>,
 }
@@ -32,9 +31,9 @@ impl<'a> ActionChain<'a> {
     ///
     /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
-    pub fn new(session: &'a WebDriverSession) -> Self {
+    pub fn new(handle: &'a SessionHandle) -> Self {
         ActionChain {
-            session,
+            handle,
             key_actions: ActionSource::<KeyAction>::new("key"),
             pointer_actions: ActionSource::<PointerAction>::new(
                 "pointer",
@@ -43,9 +42,11 @@ impl<'a> ActionChain<'a> {
         }
     }
 
-    ///Convenience wrapper for executing a WebDriver command.
+    /// Convenience wrapper for running WebDriver commands.
+    ///
+    /// For `thirtyfour` internal use only.
     async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
-        self.session.cmd(command).await
+        self.handle.cmd(command).await
     }
 
     /// Reset all actions, reverting all input devices back to default states.

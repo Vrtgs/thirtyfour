@@ -18,7 +18,7 @@ pub struct HttpClientCreateParams {
 ///
 /// ```ignore
 /// // Assuming MyHttpClient implements WebDriverHttpClientAsync.
-/// pub type MyWebDriver = GenericWebDriver<MyHttpClient>;
+/// let driver = WebDriverBuilder::new().build_custom_client::<MyHttpClient>().await?;
 /// ```
 #[async_trait]
 pub trait WebDriverHttpClientAsync: Debug + Send + Sync {

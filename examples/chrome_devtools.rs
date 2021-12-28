@@ -19,7 +19,7 @@ async fn main() -> color_eyre::Result<()> {
     let driver = WebDriver::new("http://localhost:4444", &caps).await?;
 
     // Use Chrome Devtools Protocol (CDP).
-    let dev_tools = ChromeDevTools::new(driver.session());
+    let dev_tools = ChromeDevTools::new(&driver.handle);
     let mut conditions = NetworkConditions::new();
     conditions.download_throughput = 20;
     conditions.upload_throughput = 10;
