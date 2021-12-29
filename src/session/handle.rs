@@ -236,7 +236,7 @@ impl SessionHandle {
     /// Search for an element on the current page using the specified selector.
     ///
     /// **NOTE**: For more powerful element queries including polling and filters, see the
-    /// [WebDriver::query()](type.WebDriver.html) method instead.
+    /// [WebDriver::query()](struct.WebDriver.html#method.query) method instead.
     ///
     /// # Example:
     /// ```rust
@@ -265,7 +265,7 @@ impl SessionHandle {
     /// Search for all elements on the current page that match the specified selector.
     ///
     /// **NOTE**: For more powerful element queries including polling and filters, see the
-    /// [WebDriver::query()](type.WebDriver.html) method instead.
+    /// [WebDriver::query()](struct.WebDriver.html#method.query) method instead.
     ///
     /// # Example:
     /// ```rust
