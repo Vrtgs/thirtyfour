@@ -202,7 +202,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
     /// the filters for that selector).
     ///
     /// Returns None if no elements match.
-    pub async fn first_opt(&self) -> WebDriverResult<Option<WebElement<'_>>> {
+    pub async fn first_opt(&self) -> WebDriverResult<Option<WebElement<'handle>>> {
         let elements = self.run_poller(false).await?;
         Ok(elements.into_iter().next())
     }
