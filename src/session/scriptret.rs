@@ -38,13 +38,13 @@ impl<'a> ScriptRet<'a> {
 
     /// Get a single WebElement return value.
     /// Your script must return only a single element for this to work.
-    pub fn get_element(&self) -> WebDriverResult<WebElement> {
+    pub fn get_element(&self) -> WebDriverResult<WebElement<'a>> {
         convert_element_async(self.handle, &self.value)
     }
 
     /// Get a vec of WebElements from the return value.
     /// Your script must return an array of elements for this to work.
-    pub fn get_elements(&self) -> WebDriverResult<Vec<WebElement>> {
+    pub fn get_elements(&self) -> WebDriverResult<Vec<WebElement<'a>>> {
         convert_elements_async(self.handle, &self.value)
     }
 }

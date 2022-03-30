@@ -21,10 +21,30 @@ impl ElementRect {
     }
 }
 
-#[derive(Deserialize)]
-pub struct ElementRef {
-    #[serde(rename(deserialize = "element-6066-11e4-a52e-4f735466cecf"))]
-    pub id: String,
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum ElementRef {
+    Element {
+        #[serde(rename(deserialize = "element-6066-11e4-a52e-4f735466cecf"))]
+        id: String,
+    },
+    ShadowElement {
+        #[serde(rename(deserialize = "shadow-6066-11e4-a52e-4f735466cecf"))]
+        id: String,
+    },
+}
+
+impl ElementRef {
+    pub fn id(&self) -> &str {
+        match &self {
+            ElementRef::Element {
+                id,
+            } => id,
+            ElementRef::ShadowElement {
+                id,
+            } => id,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
@@ -261,5 +281,30 @@ impl TimeoutConfiguration {
 
     pub fn set_implicit(&mut self, timeout: Option<Duration>) {
         self.implicit = timeout.map(|x| x.as_millis() as u64);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_matches::assert_matches;
+    use serde_json::json;
+
+    #[test]
+    fn test_element_ref() {
+        let id = "daaea226-43aa-400f-896c-210e5af2ac62";
+        let value = json!({ "element-6066-11e4-a52e-4f735466cecf": id });
+        let elem_ref: ElementRef = serde_json::from_value(value).unwrap();
+        assert_matches!(&elem_ref, ElementRef::Element { id: x} if x == id);
+        assert_eq!(elem_ref.id(), id);
+    }
+
+    #[test]
+    fn test_shadow_element_ref() {
+        let id = "daaea226-43aa-400f-896c-210e5af2ac62";
+        let value = json!({ "shadow-6066-11e4-a52e-4f735466cecf": id });
+        let elem_ref: ElementRef = serde_json::from_value(value).unwrap();
+        assert_matches!(&elem_ref, ElementRef::ShadowElement { id: x} if x == id);
+        assert_eq!(elem_ref.id(), id);
     }
 }

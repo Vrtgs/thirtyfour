@@ -27,7 +27,7 @@ pub fn convert_element_async<'a>(
     value: &serde_json::Value,
 ) -> WebDriverResult<WebElement<'a>> {
     let elem_id: ElementRef = serde_json::from_value(value.clone())?;
-    Ok(WebElement::new(handle, ElementId::from(elem_id.id)))
+    Ok(WebElement::new(handle, ElementId::from(elem_id.id())))
 }
 
 /// Convert the raw JSON into a Vec of WebElement structs.
@@ -36,7 +36,7 @@ pub fn convert_elements_async<'a>(
     value: &serde_json::Value,
 ) -> WebDriverResult<Vec<WebElement<'a>>> {
     let values: Vec<ElementRef> = serde_json::from_value(value.clone())?;
-    Ok(values.into_iter().map(|x| WebElement::new(handle, ElementId::from(x.id))).collect())
+    Ok(values.into_iter().map(|x| WebElement::new(handle, ElementId::from(x.id()))).collect())
 }
 
 /// The WebElement struct encapsulates a single element on a page.
@@ -750,6 +750,18 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn outer_html(&self) -> WebDriverResult<String> {
         self.get_property("outerHTML").await.map(|x| x.unwrap_or_default())
+    }
+
+    /// Get the shadowRoot property of the current element.
+    ///
+    /// Call this method on the element containing the `#shadowRoot` node.
+    /// You can then use the returned `WebElement` to query elements within the shadowRoot node.
+    pub async fn get_shadow_root(&'a self) -> WebDriverResult<WebElement<'a>> {
+        let mut args = ScriptArgs::new();
+        args.push(&self)?;
+        let ret =
+            self.handle.execute_script_with_args("return arguments[0].shadowRoot", &args).await?;
+        ret.get_element()
     }
 }
 
