@@ -50,7 +50,7 @@ impl WebDriverConfig {
         V: DeserializeOwned,
     {
         let cfg = self.config.read();
-        cfg.custom_settings.get(key).map(|v| serde_json::from_value::<V>(v.clone()).ok()).flatten()
+        cfg.custom_settings.get(key).and_then(|v| serde_json::from_value::<V>(v.clone()).ok())
     }
 
     pub fn set<V>(&mut self, key: &str, value: V) -> WebDriverResult<()>
