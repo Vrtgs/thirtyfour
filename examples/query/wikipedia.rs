@@ -18,7 +18,7 @@ async fn main() -> color_eyre::Result<()> {
     // Navigate to https://wikipedia.org.
     driver.get("https://wikipedia.org").await?;
 
-    let elem_form = driver.query(By::Id("search-form")).first().await?;
+    let elem_form = driver.query(By::Id("search-form")).single().await?;
 
     // Find element from element using multiple selectors.
     // Each selector will be executed once per poll iteration.

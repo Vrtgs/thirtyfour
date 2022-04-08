@@ -198,8 +198,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
         Ok(elements.is_empty())
     }
 
-    /// Return the first WebElement that matches any selector (including all of
-    /// the filters for that selector).
+    /// Return the first WebElement that matches any selector (including filters).
     ///
     /// Returns None if no elements match.
     pub async fn first_opt(&self) -> WebDriverResult<Option<WebElement<'handle>>> {
@@ -207,8 +206,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
         Ok(elements.into_iter().next())
     }
 
-    /// Return only the first WebElement that matches any selector (including all of
-    /// the filters for that selector).
+    /// Return only the first WebElement that matches any selector (including filters).
     ///
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
     pub async fn first(&self) -> WebDriverResult<WebElement<'handle>> {
@@ -222,16 +220,30 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
         }
     }
 
-    /// Return all WebElements that match any one selector (including all of the
-    /// filters for that selector).
+    /// Return only a single WebElement that matches any selector (including filters).
+    ///
+    /// This method requires that only one element was found, and will return
+    /// Err(WebDriverError::NoSuchElement) if the number of elements found was not
+    /// equal to 1.
+    pub async fn single(&self) -> WebDriverResult<WebElement<'handle>> {
+        let mut elements = self.run_poller(false).await?;
+
+        if elements.len() == 1 {
+            Ok(elements.remove(0))
+        } else {
+            let err = no_such_element(&self.selectors, &self.description);
+            Err(err)
+        }
+    }
+
+    /// Return all WebElements that match any one selector (including filters).
     ///
     /// Returns an empty Vec if no elements match.
     pub async fn all(&self) -> WebDriverResult<Vec<WebElement<'handle>>> {
         self.run_poller(false).await
     }
 
-    /// Return all WebElements that match any one selector (including all of the
-    /// filters for that selector).
+    /// Return all WebElements that match any one selector (including filters).
     ///
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
     pub async fn all_required(&self) -> WebDriverResult<Vec<WebElement<'handle>>> {
