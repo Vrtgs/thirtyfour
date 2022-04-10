@@ -19,11 +19,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::error::{no_such_element, WebDriverError, WebDriverResult};
+use crate::error::{WebDriverError, WebDriverResult};
 use crate::{By, WebElement};
 
 /// Set the selection state of the specified element.
-async fn set_selected(element: &WebElement<'_>, select: bool) -> WebDriverResult<()> {
+async fn set_selected(element: &WebElement, select: bool) -> WebDriverResult<()> {
     if element.is_selected().await? != select {
         element.click().await?;
     }
@@ -66,14 +66,14 @@ fn get_longest_token(value: &str) -> &str {
 }
 
 /// Convenience wrapper for `<select>` elements.
-pub struct SelectElement<'a> {
-    element: WebElement<'a>,
+pub struct SelectElement {
+    element: WebElement,
     multiple: bool,
 }
 
-impl<'a> SelectElement<'a> {
+impl SelectElement {
     /// Instantiate a new SelectElement struct. The specified element must be a `<select>` element.
-    pub async fn new(element: &WebElement<'a>) -> WebDriverResult<SelectElement<'a>> {
+    pub async fn new(element: &WebElement) -> WebDriverResult<SelectElement> {
         let multiple = element.get_attribute("multiple").await?.filter(|x| x != "false").is_some();
         let element = element.clone();
         Ok(SelectElement {
@@ -83,12 +83,12 @@ impl<'a> SelectElement<'a> {
     }
 
     /// Return a vec of all options belonging to this select tag.
-    pub async fn options(&self) -> WebDriverResult<Vec<WebElement<'a>>> {
+    pub async fn options(&self) -> WebDriverResult<Vec<WebElement>> {
         self.element.find_elements(By::Tag("option")).await
     }
 
     /// Return a vec of all selected options belonging to this select tag.
-    pub async fn all_selected_options(&self) -> WebDriverResult<Vec<WebElement<'a>>> {
+    pub async fn all_selected_options(&self) -> WebDriverResult<Vec<WebElement>> {
         let mut selected = Vec::new();
         for option in self.options().await? {
             if option.is_selected().await? {
@@ -99,13 +99,13 @@ impl<'a> SelectElement<'a> {
     }
 
     /// Return the first selected option in this select tag.
-    pub async fn first_selected_option(&self) -> WebDriverResult<WebElement<'a>> {
+    pub async fn first_selected_option(&self) -> WebDriverResult<WebElement> {
         for option in self.options().await? {
             if option.is_selected().await? {
                 return Ok(option);
             }
         }
-        Err(no_such_element("No options are selected"))
+        Err(WebDriverError::NoSuchElement("No options are selected".to_string()))
     }
 
     /// Set selection state for all options.
@@ -139,7 +139,7 @@ impl<'a> SelectElement<'a> {
                 return Ok(());
             }
         }
-        Err(no_such_element(&format!("Could not locate element with index {}", index)))
+        Err(WebDriverError::NoSuchElement(format!("Could not locate element with index {}", index)))
     }
 
     /// Set the selection state of options that display text matching the specified text.
@@ -189,7 +189,10 @@ impl<'a> SelectElement<'a> {
         }
 
         if !matched {
-            Err(no_such_element(&format!("Could not locate element with visible text: {}", text)))
+            Err(WebDriverError::NoSuchElement(format!(
+                "Could not locate element with visible text: {}",
+                text
+            )))
         } else {
             Ok(())
         }
@@ -204,7 +207,7 @@ impl<'a> SelectElement<'a> {
         let xpath = format!(".//option[{}]", condition);
         let options = self.element.find_elements(By::XPath(&xpath)).await?;
         if options.is_empty() {
-            return Err(no_such_element(&format!(
+            return Err(WebDriverError::NoSuchElement(format!(
                 "Could not locate element matching XPath condition: {:?}",
                 xpath
             )));

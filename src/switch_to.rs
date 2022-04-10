@@ -1,30 +1,23 @@
 use crate::session::handle::SessionHandle;
 use crate::{
-    common::command::Command,
     error::{WebDriverError, WebDriverResult},
-    webelement::convert_element_async,
-    Alert, WebElement, WindowHandle,
+    Alert, WebElement,
 };
+use fantoccini::elements::Element;
+use fantoccini::wd::WindowHandle;
 
 /// Struct for switching between frames/windows/alerts.
-pub struct SwitchTo<'a> {
-    handle: &'a SessionHandle,
+pub struct SwitchTo {
+    handle: SessionHandle,
 }
 
-impl<'a> SwitchTo<'a> {
+impl SwitchTo {
     /// Create a new SwitchTo struct. This is typically created internally
     /// via a call to `WebDriver::switch_to()`.
-    pub fn new(handle: &'a SessionHandle) -> Self {
+    pub fn new(handle: SessionHandle) -> Self {
         Self {
             handle,
         }
-    }
-
-    /// Convenience wrapper for running WebDriver commands.
-    ///
-    /// For `thirtyfour` internal use only.
-    async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
-        self.handle.cmd(command).await
     }
 
     /// Return the element with focus, or the `<body>` element if nothing has focus.
@@ -37,7 +30,7 @@ impl<'a> SwitchTo<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         // Wait for page load.
     /// #         driver.find_element(By::Id("button1")).await?;
@@ -46,7 +39,7 @@ impl<'a> SwitchTo<'a> {
     /// assert_eq!(elem.tag_name().await?, "body");
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// // Now let's manually focus an element and try active_element() again.
-    /// driver.execute_script(r#"document.getElementsByName("input1")[0].focus();"#).await?;
+    /// driver.execute_script(r#"document.getElementsByName("input1")[0].focus();"#, Vec::new()).await?;
     /// let elem = driver.switch_to().active_element().await?;
     /// elem.send_keys("selenium").await?;
     /// #         let elem = driver.find_element(By::Name("input1")).await?;
@@ -56,15 +49,15 @@ impl<'a> SwitchTo<'a> {
     /// #     })
     /// # }
     /// ```
-    pub async fn active_element(self) -> WebDriverResult<WebElement<'a>> {
-        let v = self.cmd(Command::GetActiveElement).await?;
-        convert_element_async(self.handle, &v["value"])
+    pub async fn active_element(self) -> WebDriverResult<WebElement> {
+        let elem = self.handle.client.active_element().await?;
+        Ok(WebElement::new(elem, self.handle.clone()))
     }
 
     /// Return Alert struct for processing the active alert on the page.
     ///
     /// See [Alert](struct.Alert.html) documentation for examples.
-    pub fn alert(self) -> Alert<'a> {
+    pub fn alert(self) -> Alert {
         Alert::new(self.handle)
     }
 
@@ -78,7 +71,7 @@ impl<'a> SwitchTo<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pageiframe")).await?.click().await?;
     /// driver.switch_to().frame_number(0).await?;
@@ -93,7 +86,8 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub async fn default_content(self) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToFrameDefault).await.map(|_| ())
+        self.handle.client.enter_frame(None).await?;
+        Ok(())
     }
 
     /// Switch to an iframe by index. The first iframe on the page has index 0.
@@ -106,7 +100,7 @@ impl<'a> SwitchTo<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pageiframe")).await?.click().await?;
     /// driver.switch_to().frame_number(0).await?;
@@ -121,7 +115,8 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub async fn frame_number(self, frame_number: u16) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToFrameNumber(frame_number)).await.map(|_| ())
+        self.handle.client.enter_frame(Some(frame_number)).await?;
+        Ok(())
     }
 
     /// Switch to the specified iframe element.
@@ -134,7 +129,7 @@ impl<'a> SwitchTo<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pageiframe")).await?.click().await?;
     /// let elem_iframe = driver.find_element(By::Id("iframeid1")).await?;
@@ -149,8 +144,10 @@ impl<'a> SwitchTo<'a> {
     /// #     })
     /// # }
     /// ```
-    pub async fn frame_element(self, frame_element: &WebElement<'a>) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToFrameElement(frame_element.element_id.clone())).await.map(|_| ())
+    pub async fn frame_element(self, frame_element: &WebElement) -> WebDriverResult<()> {
+        let frame = Element::from_element_id(self.handle.client, frame_element.element_id());
+        frame.enter_frame().await?;
+        Ok(())
     }
 
     /// Switch to the parent frame.
@@ -163,7 +160,7 @@ impl<'a> SwitchTo<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pageiframe")).await?.click().await?;
     /// let elem_iframe = driver.find_element(By::Id("iframeid1")).await?;
@@ -183,7 +180,8 @@ impl<'a> SwitchTo<'a> {
     /// # }
     /// ```
     pub async fn parent_frame(self) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToParentFrame).await.map(|_| ())
+        self.handle.client.enter_parent_frame().await?;
+        Ok(())
     }
 
     /// Switch to the specified window.
@@ -196,27 +194,28 @@ impl<'a> SwitchTo<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#).await?;
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.window_handles().await?;
-    /// driver.switch_to().window(&handles[1]).await?;
+    /// driver.switch_to().window(handles[1].clone()).await?;
     /// // We are now controlling the new tab.
     /// driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("button1")).await?;
-    /// #         driver.switch_to().window(&handles[0]).await?;
+    /// #         driver.switch_to().window(handles[0].clone()).await?;
     /// #         driver.find_element(By::Name("input1")).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn window(self, handle: &WindowHandle) -> WebDriverResult<()> {
-        self.cmd(Command::SwitchToWindow(handle.clone())).await.map(|_| ())
+    pub async fn window(self, handle: WindowHandle) -> WebDriverResult<()> {
+        self.handle.client.switch_to_window(handle).await?;
+        Ok(())
     }
 
     /// Switch to the window with the specified name. This uses the `window.name` property.
@@ -230,16 +229,16 @@ impl<'a> SwitchTo<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// // Set main window name so we can switch back easily.
     /// driver.set_window_name("mywindow").await?;
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#).await?;
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.window_handles().await?;
-    /// driver.switch_to().window(&handles[1]).await?;
+    /// driver.switch_to().window(handles[1].clone()).await?;
     /// // We are now controlling the new tab.
     /// assert_eq!(driver.title().await?, "");
     /// driver.switch_to().window_name("mywindow").await?;
@@ -253,19 +252,16 @@ impl<'a> SwitchTo<'a> {
     pub async fn window_name(self, name: &str) -> WebDriverResult<()> {
         let original_handle = self.handle.current_window_handle().await?;
         let handles = self.handle.window_handles().await?;
-        for handle in &handles {
+        for handle in handles {
             self.handle.switch_to().window(handle).await?;
-            let ret = self.handle.execute_script(r#"return window.name;"#).await?;
+            let ret = self.handle.execute_script(r#"return window.name;"#, Vec::new()).await?;
             let current_name: String = ret.convert()?;
             if current_name == name {
                 return Ok(());
             }
         }
 
-        self.window(&original_handle).await?;
-        Err(WebDriverError::NotFound(
-            format!("window handle '{}'", name),
-            "No windows with the specified handle were found".to_string(),
-        ))
+        self.window(original_handle).await?;
+        Err(WebDriverError::NoSuchWindow(name.to_string()))
     }
 }

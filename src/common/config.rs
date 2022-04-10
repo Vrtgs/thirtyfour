@@ -1,6 +1,7 @@
 use crate::error::WebDriverResult;
 use crate::query::ElementPoller;
 use crate::SessionId;
+use fantoccini::wd::Capabilities;
 use parking_lot::RwLock;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -11,6 +12,7 @@ use std::sync::Arc;
 struct InnerConfig {
     pub session_id: SessionId,
     pub query_poller: ElementPoller,
+    pub capabilities: Capabilities,
     pub custom_settings: HashMap<String, serde_json::Value>,
 }
 
@@ -20,11 +22,12 @@ pub struct WebDriverConfig {
 }
 
 impl WebDriverConfig {
-    pub fn new(session_id: SessionId) -> Self {
+    pub fn new(session_id: SessionId, capabilities: Capabilities) -> Self {
         Self {
             config: Arc::new(RwLock::new(InnerConfig {
                 session_id,
                 query_poller: ElementPoller::default(),
+                capabilities,
                 custom_settings: HashMap::default(),
             })),
         }
@@ -43,6 +46,11 @@ impl WebDriverConfig {
     pub fn set_query_poller(&self, poller: ElementPoller) {
         let mut cfg = self.config.write();
         cfg.query_poller = poller;
+    }
+
+    pub fn get_capabilities(&self) -> Capabilities {
+        let cfg = self.config.read();
+        cfg.capabilities.clone()
     }
 
     pub fn get<V>(&self, key: &str) -> Option<V>

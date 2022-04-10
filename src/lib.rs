@@ -4,9 +4,6 @@
 //! Tested with Chrome and Firefox although any W3C-compatible WebDriver
 //! should work.
 //!
-//! Async only (`tokio` and `async-std` runtimes supported via feature flags).
-//! For synchronous support, use the [thirtyfour_sync](https://docs.rs/thirtyfour_sync) crate instead.
-//!
 //! ## Features
 //!
 //! - All W3C WebDriver and WebElement methods supported
@@ -28,19 +25,8 @@
 //!
 //! ## Feature Flags
 //!
-//! Support for **tokio** and **async-std** async runtimes, and support for synchronous http,
-//! are provided via feature flags.
-//!
-//! * `tokio-runtime`: (Default) Use the **tokio** async runtime with the [reqwest](https://docs.rs/reqwest) http client.
-//! * `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
-//!
-//!     **NOTE**: You cannot combine `async-std-runtime` with `tokio-runtime`.
-//!
-//! There are four `reqwest-*-tls*`-features, which enable the respective features in the `reqwest` dependency:
-//! - **reqwest-default-tls** *(enabled by default)*: Provides TLS support to connect over HTTPS.
-//! - **reqwest-native-tls**: Enables TLS functionality provided by `native-tls`.
-//! - **reqwest-native-tls-vendored**: Enables the `vendored` feature of `native-tls`.
-//! - **reqwest-rustls-tls**: Enables TLS functionality provided by `rustls`.
+//! * `rusttls-tls`: (Default) Use rusttls to provide TLS support (via fantoccini/hyper).
+//! * `native-tls`: Use native TLS (via fantoccini/hyper).
 //!
 //! ## Examples
 //!
@@ -59,14 +45,13 @@
 //! ### Example (async):
 //!
 //! ```rust
-//! # #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))] {
 //! use thirtyfour::prelude::*;
 //! use tokio;
 //!
 //! #[tokio::main]
 //! async fn main() -> WebDriverResult<()> {
 //!     let caps = DesiredCapabilities::chrome();
-//!     let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+//!     let driver = WebDriver::new("http://localhost:4444", caps).await?;
 //!
 //!     // Navigate to URL.
 //!     driver.get("http://webappdemo").await?;
@@ -96,7 +81,6 @@
 //!
 //!     Ok(())
 //! }
-//! # }
 //! ```
 //!
 //! ### The browser will not close automatically
@@ -124,22 +108,20 @@
 #![allow(clippy::needless_doctest_main)]
 
 pub use alert::Alert;
-pub use common::requestdata::{RequestData, RequestMethod};
 pub use common::{
     capabilities::{
         chrome::ChromeCapabilities, desiredcapabilities::*, edge::EdgeCapabilities,
         firefox::FirefoxCapabilities, ie::InternetExplorerCapabilities, opera::OperaCapabilities,
         safari::SafariCapabilities,
     },
-    command::{By, ExtensionCommand},
-    cookie::Cookie,
-    keys::{Keys, TypingData},
-    scriptargs::ScriptArgs,
+    command::By,
     types::*,
 };
 
+pub use cookie;
+pub use fantoccini::wd::TimeoutConfiguration;
 pub use switch_to::SwitchTo;
-pub use webdriver::{WebDriver, WebDriverBuilder};
+pub use webdriver::WebDriver;
 pub use webelement::WebElement;
 
 /// Allow importing the common async structs via `use thirtyfour::prelude::*`.
@@ -149,20 +131,20 @@ pub mod prelude {
     pub use crate::query::{ElementQueryable, ElementWaitable};
     pub use crate::session::scriptret::ScriptRet;
     pub use crate::switch_to::SwitchTo;
-    pub use crate::webdriver::{WebDriver, WebDriverBuilder};
+    pub use crate::webdriver::WebDriver;
     pub use crate::webelement::WebElement;
-    pub use crate::{By, Cookie, DesiredCapabilities, Keys, ScriptArgs, TypingData};
+    pub use crate::{By, DesiredCapabilities};
+    pub use fantoccini::cookies::Cookie;
+    pub use fantoccini::key::Key;
 }
 
 /// Action chains allow for more complex user interactions with the keyboard and mouse.
 pub mod action_chain;
 mod alert;
-mod runtime;
+/// Everything related to driving the underlying WebDriver session.
 pub mod session {
     pub mod handle;
     pub mod scriptret;
-    pub mod start;
-    pub mod task;
 }
 
 /// Miscellaneous support functions for `thirtyfour` tests.
@@ -171,20 +153,8 @@ mod switch_to;
 mod webdriver;
 mod webelement;
 
-/// Async HTTP client traits.
-pub mod http {
-    pub mod connection_async;
-    #[cfg(not(any(feature = "tokio-runtime", feature = "async-std-runtime")))]
-    pub mod nulldriver_async;
-    #[cfg(all(feature = "tokio-runtime", not(feature = "async-std-runtime")))]
-    pub mod reqwest_async;
-    #[cfg(feature = "async-std-runtime")]
-    pub mod surf_async;
-}
-
 /// Common types used by both async and sync implementations.
 pub mod common {
-    pub mod action;
     pub mod capabilities {
         pub mod chrome;
         pub mod desiredcapabilities;
@@ -196,11 +166,6 @@ pub mod common {
     }
     pub mod command;
     pub mod config;
-    pub mod connection_common;
-    pub mod cookie;
-    pub mod keys;
-    pub mod requestdata;
-    pub mod scriptargs;
     pub mod types;
 }
 
@@ -216,6 +181,15 @@ pub mod extensions {
         pub use devtools::ChromeDevTools;
         pub use networkconditions::NetworkConditions;
     }
+
+    /// Extensions for working with Firefox.
+    pub mod firefox {
+        mod firefoxcommand;
+        mod firefoxtools;
+
+        pub use firefoxcommand::FirefoxCommand;
+        pub use firefoxtools::FirefoxTools;
+    }
 }
 
 /// Wrappers for specific component types.
@@ -229,3 +203,6 @@ pub mod error;
 
 // ElementQuery and ElementWaiter interfaces.
 pub mod query;
+
+// Re-export fantoccini types.
+pub use fantoccini::key::Key;

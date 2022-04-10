@@ -1,24 +1,24 @@
 use std::path::Path;
 
+use fantoccini::wd::Capabilities;
 use serde::Serialize;
 use serde_json::{from_value, json, to_value, Value};
 
-use crate::common::capabilities::desiredcapabilities::Capabilities;
 use crate::error::WebDriverResult;
-use crate::PageLoadStrategy;
+use crate::{CapabilitiesHelper, PageLoadStrategy};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
 pub struct FirefoxCapabilities {
-    capabilities: Value,
+    capabilities: Capabilities,
 }
 
 impl Default for FirefoxCapabilities {
     fn default() -> Self {
+        let mut capabilities = Capabilities::new();
+        capabilities.insert("browserName".to_string(), json!("firefox"));
         FirefoxCapabilities {
-            capabilities: json!({
-                "browserName": "firefox"
-            }),
+            capabilities,
         }
     }
 }
@@ -40,7 +40,7 @@ impl FirefoxCapabilities {
     /// Set the selenium logging preferences. To set the `geckodriver` log level,
     /// use `set_log_level()` instead.
     pub fn set_logging_prefs(&mut self, component: String, log_level: LoggingPrefsLogLevel) {
-        self.update(json!({"loggingPrefs": {component: log_level}}));
+        self.update("loggingPrefs", json!({ component: log_level }));
     }
 
     /// Set the `geckodriver` log level.
@@ -85,13 +85,23 @@ impl FirefoxCapabilities {
     }
 }
 
-impl Capabilities for FirefoxCapabilities {
-    fn get(&self) -> &Value {
-        &self.capabilities
+impl CapabilitiesHelper for FirefoxCapabilities {
+    fn get(&self, key: &str) -> Option<&Value> {
+        self.capabilities.get(key)
     }
 
-    fn get_mut(&mut self) -> &mut Value {
-        &mut self.capabilities
+    fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
+        self.capabilities.get_mut(key)
+    }
+
+    fn set(&mut self, key: String, value: Value) {
+        self.capabilities.insert(key, value);
+    }
+}
+
+impl From<FirefoxCapabilities> for Capabilities {
+    fn from(caps: FirefoxCapabilities) -> Capabilities {
+        caps.capabilities
     }
 }
 

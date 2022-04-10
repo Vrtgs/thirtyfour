@@ -17,7 +17,7 @@ use stringmatch::Needle;
 /// #     use thirtyfour::query::ElementPoller;
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
-/// #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+/// #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
 /// #         driver.get("http://webappdemo").await?;
 /// #         let elem = driver.query(By::Id("button1")).first().await?;
 /// // Wait until the element is displayed.
@@ -29,15 +29,15 @@ use stringmatch::Needle;
 /// # }
 /// ```
 #[derive(Debug, Clone)]
-pub struct ElementWaiter<'handle> {
-    element: WebElement<'handle>,
+pub struct ElementWaiter {
+    element: WebElement,
     poller: ElementPoller,
     message: String,
     ignore_errors: bool,
 }
 
-impl<'handle> ElementWaiter<'handle> {
-    fn new(element: WebElement<'handle>, poller: ElementPoller) -> Self {
+impl ElementWaiter {
+    fn new(element: WebElement, poller: ElementPoller) -> Self {
         Self {
             element,
             poller,
@@ -358,7 +358,7 @@ pub trait ElementWaitable {
     fn wait_until(&self) -> ElementWaiter;
 }
 
-impl ElementWaitable for WebElement<'_> {
+impl ElementWaitable for WebElement {
     /// Return an ElementWaiter instance for more executing powerful explicit waits.
     ///
     /// This uses the builder pattern to construct explicit waits using one of the
@@ -382,7 +382,7 @@ async fn _test_is_send() -> WebDriverResult<()> {
 
     // Pre values
     let caps = DesiredCapabilities::chrome();
-    let driver = WebDriver::new("http://localhost:4444", &caps).await?;
+    let driver = WebDriver::new("http://localhost:4444", caps).await?;
     let elem = driver.find_element(By::Css(r#"div"#)).await?;
 
     // ElementWaitCondition

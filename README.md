@@ -9,6 +9,17 @@ It supports the full W3C WebDriver spec. Tested with Chrome and Firefox although
 Async only (`tokio` and `async-std` runtimes supported via feature flags).
 For synchronous support, use the [thirtyfour_sync](https://docs.rs/thirtyfour_sync) crate instead.
 
+## MAJOR UPDATE ANNOUNCEMENT
+
+In order to reduce duplication of effort, `thirtyfour` is switching to `fantoccini` as the
+`WebDriver` client backend from Version 0.29 and onwards.
+
+This comes with some advantages and drawbacks, but hopefully this will help to provide
+a more stable ecosystem around Web Browser automation using Rust.
+
+The update aims to maintain broad API compatibility with previous versions, however there 
+are some breaking changes (see the section on breaking changes for v0.29.x below).
+
 ## Features
 
 - All W3C WebDriver and WebElement methods supported
@@ -33,10 +44,8 @@ It is named after the atomic number for the Selenium chemical element (Se).
 
 ## Feature Flags
 
-- `tokio-runtime`: (Default) Use the **tokio** async runtime with the [reqwest](https://docs.rs/reqwest) http client.
-- `async-std-runtime`: Use the **async-std** runtime with the [surf](https://docs.rs/surf) http client.
-
-  **NOTE:** There are also additional features for enabling TLS. See the API documentation for details.
+- `rusttls-tls`: (Default) Use rusttls to provide TLS support (via fantoccini/hyper).
+- `native-tls`: Use native TLS (via fantoccini/hyper).
 
 ## Examples
 
@@ -63,7 +72,7 @@ use tokio;
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
      let caps = DesiredCapabilities::chrome();
-     let driver = WebDriver::new("http://localhost:4444", &caps).await?;
+     let driver = WebDriver::new("http://localhost:4444", caps).await?;
 
      // Navigate to https://wikipedia.org.
      driver.get("https://wikipedia.org").await?;
@@ -165,6 +174,33 @@ elem.wait_until().conditions(vec![
 
 These predicates (or your own) can also be supplied as filters to `ElementQuery`.
 
+## Breaking changes in v0.29 
+
+- Tokio is now the only supported async runtime (via `fantoccini`)
+- `WebDriver` and all `WebElement` instances no longer contain a reference to the underlying `WebDriverSession`.
+  This makes some things easier since you no longer need to worry about element lifetimes.
+  However it also introduces the potential for your code to issue `WebElement::*` commands after the browser has
+  been closed, which would lead to runtime errors.
+- `WebDriver::new()` now takes ownership of `DesiredCapabilities` rather than taking a reference to it.
+- WebDriver timeouts are currently not supported. `WebDriver::new_with_timeout()` will still create a `WebDriver`
+  instance, however the timeouts will not take effect.
+- The `WebDriverError` enum now mostly wraps `fantoccini::CmdError` with some variants split out into top-level
+  variants for ease-of-use
+- `TypingData` has been removed. You can now just use `&str` and/or the `Key` enum directly
+- Cookie support is now provided by `cookie-rs`, for compatibility with `fantoccini`
+- `ScriptArgs` has been removed. You can provide arguments to scripts as `Vec<serde_json::Value>`. 
+  Use `WebElement::to_json()?` to convert a `WebElement` to a `serde_json::Value`.
+- Likewise, `WebDriver::execute_script_with_args()` has been removed. `WebDriver::execute_script()` now requires
+  a `Vec<serde_json::Value>`, for which you can specify `Vec::new()` or `vec![]` if your script does not require args.
+- `WebDriver::execute_async_script*()` has been renamed to `WebDriver::execute_script_async()` and requires a
+  `Vec<serde_json::Value>` similar to `WebDriver::execute_script()`.
+- `WebElement::screenshot_as_base64()` has been removed. Use `WebElement::screenshot_as_png()` to get the PNG data.
+- `WebDriver::extension_command()` has been removed. Extension commands can be executed by implementing 
+  `WebDriverCompatibleCommand` and passing it to `WebDriver::handle.client.issue_cmd()`
+  (see `ChromeCommand` and `FirefoxCommand` for example of how to do this)
+
+If there are other changes I've missed that should be on this list, please let me know and I'll add them.
+
 ## Running against selenium
 
 **NOTE:** To run the selenium example, start selenium (instructions below) then run:
@@ -177,8 +213,7 @@ Essentially you need 3 main components as a minimum:
 
 1. Selenium standalone running on some server, usually localhost at port 4444.
 
-    When using selenium, remember to include `/wd/hub` after the server address.
-    For example, when running against localhost:4444, your selenium url will be `http://localhost:4444/wd/hub`
+    For example, `http://localhost:4444`
 
 2. The webdriver for your browser somewhere in your PATH, e.g. chromedriver (Chrome) or geckodriver (Firefox)
 3. Your code, that imports this library
@@ -204,36 +239,6 @@ If you don't want to use a VNC viewer you don't have to, but then you won't see 
 
 If you want to run on Firefox instead, or customize the browser setup, see
 [docker-selenium](https://github.com/SeleniumHQ/docker-selenium) on GitHub for more options
-
-### Choosing between Sync and Async
-
-The `thirtyfour` crate provides an async API whereas `thirtyfour_sync` provides sync. Which one you should use really depends on your personal preference and the nature of your application.
-
-For a more in-depth introduction to async programming in rust, see [The Rust Async Book](https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html).
-
-All interactions with selenium involve sending requests to the selenium server, and then waiting for a response.
-The difference between sync and async for `thirtyfour` essentially comes down to what actually happens (or doesn't happen) while waiting for that response.
-
-With the synchronous version, requests to selenium will block the calling thread until they return. While this is obviously inefficient, the code is often a little bit simpler and easier to follow.
-You can alleviate some of the inefficiency by using multiple threads if/when concurrency is required, but note that threads have some overhead as well. If you're thinking of spawning hundreds (or even tens) of threads, you probably want to use async instead.
-
-In contrast, async method calls will immediately return a "future", which is a bit like a task that can be executed later (typically via `.await`), and will eventually complete and return a value.
-While it is `.await`ing a response from selenium, the "future" will yield control of the current thread, allowing other "futures" to run.
-This allows multiple operations to be performed concurrently on the same thread, rather than just sitting and blocking the thread completely for each call to selenium.
-For more information on running multiple tasks concurrently, see chapter 6 of [The Rust Async Book](https://rust-lang.github.io/async-book/06_multiple_futures/01_chapter.html).
-
-In short, if you need to do a lot of I/O (network requests, reading/writing files, handling network connections), and especially if you want to do I/O operations concurrently, choose async. If not, it's really up to your personal preference.
-
-## WebDriverSession Lifetime
-
-All WebElement structs share a reference to the WebDriverSession which 
-provdes a compile-time guarantee that no element or alert struct (for example)
-will outlast the browser session. This should prevent issues where something 
-attempts to send a command to a browser session that has already been closed.
-
-By embedding a reference to the actual WebDriverSession inside each
-struct such as WebElement, this also enables things such as easily adding
-WebElement methods that run JavaScript internally.
 
 ## Running the tests for `thirtyfour`, including doctests
 

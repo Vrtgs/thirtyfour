@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::error::{WebDriverError, WebDriverErrorInfo};
+use crate::error::WebDriverError;
 use crate::prelude::{WebDriver, WebDriverResult};
 use crate::{By, WebElement};
 use stringmatch::Needle;
@@ -23,17 +23,17 @@ fn no_such_element(selectors: &[ElementSelector], description: &str) -> WebDrive
         format!("'{}' element(s)", description)
     };
 
-    WebDriverError::NoSuchElement(WebDriverErrorInfo::new(&format!(
+    WebDriverError::NoSuchElement(format!(
         "{} not found using selectors: {}",
         element_description,
-        &get_selector_summary(selectors)
-    )))
+        get_selector_summary(selectors)
+    ))
 }
 
-pub async fn filter_elements<'a, 'b>(
-    mut elements: Vec<WebElement<'a>>,
-    filters: &'b [ElementPredicate],
-) -> WebDriverResult<Vec<WebElement<'a>>> {
+pub async fn filter_elements(
+    mut elements: Vec<WebElement>,
+    filters: &[ElementPredicate],
+) -> WebDriverResult<Vec<WebElement>> {
     for func in filters {
         let tmp_elements = std::mem::take(&mut elements);
         for element in tmp_elements {
@@ -53,15 +53,15 @@ pub async fn filter_elements<'a, 'b>(
 /// An ElementSelector contains a selector method (By) as well as zero or more filters.
 /// The filters will be applied to any elements matched by the selector.
 /// Selectors and filters all run in full on every poll iteration.
-pub struct ElementSelector<'a> {
-    pub by: By<'a>,
+pub struct ElementSelector {
+    pub by: By,
     pub filters: Vec<ElementPredicate>,
 }
 
-impl<'a> ElementSelector<'a> {
-    pub fn new(by: By<'a>) -> Self {
+impl ElementSelector {
+    pub fn new(by: By) -> Self {
         Self {
-            by: by.clone(),
+            by,
             filters: Vec::new(),
         }
     }
@@ -76,9 +76,9 @@ impl<'a> ElementSelector<'a> {
 /// The command issued to the webdriver will differ depending on the source,
 /// i.e. FindElement vs FindElementFromElement etc. but the ElementQuery
 /// interface is the same for both.
-pub enum ElementQuerySource<'a> {
-    Driver(&'a SessionHandle),
-    Element(&'a WebElement<'a>),
+pub enum ElementQuerySource {
+    Driver(SessionHandle),
+    Element(WebElement),
 }
 
 /// High-level interface for performing powerful element queries using a
@@ -93,7 +93,7 @@ pub enum ElementQuerySource<'a> {
 /// #     use thirtyfour::query::ElementPoller;
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
-/// #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+/// #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
 /// #         driver.get("http://webappdemo").await?;
 /// // WebDriver::query() example.
 /// let elem = driver.query(By::Css("div[data-section='section-buttons']")).first().await?;
@@ -105,16 +105,16 @@ pub enum ElementQuerySource<'a> {
 /// #     })
 /// # }
 /// ```
-pub struct ElementQuery<'handle, 'by> {
-    source: ElementQuerySource<'handle>,
+pub struct ElementQuery {
+    source: ElementQuerySource,
     poller: ElementPoller,
-    selectors: Vec<ElementSelector<'by>>,
+    selectors: Vec<ElementSelector>,
     ignore_errors: bool,
     description: String,
 }
 
-impl<'handle, 'by> ElementQuery<'handle, 'by> {
-    fn new(source: ElementQuerySource<'handle>, poller: ElementPoller, by: By<'by>) -> Self {
+impl ElementQuery {
+    fn new(source: ElementQuerySource, poller: ElementPoller, by: By) -> Self {
         let selector = ElementSelector::new(by);
         Self {
             source,
@@ -170,7 +170,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
 
     /// Add the specified selector to this ElementQuery. Callers should use
     /// the `or()` method instead.
-    fn add_selector(mut self, selector: ElementSelector<'by>) -> Self {
+    fn add_selector(mut self, selector: ElementSelector) -> Self {
         self.selectors.push(selector);
         self
     }
@@ -178,7 +178,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
     /// Add a new selector to this ElementQuery. All conditions specified after
     /// this selector (up until the next `or()` method) will apply to this
     /// selector.
-    pub fn or(self, by: By<'by>) -> Self {
+    pub fn or(self, by: By) -> Self {
         self.add_selector(ElementSelector::new(by))
     }
 
@@ -201,7 +201,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
     /// Return the first WebElement that matches any selector (including filters).
     ///
     /// Returns None if no elements match.
-    pub async fn first_opt(&self) -> WebDriverResult<Option<WebElement<'handle>>> {
+    pub async fn first_opt(&self) -> WebDriverResult<Option<WebElement>> {
         let elements = self.run_poller(false).await?;
         Ok(elements.into_iter().next())
     }
@@ -209,7 +209,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
     /// Return only the first WebElement that matches any selector (including filters).
     ///
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
-    pub async fn first(&self) -> WebDriverResult<WebElement<'handle>> {
+    pub async fn first(&self) -> WebDriverResult<WebElement> {
         let mut elements = self.run_poller(false).await?;
 
         if elements.is_empty() {
@@ -225,7 +225,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
     /// This method requires that only one element was found, and will return
     /// Err(WebDriverError::NoSuchElement) if the number of elements found was not
     /// equal to 1.
-    pub async fn single(&self) -> WebDriverResult<WebElement<'handle>> {
+    pub async fn single(&self) -> WebDriverResult<WebElement> {
         let mut elements = self.run_poller(false).await?;
 
         if elements.len() == 1 {
@@ -239,14 +239,14 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
     /// Return all WebElements that match any one selector (including filters).
     ///
     /// Returns an empty Vec if no elements match.
-    pub async fn all(&self) -> WebDriverResult<Vec<WebElement<'handle>>> {
+    pub async fn all(&self) -> WebDriverResult<Vec<WebElement>> {
         self.run_poller(false).await
     }
 
     /// Return all WebElements that match any one selector (including filters).
     ///
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
-    pub async fn all_required(&self) -> WebDriverResult<Vec<WebElement<'handle>>> {
+    pub async fn all_required(&self) -> WebDriverResult<Vec<WebElement>> {
         let elements = self.run_poller(false).await?;
 
         if elements.is_empty() {
@@ -262,7 +262,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
 
     /// Run the poller for this ElementQuery and return the Vec of WebElements matched.
     /// NOTE: This function doesn't return a no_such_element error and the caller must handle it.
-    async fn run_poller(&self, inverted: bool) -> WebDriverResult<Vec<WebElement<'handle>>> {
+    async fn run_poller(&self, inverted: bool) -> WebDriverResult<Vec<WebElement>> {
         let no_such_element_error = no_such_element(&self.selectors, &self.description);
         if self.selectors.is_empty() {
             return Err(no_such_element_error);
@@ -302,10 +302,7 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
     }
 
     /// Execute the specified selector and return any matched WebElements.
-    async fn fetch_elements_from_source(
-        &self,
-        by: By<'by>,
-    ) -> WebDriverResult<Vec<WebElement<'handle>>> {
+    async fn fetch_elements_from_source(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         match &self.source {
             ElementQuerySource::Driver(driver) => driver.find_elements(by).await,
             ElementQuerySource::Element(element) => element.find_elements(by).await,
@@ -659,19 +656,19 @@ impl<'handle, 'by> ElementQuery<'handle, 'by> {
 
 /// Trait for enabling the ElementQuery interface.
 pub trait ElementQueryable {
-    fn query<'handle, 'by>(&'handle self, by: By<'by>) -> ElementQuery<'handle, 'by>;
+    fn query(&self, by: By) -> ElementQuery;
 }
 
-impl ElementQueryable for WebElement<'_> {
+impl ElementQueryable for WebElement {
     /// Return an ElementQuery instance for more executing powerful element queries.
     ///
     /// This uses the builder pattern to construct queries that will return one or
     /// more elements, depending on the method specified at the end of the chain.
     ///
     /// See [ElementQuery](query/struct.ElementQuery.html) for more documentation.
-    fn query<'handle, 'by>(&'handle self, by: By<'by>) -> ElementQuery<'handle, 'by> {
+    fn query(&self, by: By) -> ElementQuery {
         let poller: ElementPoller = self.handle.config.get_query_poller();
-        ElementQuery::new(ElementQuerySource::Element(self), poller, by)
+        ElementQuery::new(ElementQuerySource::Element(self.clone()), poller, by)
     }
 }
 
@@ -682,9 +679,9 @@ impl ElementQueryable for WebDriver {
     /// more elements, depending on the method specified at the end of the chain.
     ///
     /// See [ElementQuery](query/struct.ElementQuery.html) for more documentation.
-    fn query<'handle, 'by>(&'handle self, by: By<'by>) -> ElementQuery<'handle, 'by> {
+    fn query(&self, by: By) -> ElementQuery {
         let poller: ElementPoller = self.handle.config.get_query_poller();
-        ElementQuery::new(ElementQuerySource::Driver(&self.handle), poller, by)
+        ElementQuery::new(ElementQuerySource::Driver(self.handle.clone()), poller, by)
     }
 }
 
@@ -703,7 +700,7 @@ async fn _test_is_send() -> WebDriverResult<()> {
 
     // Pre values
     let caps = DesiredCapabilities::chrome();
-    let driver = WebDriver::new("http://localhost:4444", &caps).await?;
+    let driver = WebDriver::new("http://localhost:4444", caps).await?;
 
     // ElementQuery
     let query = driver.query(By::Css("div"));

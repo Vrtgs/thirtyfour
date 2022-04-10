@@ -1,12 +1,9 @@
 use serde_json::{json, Value};
-use tokio::sync::oneshot;
 
-use crate::common::connection_common::convert_json;
 use crate::error::WebDriverResult;
 use crate::extensions::chrome::networkconditions::NetworkConditions;
 use crate::extensions::chrome::ChromeCommand;
 use crate::session::handle::SessionHandle;
-use crate::session::task::SessionCommand;
 
 /// The ChromeDevTools struct allows you to interact with Chromium-based browsers via
 /// the Chrome Devtools Protocol (CDP).
@@ -15,7 +12,7 @@ use crate::session::task::SessionCommand;
 /// [https://chromedevtools.github.io/devtools-protocol/](https://chromedevtools.github.io/devtools-protocol/])
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use thirtyfour::prelude::*;
 /// # use thirtyfour::support::block_on;
 /// # use thirtyfour::extensions::chrome::ChromeDevTools;
@@ -23,10 +20,10 @@ use crate::session::task::SessionCommand;
 /// # fn main() -> WebDriverResult<()> {
 /// #     block_on(async {
 /// let caps = DesiredCapabilities::chrome();
-/// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+/// let driver = WebDriver::new("http://localhost:4444", caps).await?;
 ///
 /// // Create a ChromeDevTools struct like this.
-/// let dev_tools = ChromeDevTools::new(&driver.handle);
+/// let dev_tools = ChromeDevTools::new(driver.handle.clone());
 /// dev_tools.execute_cdp("Network.clearBrowserCache").await?;
 /// #         driver.quit().await?;
 /// #         Ok(())
@@ -34,15 +31,15 @@ use crate::session::task::SessionCommand;
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct ChromeDevTools<'a> {
-    pub handle: &'a SessionHandle,
+pub struct ChromeDevTools {
+    pub handle: SessionHandle,
 }
 
-impl<'a> ChromeDevTools<'a> {
+impl ChromeDevTools {
     /// Create a new ChromeDevTools struct.
     ///
     /// # Example:
-    /// ```rust
+    /// ```
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::ChromeDevTools;
@@ -50,36 +47,29 @@ impl<'a> ChromeDevTools<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// let dev_tools = ChromeDevTools::new(&driver.handle);
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// let dev_tools = ChromeDevTools::new(driver.handle.clone());
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub fn new(handle: &'a SessionHandle) -> Self {
+    pub fn new(handle: SessionHandle) -> Self {
         Self {
             handle,
         }
     }
 
-    /// Convenience method to execute a ChromeCommand.
-    async fn cmd(&self, command: ChromeCommand) -> WebDriverResult<serde_json::Value> {
-        let (ret_tx, ret_rx) = oneshot::channel();
-        self.handle.tx.send(SessionCommand::WebDriverCommand(Box::new(command), ret_tx))?;
-        ret_rx.await?
-    }
-
     /// Launch the Chrome app with the specified id.
     pub async fn launch_app(&self, app_id: &str) -> WebDriverResult<()> {
-        self.cmd(ChromeCommand::LaunchApp(app_id.to_string())).await?;
+        self.handle.client.issue_cmd(ChromeCommand::LaunchApp(app_id.to_string())).await?;
         Ok(())
     }
 
     /// Get the current network conditions. You must set the conditions first.
     ///
     /// # Example:
-    /// ```rust
+    /// ```
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::{ChromeDevTools, NetworkConditions};
@@ -87,9 +77,9 @@ impl<'a> ChromeDevTools<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// // Create ChromeDevTools struct.
-    /// let dev_tools = ChromeDevTools::new(&driver.handle);
+    /// let dev_tools = ChromeDevTools::new(driver.handle.clone());
     ///
     /// // First we need to set the network conditions.
     /// let mut conditions = NetworkConditions::new();
@@ -105,14 +95,15 @@ impl<'a> ChromeDevTools<'a> {
     /// # }
     /// ```
     pub async fn get_network_conditions(&self) -> WebDriverResult<NetworkConditions> {
-        let v = self.cmd(ChromeCommand::GetNetworkConditions).await?;
-        convert_json(&v["value"])
+        let v = self.handle.client.issue_cmd(ChromeCommand::GetNetworkConditions).await?;
+        let conditions: NetworkConditions = serde_json::from_value(v)?;
+        Ok(conditions)
     }
 
     /// Set the network conditions.
     ///
     /// # Example:
-    /// ```rust
+    /// ```
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::{ChromeDevTools, NetworkConditions};
@@ -120,9 +111,9 @@ impl<'a> ChromeDevTools<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// // Create ChromeDevTools struct.
-    /// let dev_tools = ChromeDevTools::new(&driver.handle);
+    /// let dev_tools = ChromeDevTools::new(driver.handle.clone());
     ///
     /// // Now we can set the network conditions. You do not need to set all parameters.
     /// let mut conditions = NetworkConditions::new();
@@ -146,7 +137,10 @@ impl<'a> ChromeDevTools<'a> {
         &self,
         conditions: &NetworkConditions,
     ) -> WebDriverResult<()> {
-        self.cmd(ChromeCommand::SetNetworkConditions(conditions.clone())).await?;
+        self.handle
+            .client
+            .issue_cmd(ChromeCommand::SetNetworkConditions(conditions.clone()))
+            .await?;
         Ok(())
     }
 
@@ -157,7 +151,7 @@ impl<'a> ChromeDevTools<'a> {
     /// [https://chromedevtools.github.io/devtools-protocol/](https://chromedevtools.github.io/devtools-protocol/])
     ///
     /// # Example:
-    /// ```rust
+    /// ```
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::ChromeDevTools;
@@ -166,8 +160,8 @@ impl<'a> ChromeDevTools<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// let dev_tools = ChromeDevTools::new(&driver.handle);
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// let dev_tools = ChromeDevTools::new(driver.handle.clone());
     /// dev_tools.execute_cdp("Network.clearBrowserCache").await?;
     ///
     /// // execute_cdp() can also return values as well.
@@ -188,7 +182,7 @@ impl<'a> ChromeDevTools<'a> {
     /// [https://chromedevtools.github.io/devtools-protocol/](https://chromedevtools.github.io/devtools-protocol/])
     ///
     /// # Example:
-    /// ```rust
+    /// ```
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::ChromeDevTools;
@@ -197,8 +191,8 @@ impl<'a> ChromeDevTools<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// let dev_tools = ChromeDevTools::new(&driver.handle);
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// let dev_tools = ChromeDevTools::new(driver.handle.clone());
     /// dev_tools.execute_cdp_with_params("Network.setCacheDisabled", json!({"cacheDisabled": true})).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -210,37 +204,44 @@ impl<'a> ChromeDevTools<'a> {
         cmd: &str,
         cmd_args: Value,
     ) -> WebDriverResult<Value> {
-        let v = self.cmd(ChromeCommand::ExecuteCdpCommand(cmd.to_string(), cmd_args)).await?;
-        Ok(v["value"].clone())
+        let v = self
+            .handle
+            .client
+            .issue_cmd(ChromeCommand::ExecuteCdpCommand(cmd.to_string(), cmd_args))
+            .await?;
+        Ok(v)
     }
 
     /// Get the list of sinks available for cast.
     pub async fn get_sinks(&self) -> WebDriverResult<Value> {
-        let v = self.cmd(ChromeCommand::GetSinks).await?;
-        Ok(v["value"].clone())
+        let v = self.handle.client.issue_cmd(ChromeCommand::GetSinks).await?;
+        Ok(v)
     }
 
     /// Get the issue message for any issue in a cast session.
     pub async fn get_issue_message(&self) -> WebDriverResult<Value> {
-        let v = self.cmd(ChromeCommand::GetIssueMessage).await?;
-        Ok(v["value"].clone())
+        let v = self.handle.client.issue_cmd(ChromeCommand::GetIssueMessage).await?;
+        Ok(v)
     }
 
     /// Set the specified sink as the cast session receiver target.
     pub async fn set_sink_to_use(&self, sink_name: &str) -> WebDriverResult<()> {
-        self.cmd(ChromeCommand::SetSinkToUse(sink_name.to_string())).await?;
+        self.handle.client.issue_cmd(ChromeCommand::SetSinkToUse(sink_name.to_string())).await?;
         Ok(())
     }
 
     /// Start a tab mirroring session on the specified receiver target.
     pub async fn start_tab_mirroring(&self, sink_name: &str) -> WebDriverResult<()> {
-        self.cmd(ChromeCommand::StartTabMirroring(sink_name.to_string())).await?;
+        self.handle
+            .client
+            .issue_cmd(ChromeCommand::StartTabMirroring(sink_name.to_string()))
+            .await?;
         Ok(())
     }
 
     /// Stop the existing cast session on the specified receiver target.
     pub async fn stop_casting(&self, sink_name: &str) -> WebDriverResult<()> {
-        self.cmd(ChromeCommand::StopCasting(sink_name.to_string())).await?;
+        self.handle.client.issue_cmd(ChromeCommand::StopCasting(sink_name.to_string())).await?;
         Ok(())
     }
 }

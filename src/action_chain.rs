@@ -1,13 +1,11 @@
 use crate::session::handle::SessionHandle;
-use crate::{
-    common::{
-        action::{ActionSource, KeyAction, PointerAction, PointerActionType},
-        command::{Actions, Command},
-        keys::TypingData,
-    },
-    error::WebDriverResult,
-    WebElement,
+use crate::{error::WebDriverResult, WebElement};
+use fantoccini::actions::{
+    ActionSequence, InputSource, KeyAction, KeyActions, MouseActions, PointerAction,
+    MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT,
 };
+
+use std::time::Duration;
 
 /// The ActionChain struct allows you to perform multiple input actions in
 /// a sequence, including drag-and-drop, send keystrokes to an element, and
@@ -20,33 +18,93 @@ use crate::{
 /// ```ignore
 /// driver.action_chain().drag_and_drop_element(elem_src, elem_target).perform().await?;
 /// ```
-pub struct ActionChain<'a> {
-    handle: &'a SessionHandle,
-    key_actions: ActionSource<KeyAction>,
-    pointer_actions: ActionSource<PointerAction>,
+pub struct ActionChain {
+    handle: SessionHandle,
+    key_actions: Option<KeyActions>,
+    mouse_actions: Option<MouseActions>,
 }
 
-impl<'a> ActionChain<'a> {
+impl ActionChain {
     /// Create a new ActionChain struct.
     ///
     /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
-    pub fn new(handle: &'a SessionHandle) -> Self {
+    pub fn new(handle: SessionHandle) -> Self {
         ActionChain {
             handle,
-            key_actions: ActionSource::<KeyAction>::new("key"),
-            pointer_actions: ActionSource::<PointerAction>::new(
-                "pointer",
-                PointerActionType::Mouse,
-            ),
+            key_actions: Some(KeyActions::new("key".to_string())),
+            mouse_actions: Some(MouseActions::new("mouse".to_string())),
         }
     }
 
-    /// Convenience wrapper for running WebDriver commands.
-    ///
-    /// For `thirtyfour` internal use only.
-    async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
-        self.handle.cmd(command).await
+    /// Add a pause for the key sequence. Usually required after adding a mouse event,
+    /// to keep the key sequence in sync with the mouse sequence.
+    fn add_key_pause(&mut self) {
+        self.key_actions = Some(self.key_actions.take().unwrap().pause(Duration::from_millis(0)));
+    }
+
+    fn add_key_down(&mut self, key: char) {
+        self.key_actions = Some(self.key_actions.take().unwrap().then(KeyAction::Down {
+            value: key,
+        }));
+        self.add_mouse_pause();
+    }
+
+    fn add_key_up(&mut self, key: char) {
+        self.key_actions = Some(self.key_actions.take().unwrap().then(KeyAction::Up {
+            value: key,
+        }));
+        self.add_mouse_pause();
+    }
+
+    /// Add a pause for the mouse sequence. Usually required after adding a key event,
+    /// to keep the mouse sequence in sync with the key sequence.
+    fn add_mouse_pause(&mut self) {
+        self.mouse_actions =
+            Some(self.mouse_actions.take().unwrap().pause(Duration::from_millis(0)));
+    }
+
+    fn add_mouse_down(&mut self, button: u64) {
+        self.mouse_actions = Some(self.mouse_actions.take().unwrap().then(PointerAction::Down {
+            button,
+        }));
+        self.add_key_pause();
+    }
+
+    fn add_mouse_up(&mut self, button: u64) {
+        self.mouse_actions = Some(self.mouse_actions.take().unwrap().then(PointerAction::Up {
+            button,
+        }));
+        self.add_key_pause();
+    }
+
+    fn add_move_to_element(&mut self, element: &WebElement, x_offset: i64, y_offset: i64) {
+        self.mouse_actions =
+            Some(self.mouse_actions.take().unwrap().then(PointerAction::MoveToElement {
+                element: element.element.clone(),
+                duration: None,
+                x: x_offset,
+                y: y_offset,
+            }));
+        self.add_key_pause();
+    }
+
+    fn add_move_to(&mut self, x: i64, y: i64) {
+        self.mouse_actions = Some(self.mouse_actions.take().unwrap().then(PointerAction::MoveTo {
+            duration: None,
+            x,
+            y,
+        }));
+        self.add_key_pause();
+    }
+
+    fn add_move_by(&mut self, x: i64, y: i64) {
+        self.mouse_actions = Some(self.mouse_actions.take().unwrap().then(PointerAction::MoveBy {
+            duration: None,
+            x,
+            y,
+        }));
+        self.add_key_pause();
     }
 
     /// Reset all actions, reverting all input devices back to default states.
@@ -59,7 +117,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// // Hold mouse button down on element.
     /// let elem = driver.find_element(By::Id("button1")).await?;
@@ -76,15 +134,20 @@ impl<'a> ActionChain<'a> {
     /// # }
     /// ```
     pub async fn reset_actions(&self) -> WebDriverResult<()> {
-        self.cmd(Command::ReleaseActions).await?;
+        self.handle.client.release_actions().await?;
         Ok(())
     }
 
     /// Perform the action sequence. No actions are actually performed until
     /// this method is called.
-    pub async fn perform(&self) -> WebDriverResult<()> {
-        let actions = Actions::from(serde_json::json!([self.key_actions, self.pointer_actions]));
-        self.cmd(Command::PerformActions(actions)).await?;
+    pub async fn perform(self) -> WebDriverResult<()> {
+        self.handle
+            .client
+            .perform_actions(vec![
+                ActionSequence::from(self.key_actions.unwrap()),
+                ActionSequence::from(self.mouse_actions.unwrap()),
+            ])
+            .await?;
         Ok(())
     }
 
@@ -98,7 +161,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// driver.action_chain().move_to_element_center(&elem).click().perform().await?;
@@ -110,10 +173,8 @@ impl<'a> ActionChain<'a> {
     /// # }
     /// ```
     pub fn click(mut self) -> Self {
-        self.pointer_actions.click();
-        // Click = 2 actions (PointerDown + PointerUp).
-        self.key_actions.pause();
-        self.key_actions.pause();
+        self.add_mouse_down(MOUSE_BUTTON_LEFT);
+        self.add_mouse_up(MOUSE_BUTTON_LEFT);
         self
     }
 
@@ -127,7 +188,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// driver.action_chain().click_element(&elem).perform().await?;
@@ -138,8 +199,9 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn click_element(self, element: &WebElement) -> Self {
-        self.move_to_element_center(element).click()
+    pub fn click_element(mut self, element: &WebElement) -> Self {
+        self.add_move_to_element(element, 0, 0);
+        self.click()
     }
 
     /// Click the left mouse button and hold it down.
@@ -152,7 +214,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "None");
@@ -167,8 +229,7 @@ impl<'a> ActionChain<'a> {
     /// # }
     /// ```
     pub fn click_and_hold(mut self) -> Self {
-        self.pointer_actions.click_and_hold();
-        self.key_actions.pause();
+        self.add_mouse_down(MOUSE_BUTTON_LEFT);
         self
     }
 
@@ -183,7 +244,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "None");
@@ -197,8 +258,9 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn click_and_hold_element(self, element: &WebElement) -> Self {
-        self.move_to_element_center(element).click_and_hold()
+    pub fn click_and_hold_element(mut self, element: &WebElement) -> Self {
+        self.add_move_to_element(element, 0, 0);
+        self.click_and_hold()
     }
 
     /// Click and release the right mouse button.
@@ -211,7 +273,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// driver.action_chain().move_to_element_center(&elem).context_click().perform().await?;
@@ -223,10 +285,8 @@ impl<'a> ActionChain<'a> {
     /// # }
     /// ```
     pub fn context_click(mut self) -> Self {
-        self.pointer_actions.context_click();
-        // Click = 2 actions (PointerDown + PointerUp).
-        self.key_actions.pause();
-        self.key_actions.pause();
+        self.add_mouse_down(MOUSE_BUTTON_RIGHT);
+        self.add_mouse_up(MOUSE_BUTTON_RIGHT);
         self
     }
 
@@ -240,7 +300,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// driver.action_chain().context_click_element(&elem).perform().await?;
@@ -251,8 +311,9 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn context_click_element(self, element: &WebElement) -> Self {
-        self.move_to_element_center(element).context_click()
+    pub fn context_click_element(mut self, element: &WebElement) -> Self {
+        self.add_move_to_element(element, 0, 0);
+        self.context_click()
     }
 
     /// Double-click the left mouse button.
@@ -265,7 +326,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// driver.action_chain().move_to_element_center(&elem).double_click().perform().await?;
@@ -276,13 +337,8 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn double_click(mut self) -> Self {
-        self.pointer_actions.double_click();
-        // Each click = 2 actions (PointerDown + PointerUp).
-        for _ in 0..4 {
-            self.key_actions.pause();
-        }
-        self
+    pub fn double_click(self) -> Self {
+        self.click().click()
     }
 
     /// Double-click on the specified element.
@@ -295,7 +351,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// driver.action_chain().double_click_element(&elem).perform().await?;
@@ -306,8 +362,9 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn double_click_element(self, element: &WebElement) -> Self {
-        self.move_to_element_center(element).double_click()
+    pub fn double_click_element(mut self, element: &WebElement) -> Self {
+        self.add_move_to_element(element, 0, 0);
+        self.double_click()
     }
 
     /// Drag the mouse cursor from the center of the source element to the
@@ -335,7 +392,7 @@ impl<'a> ActionChain<'a> {
     /// This method has been confirmed to produce identical JSON output
     /// compared to the python selenium library (which also fails due to
     /// the same bug).
-    pub fn drag_and_drop_by_offset(self, x_offset: i32, y_offset: i32) -> Self {
+    pub fn drag_and_drop_by_offset(self, x_offset: i64, y_offset: i64) -> Self {
         self.click_and_hold().move_by_offset(x_offset, y_offset)
     }
 
@@ -353,8 +410,8 @@ impl<'a> ActionChain<'a> {
     pub fn drag_and_drop_element_by_offset(
         self,
         element: &WebElement,
-        x_offset: i32,
-        y_offset: i32,
+        x_offset: i64,
+        y_offset: i64,
     ) -> Self {
         self.click_and_hold_element(element).move_by_offset(x_offset, y_offset)
     }
@@ -369,7 +426,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
@@ -381,12 +438,8 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn key_down<T>(mut self, value: T) -> Self
-    where
-        T: Into<char>,
-    {
-        self.key_actions.key_down(value.into());
-        self.pointer_actions.pause();
+    pub fn key_down(mut self, value: impl Into<char>) -> Self {
+        self.add_key_down(value.into());
         self
     }
 
@@ -400,7 +453,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
@@ -412,10 +465,7 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn key_down_on_element<T>(self, element: &WebElement, value: T) -> Self
-    where
-        T: Into<char>,
-    {
+    pub fn key_down_on_element(self, element: &WebElement, value: impl Into<char>) -> Self {
         self.click_element(element).key_down(value)
     }
 
@@ -429,7 +479,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
@@ -437,8 +487,8 @@ impl<'a> ActionChain<'a> {
     /// elem.send_keys("selenium").await?;
     /// assert_eq!(elem.value().await?, Some("selenium".to_string()));
     /// driver.action_chain()
-    ///     .key_down_on_element(&elem, Keys::Control).key_down('a')
-    ///     .key_up(Keys::Control).key_up('a')
+    ///     .key_down_on_element(&elem, Key::Control).key_down('a')
+    ///     .key_up(Key::Control).key_up('a')
     ///     .key_down('b')
     ///     .perform().await?;
     /// assert_eq!(elem.value().await?, Some("b".to_string()));
@@ -447,12 +497,8 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn key_up<T>(mut self, value: T) -> Self
-    where
-        T: Into<char>,
-    {
-        self.key_actions.key_up(value.into());
-        self.pointer_actions.pause();
+    pub fn key_up(mut self, value: impl Into<char>) -> Self {
+        self.add_key_up(value.into());
         self
     }
 
@@ -466,7 +512,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
@@ -474,8 +520,8 @@ impl<'a> ActionChain<'a> {
     /// elem.send_keys("selenium").await?;
     /// assert_eq!(elem.value().await?, Some("selenium".to_string()));
     /// driver.action_chain()
-    ///     .key_down_on_element(&elem, Keys::Control).key_down('a')
-    ///     .key_up_on_element(&elem, 'a').key_up_on_element(&elem, Keys::Control)
+    ///     .key_down_on_element(&elem, Key::Control).key_down('a')
+    ///     .key_up_on_element(&elem, 'a').key_up_on_element(&elem, Key::Control)
     ///     .key_down('b')
     ///     .perform().await?;
     /// assert_eq!(elem.value().await?, Some("b".to_string()));
@@ -484,10 +530,7 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn key_up_on_element<T>(self, element: &WebElement, value: T) -> Self
-    where
-        T: Into<char>,
-    {
+    pub fn key_up_on_element(self, element: &WebElement, value: impl Into<char>) -> Self {
         self.click_element(element).key_up(value)
     }
 
@@ -501,7 +544,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// let center = elem.rect().await?.icenter();
@@ -516,9 +559,8 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn move_to(mut self, x: i32, y: i32) -> Self {
-        self.pointer_actions.move_to(x, y);
-        self.key_actions.pause();
+    pub fn move_to(mut self, x: i64, y: i64) -> Self {
+        self.add_move_to(x, y);
         self
     }
 
@@ -532,13 +574,13 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem1 = driver.find_element(By::Id("button1")).await?;
     /// let elem2 = driver.find_element(By::Id("button2")).await?;
     /// // We will calculate the distance between the two center points and then
     /// // use action_chain() to move to the second button before clicking.
-    /// let offset = elem2.rect().await?.center().0 as i32 - elem1.rect().await?.center().0 as i32;
+    /// let offset = elem2.rect().await?.center().0 as i64 - elem1.rect().await?.center().0 as i64;
     /// driver.action_chain()
     ///     .move_to_element_center(&elem1)
     ///     .move_by_offset(offset, 0)
@@ -551,9 +593,8 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn move_by_offset(mut self, x_offset: i32, y_offset: i32) -> Self {
-        self.pointer_actions.move_by(x_offset, y_offset);
-        self.key_actions.pause();
+    pub fn move_by_offset(mut self, x_offset: i64, y_offset: i64) -> Self {
+        self.add_move_by(x_offset, y_offset);
         self
     }
 
@@ -567,7 +608,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// driver.action_chain()
@@ -582,8 +623,7 @@ impl<'a> ActionChain<'a> {
     /// # }
     /// ```
     pub fn move_to_element_center(mut self, element: &WebElement) -> Self {
-        self.pointer_actions.move_to_element_center(element.element_id.clone());
-        self.key_actions.pause();
+        self.add_move_to_element(element, 0, 0);
         self
     }
 
@@ -599,24 +639,24 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("button1")).await?.click().await?;
     /// // Select the text in the source element and copy it to the clipboard.
     /// let elem = driver.find_element(By::Id("button-result")).await?;
     /// let width = elem.rect().await?.width;
     /// driver.action_chain()
-    ///     .move_to_element_with_offset(&elem, (-width / 2.0) as i32, 0)
-    ///     .drag_and_drop_by_offset(width as i32, 0)
-    ///     .key_down(Keys::Control)
+    ///     .move_to_element_with_offset(&elem, (-(width as f64) / 2.0) as i64, 0)
+    ///     .drag_and_drop_by_offset(width as i64, 0)
+    ///     .key_down(Key::Control)
     ///     .key_down('c').key_up('c')
-    ///     .key_up(Keys::Control)
+    ///     .key_up(Key::Control)
     ///     .perform().await?;
     ///
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// // Now paste the text into the input field.
     /// let elem_tgt = driver.find_element(By::Name("input1")).await?;
-    /// elem_tgt.send_keys(Keys::Control + "v").await?;
+    /// elem_tgt.send_keys(Key::Control + "v").await?;
     /// #         assert_eq!(elem_tgt.value().await?, Some("Button 1 clicked".to_string()));
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -626,11 +666,10 @@ impl<'a> ActionChain<'a> {
     pub fn move_to_element_with_offset(
         mut self,
         element: &WebElement,
-        x_offset: i32,
-        y_offset: i32,
+        x_offset: i64,
+        y_offset: i64,
     ) -> Self {
-        self.pointer_actions.move_to_element(element.element_id.clone(), x_offset, y_offset);
-        self.key_actions.pause();
+        self.add_move_to_element(element, x_offset, y_offset);
         self
     }
 
@@ -644,7 +683,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
     /// #         driver.action_chain().click_and_hold_element(&elem).perform().await?;
@@ -658,8 +697,7 @@ impl<'a> ActionChain<'a> {
     /// # }
     /// ```
     pub fn release(mut self) -> Self {
-        self.pointer_actions.release();
-        self.key_actions.pause();
+        self.add_mouse_up(MOUSE_BUTTON_LEFT);
         self
     }
 
@@ -673,7 +711,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
     /// #         driver.action_chain().click_and_hold_element(&elem).perform().await?;
@@ -694,14 +732,14 @@ impl<'a> ActionChain<'a> {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::Keys;
+    /// use thirtyfour::Key;
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
@@ -719,12 +757,8 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn send_keys<S>(mut self, text: S) -> Self
-    where
-        S: Into<TypingData>,
-    {
-        let typing: TypingData = text.into();
-        for c in typing.as_vec() {
+    pub fn send_keys(mut self, text: impl AsRef<str>) -> Self {
+        for c in text.as_ref().chars() {
             self = self.key_down(c).key_up(c);
         }
         self
@@ -740,7 +774,7 @@ impl<'a> ActionChain<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
@@ -757,10 +791,7 @@ impl<'a> ActionChain<'a> {
     /// #     })
     /// # }
     /// ```
-    pub fn send_keys_to_element<S>(self, element: &WebElement, text: S) -> Self
-    where
-        S: Into<TypingData>,
-    {
+    pub fn send_keys_to_element(self, element: &WebElement, text: impl AsRef<str>) -> Self {
         self.click_element(element).send_keys(text)
     }
 }

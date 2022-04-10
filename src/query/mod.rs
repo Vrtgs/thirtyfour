@@ -18,7 +18,7 @@
 //! # fn main() -> WebDriverResult<()> {
 //! #     block_on(async {
 //! #         let caps = DesiredCapabilities::chrome();
-//! #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+//! #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
 //! # driver.get("http://webappdemo").await?;
 //! // This will only poll once and then return a bool immediately.
 //! let is_found = driver.query(By::Id("button1")).nowait().exists().await?;
@@ -47,7 +47,7 @@
 //! # fn main() -> WebDriverResult<()> {
 //! #     block_on(async {
 //! #         let caps = DesiredCapabilities::chrome();
-//! #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+//! #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
 //! # driver.get("http://webappdemo").await?;
 //! let elem = driver.query(By::Css("thiswont.match")).with_text("testing")
 //!     .or(By::Id("button1")).with_class(StringMatch::new("pure-button").word()).and_enabled()
@@ -128,7 +128,7 @@
 //! # fn main() -> WebDriverResult<()> {
 //! #     block_on(async {
 //! #         let caps = DesiredCapabilities::chrome();
-//! #         let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+//! #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
 //! let poller = ElementPoller::TimeoutWithInterval(Duration::new(10, 0), Duration::from_millis(500));
 //! driver.set_query_poller(poller);
 //! #         driver.quit().await?;
@@ -150,17 +150,14 @@ pub use element_query::*;
 pub use element_waiter::*;
 pub use poller::*;
 
-use futures::Future;
-use std::pin::Pin;
+use crate::error::WebDriverResult;
+use futures::future::BoxFuture;
 /// Re-export stringmatch::StringMatch for convenience.
 pub use stringmatch::StringMatch;
 
 /// Function signature for element predicates.
 pub type ElementPredicate = Box<
-    dyn for<'a> Fn(
-            &'a crate::webelement::WebElement<'a>,
-        )
-            -> Pin<Box<dyn Future<Output = crate::error::WebDriverResult<bool>> + Send + 'a>>
+    dyn Fn(&crate::webelement::WebElement) -> BoxFuture<WebDriverResult<bool>>
         + Send
         + Sync
         + 'static,

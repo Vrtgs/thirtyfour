@@ -12,7 +12,7 @@ use tokio;
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
     let caps = DesiredCapabilities::chrome();
-    let driver = WebDriver::new("http://localhost:4444", &caps).await?;
+    let driver = WebDriver::new("http://localhost:4444", caps).await?;
     // Navigate to https://wikipedia.org.
     driver.get("https://wikipedia.org").await?;
 

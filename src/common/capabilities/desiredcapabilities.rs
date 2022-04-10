@@ -1,3 +1,4 @@
+use fantoccini::wd::Capabilities;
 use serde::Serialize;
 use serde_json::{json, to_value, Value};
 
@@ -72,7 +73,15 @@ fn merge(a: &mut Value, b: Value) {
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
 pub struct DesiredCapabilities {
-    capabilities: Value,
+    capabilities: Capabilities,
+}
+
+impl Default for DesiredCapabilities {
+    fn default() -> Self {
+        Self {
+            capabilities: serde_json::Map::new(),
+        }
+    }
 }
 
 impl DesiredCapabilities {
@@ -80,10 +89,8 @@ impl DesiredCapabilities {
     /// browser-specific functions instead, such as `DesiredCapabilities::firefox()`,
     /// but you can use `DesiredCapabilities::new` if you need to create capabilities
     /// for a browser not listed here.
-    pub fn new(capabilities: Value) -> Self {
-        Self {
-            capabilities,
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Create a FirefoxCapabilities struct.
@@ -120,29 +127,41 @@ impl DesiredCapabilities {
 /// Add generic Capabilities implementation. This can be used as a convenient way to
 /// interact with the returned capabilities from a WebDriver instance, or as a way
 /// to construct a custom capabilities JSON struct.
-impl Capabilities for DesiredCapabilities {
-    fn get(&self) -> &Value {
-        &self.capabilities
+impl CapabilitiesHelper for DesiredCapabilities {
+    fn get(&self, key: &str) -> Option<&Value> {
+        self.capabilities.get(key)
     }
 
-    fn get_mut(&mut self) -> &mut Value {
-        &mut self.capabilities
+    fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
+        self.capabilities.get_mut(key)
+    }
+
+    fn set(&mut self, key: String, value: Value) {
+        self.capabilities.insert(key, value);
     }
 }
 
-pub trait Capabilities {
+impl From<DesiredCapabilities> for Capabilities {
+    fn from(caps: DesiredCapabilities) -> Capabilities {
+        caps.capabilities
+    }
+}
+
+pub trait CapabilitiesHelper {
     /// Get an immutable reference to the underlying serde_json::Value.
-    fn get(&self) -> &Value;
+    fn get(&self, key: &str) -> Option<&Value>;
 
     /// Get a mutable reference to the underlying serde_json::Value.
-    fn get_mut(&mut self) -> &mut Value;
+    fn get_mut(&mut self, key: &str) -> Option<&mut Value>;
+
+    fn set(&mut self, key: String, value: Value);
 
     /// Add any Serialize-able object to the capabilities under the specified key.
     fn add<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
     where
         T: Serialize,
     {
-        self.get_mut()[key] = to_value(value)?;
+        self.set(key.to_string(), to_value(value)?);
         Ok(())
     }
 
@@ -151,29 +170,35 @@ pub trait Capabilities {
     where
         T: Serialize,
     {
-        let v = self.get_mut();
-        if v[key].is_null() {
-            v[key] = json!({ subkey: value });
-        } else {
-            v[key][subkey] = to_value(value)?;
+        match self.get_mut(key) {
+            Some(v) => {
+                v[subkey] = to_value(value)?;
+            }
+            None => self.set(key.to_string(), json!({ subkey: value })),
         }
         Ok(())
     }
 
     /// Remove a subkey from the specified key, if it exists.
     fn remove_subkey(&mut self, key: &str, subkey: &str) -> WebDriverResult<()> {
-        let v = self.get_mut();
-        if let Some(obj) = v[key].as_object_mut() {
-            obj.remove(subkey);
+        if let Some(Value::Object(v)) = self.get_mut(key) {
+            v.remove(subkey);
         }
         Ok(())
     }
 
     /// Add all keys of the specified object into the capabilities, overwriting any
     /// matching keys that already exist.
-    fn update(&mut self, value: Value) {
+    fn update(&mut self, key: &str, value: Value) {
         assert!(value.is_object());
-        merge(self.get_mut(), value);
+        let merged = match self.get_mut(key) {
+            Some(x) => {
+                merge(x, value);
+                x.clone()
+            }
+            None => value,
+        };
+        self.set(key.to_string(), merged);
     }
 
     /// Set the desired browser version.
@@ -250,12 +275,12 @@ pub trait Capabilities {
 
     /// Get whether the session can interact with modal popups such as `window.alert`.
     fn handles_alerts(&self) -> Option<bool> {
-        self.get()["handlesAlerts"].as_bool()
+        self.get("handlesAlerts").map(|x| x.as_bool()).flatten()
     }
 
     /// Get whether the session supports CSS selectors when searching for elements.
     fn css_selectors_enabled(&self) -> Option<bool> {
-        self.get()["cssSelectorsEnabled"].as_bool()
+        self.get("cssSelectorsEnabled").map(|x| x.as_bool()).flatten()
     }
 }
 

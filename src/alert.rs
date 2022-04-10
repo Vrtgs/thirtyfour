@@ -1,28 +1,18 @@
+use crate::error::WebDriverResult;
 use crate::session::handle::SessionHandle;
-use crate::{
-    common::{command::Command, connection_common::convert_json, keys::TypingData},
-    error::WebDriverResult,
-};
 
 /// Struct for managing alerts.
-pub struct Alert<'a> {
-    handle: &'a SessionHandle,
+pub struct Alert {
+    handle: SessionHandle,
 }
 
-impl<'a> Alert<'a> {
+impl Alert {
     /// Create a new Alert struct. This is typically created internally
     /// via a call to `WebDriver::switch_to().alert()`.
-    pub fn new(handle: &'a SessionHandle) -> Self {
+    pub fn new(handle: SessionHandle) -> Self {
         Self {
             handle,
         }
-    }
-
-    /// Convenience wrapper for running WebDriver commands.
-    ///
-    /// For `thirtyfour` internal use only.
-    async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
-        self.handle.cmd(command).await
     }
 
     /// Get the active alert text.
@@ -35,7 +25,7 @@ impl<'a> Alert<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #         driver.find_element(By::Id("alertbutton1")).await?.click().await?;
@@ -49,8 +39,7 @@ impl<'a> Alert<'a> {
     /// # }
     /// ```
     pub async fn text(&self) -> WebDriverResult<String> {
-        let v = self.cmd(Command::GetAlertText).await?;
-        convert_json::<String>(&v["value"])
+        Ok(self.handle.client.get_alert_text().await?)
     }
 
     /// Dismiss the active alert.
@@ -63,7 +52,7 @@ impl<'a> Alert<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #         driver.find_element(By::Id("alertbutton2")).await?.click().await?;
@@ -76,7 +65,8 @@ impl<'a> Alert<'a> {
     /// # }
     /// ```
     pub async fn dismiss(&self) -> WebDriverResult<()> {
-        self.cmd(Command::DismissAlert).await.map(|_| ())
+        self.handle.client.dismiss_alert().await?;
+        Ok(())
     }
 
     /// Accept the active alert.
@@ -89,7 +79,7 @@ impl<'a> Alert<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #         driver.find_element(By::Id("alertbutton2")).await?.click().await?;
@@ -102,7 +92,8 @@ impl<'a> Alert<'a> {
     /// # }
     /// ```
     pub async fn accept(&self) -> WebDriverResult<()> {
-        self.cmd(Command::AcceptAlert).await.map(|_| ())
+        self.handle.client.accept_alert().await?;
+        Ok(())
     }
 
     /// Send the specified keys to the active alert.
@@ -117,7 +108,7 @@ impl<'a> Alert<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #         driver.find_element(By::Id("alertbutton3")).await?.click().await?;
@@ -140,13 +131,13 @@ impl<'a> Alert<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
     /// #         driver.find_element(By::Id("alertbutton3")).await?.click().await?;
     /// let alert = driver.switch_to().alert();
     /// alert.send_keys("selenium").await?;
-    /// alert.send_keys(Keys::Control + "a").await?;
+    /// alert.send_keys(Key::Control + "a".to_string()).await?;
     /// alert.send_keys("thirtyfour").await?;
     /// #         alert.accept().await?;
     /// #         let elem = driver.find_element(By::Id("alert-result")).await?;
@@ -156,10 +147,8 @@ impl<'a> Alert<'a> {
     /// #     })
     /// # }
     /// ```
-    pub async fn send_keys<S>(&self, keys: S) -> WebDriverResult<()>
-    where
-        S: Into<TypingData>,
-    {
-        self.cmd(Command::SendAlertText(keys.into())).await.map(|_| ())
+    pub async fn send_keys(&self, keys: impl AsRef<str>) -> WebDriverResult<()> {
+        self.handle.client.send_alert_text(keys.as_ref()).await?;
+        Ok(())
     }
 }

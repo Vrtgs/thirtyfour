@@ -1,43 +1,17 @@
-#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
-use crate::runtime::imports::{AsyncWriteExt, File};
-use base64::decode;
-use serde::ser::{Serialize, SerializeMap, Serializer};
+use fantoccini::elements::{Element, ElementRef};
+use fantoccini::error::CmdError;
+use serde::ser::{Serialize, Serializer};
+use serde_json::Value;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
-#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
+use std::ops::{Deref, DerefMut};
 use std::path::Path;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 
-use crate::common::command::MAGIC_ELEMENTID;
 use crate::error::WebDriverError;
 use crate::session::handle::SessionHandle;
-use crate::{
-    common::{
-        command::Command,
-        connection_common::convert_json,
-        keys::TypingData,
-        types::{ElementRect, ElementRef},
-    },
-    error::WebDriverResult,
-    By, ElementId, ScriptArgs,
-};
-
-/// Convert the raw JSON into a WebElement struct.
-pub fn convert_element_async<'a>(
-    handle: &'a SessionHandle,
-    value: &serde_json::Value,
-) -> WebDriverResult<WebElement<'a>> {
-    let elem_id: ElementRef = serde_json::from_value(value.clone())?;
-    Ok(WebElement::new(handle, ElementId::from(elem_id.id())))
-}
-
-/// Convert the raw JSON into a Vec of WebElement structs.
-pub fn convert_elements_async<'a>(
-    handle: &'a SessionHandle,
-    value: &serde_json::Value,
-) -> WebDriverResult<Vec<WebElement<'a>>> {
-    let values: Vec<ElementRef> = serde_json::from_value(value.clone())?;
-    Ok(values.into_iter().map(|x| WebElement::new(handle, ElementId::from(x.id()))).collect())
-}
+use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHelper};
 
 /// The WebElement struct encapsulates a single element on a page.
 ///
@@ -52,7 +26,7 @@ pub fn convert_elements_async<'a>(
 /// # fn main() -> WebDriverResult<()> {
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
-/// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+/// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
 /// #         driver.get("http://webappdemo").await?;
 /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
 /// let elem = driver.find_element(By::Id("input-result")).await?;
@@ -71,7 +45,7 @@ pub fn convert_elements_async<'a>(
 /// # fn main() -> WebDriverResult<()> {
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
-/// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+/// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
 /// #         driver.get("http://webappdemo").await?;
 /// let elem = driver.find_element(By::Css("div[data-section='section-buttons']")).await?;
 /// let child_elem = elem.find_element(By::Tag("button")).await?;
@@ -88,42 +62,91 @@ pub fn convert_elements_async<'a>(
 /// input to an element using the `send_keys()` method.
 ///
 #[derive(Clone)]
-pub struct WebElement<'a> {
-    pub element_id: ElementId,
-    pub handle: &'a SessionHandle,
+pub struct WebElement {
+    pub element: Element,
+    pub handle: SessionHandle,
 }
 
-impl Debug for WebElement<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.element_id)
+impl Deref for WebElement {
+    type Target = Element;
+
+    fn deref(&self) -> &Self::Target {
+        &self.element
     }
 }
 
-impl<'a> WebElement<'a> {
+impl DerefMut for WebElement {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.element
+    }
+}
+
+impl Debug for WebElement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("WebElement").field("element", &self.element).finish()
+    }
+}
+
+impl WebElement {
     /// Create a new WebElement struct.
     ///
     /// Typically you would not call this directly. WebElement structs are
     /// usually constructed by calling one of the find_element*() methods
     /// either on WebDriver or another WebElement.
-    pub(crate) fn new(handle: &'a SessionHandle, element_id: ElementId) -> Self {
-        WebElement {
-            element_id,
+    pub(crate) fn new(element: Element, handle: SessionHandle) -> Self {
+        Self {
+            element,
             handle,
         }
     }
 
-    /// Convenience wrapper for running WebDriver commands.
-    ///
-    /// For `thirtyfour` internal use only.
-    async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
-        self.handle.cmd(command).await
+    pub fn from_json(value: Value, handle: SessionHandle) -> WebDriverResult<Self> {
+        let element_ref: ElementRefHelper = serde_json::from_value(value)?;
+        Ok(Self {
+            element: Element::from_element_id(handle.client.clone(), element_ref.into()),
+            handle,
+        })
+    }
+
+    pub fn to_json(&self) -> WebDriverResult<Value> {
+        Ok(serde_json::to_value(self.element.clone())?)
+    }
+
+    pub fn element_id(&self) -> ElementRef {
+        self.element.element_id()
     }
 
     /// Get the bounding rectangle for this WebElement.
+    ///
+    /// # Example:
+    /// ```rust
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let r = elem.rect().await?;
+    /// #         assert!(r.x > 0.0f64);
+    /// #         assert!(r.y > 0.0f64);
+    /// #         assert!(r.width > 0.0f64);
+    /// #         assert!(r.height > 0.0f64);
+    /// #         driver.quit().await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
     pub async fn rect(&self) -> WebDriverResult<ElementRect> {
-        let v = self.cmd(Command::GetElementRect(self.element_id.clone())).await?;
-        let r: ElementRect = serde_json::from_value((&v["value"]).clone())?;
-        Ok(r)
+        let (x, y, w, h) = self.element.rectangle().await?;
+        Ok(ElementRect {
+            x,
+            y,
+            width: w,
+            height: h,
+        })
     }
 
     /// Get the tag name for this WebElement.
@@ -136,7 +159,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// assert_eq!(elem.tag_name().await?, "button");
@@ -146,8 +169,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn tag_name(&self) -> WebDriverResult<String> {
-        let v = self.cmd(Command::GetElementTagName(self.element_id.clone())).await?;
-        convert_json(&v["value"])
+        Ok(self.element.tag_name().await?)
     }
 
     /// Get the class name for this WebElement.
@@ -160,7 +182,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// let class_name_option = elem.class_name().await?;  // Option<String>
@@ -171,7 +193,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn class_name(&self) -> WebDriverResult<Option<String>> {
-        self.get_attribute("class").await
+        Ok(self.get_attribute("class").await?)
     }
 
     /// Get the id for this WebElement.
@@ -184,7 +206,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// let id_option = elem.id().await?;  // Option<String>
@@ -208,7 +230,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("button1")).await?.click().await?;
     /// let elem = driver.find_element(By::Id("button-result")).await?;
@@ -220,8 +242,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn text(&self) -> WebDriverResult<String> {
-        let v = self.cmd(Command::GetElementText(self.element_id.clone())).await?;
-        convert_json(&v["value"])
+        Ok(self.element.text().await?)
     }
 
     /// Convenience method for getting the (optional) value attribute of this element.
@@ -239,7 +260,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// elem.click().await?;
@@ -251,7 +272,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn click(&self) -> WebDriverResult<()> {
-        self.cmd(Command::ElementClick(self.element_id.clone())).await?;
+        self.element.click().await?;
         Ok(())
     }
 
@@ -265,7 +286,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input2")).await?;
@@ -278,8 +299,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn clear(&self) -> WebDriverResult<()> {
-        self.cmd(Command::ElementClear(self.element_id.clone())).await?;
-        Ok(())
+        Ok(self.element.clear().await?)
     }
 
     /// Get the specified property.
@@ -292,7 +312,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find_element(By::Name("input2")).await?;
@@ -305,16 +325,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn get_property(&self, name: &str) -> WebDriverResult<Option<String>> {
-        let v =
-            self.cmd(Command::GetElementProperty(self.element_id.clone(), name.to_owned())).await?;
-
-        if v["value"].is_null() {
-            Ok(None)
-        } else if !v["value"].is_string() {
-            Ok(Some(v["value"].to_string()))
-        } else {
-            convert_json(&v["value"]).map(Some)
-        }
+        Ok(self.element.prop(name).await?)
     }
 
     /// Get the specified attribute.
@@ -327,7 +338,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find_element(By::Name("input2")).await?;
@@ -340,14 +351,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn get_attribute(&self, name: &str) -> WebDriverResult<Option<String>> {
-        let v = self
-            .cmd(Command::GetElementAttribute(self.element_id.clone(), name.to_owned()))
-            .await?;
-        if !v["value"].is_string() {
-            Ok(None)
-        } else {
-            convert_json(&v["value"]).map(Some)
-        }
+        Ok(self.element.attr(name).await?)
     }
 
     /// Get the specified CSS property.
@@ -360,7 +364,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find_element(By::Name("input2")).await?;
@@ -373,19 +377,12 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn get_css_property(&self, name: &str) -> WebDriverResult<String> {
-        let v =
-            self.cmd(Command::GetElementCssValue(self.element_id.clone(), name.to_owned())).await?;
-        if !v["value"].is_string() {
-            Ok(String::new())
-        } else {
-            convert_json(&v["value"])
-        }
+        Ok(self.element.css_value(name).await?)
     }
 
     /// Return true if the WebElement is currently selected, otherwise false.
     pub async fn is_selected(&self) -> WebDriverResult<bool> {
-        let v = self.cmd(Command::IsElementSelected(self.element_id.clone())).await?;
-        convert_json(&v["value"])
+        Ok(self.element.is_selected().await?)
     }
 
     /// Return true if the WebElement is currently displayed, otherwise false.
@@ -398,7 +395,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
     /// let displayed = elem.is_displayed().await?;
@@ -409,8 +406,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn is_displayed(&self) -> WebDriverResult<bool> {
-        let v = self.cmd(Command::IsElementDisplayed(self.element_id.clone())).await?;
-        convert_json(&v["value"])
+        Ok(self.element.is_displayed().await?)
     }
 
     /// Return true if the WebElement is currently enabled, otherwise false.
@@ -423,7 +419,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
     /// let enabled = elem.is_enabled().await?;
@@ -434,8 +430,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn is_enabled(&self) -> WebDriverResult<bool> {
-        let v = self.cmd(Command::IsElementEnabled(self.element_id.clone())).await?;
-        convert_json(&v["value"])
+        Ok(self.element.is_enabled().await?)
     }
 
     /// Return true if the WebElement is currently clickable (visible and enabled),
@@ -449,7 +444,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
     /// let clickable = elem.is_clickable().await?;
@@ -484,7 +479,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         let elem = driver.find_element(By::Id("button1")).await?;
     /// let present = elem.is_present().await?;
@@ -499,9 +494,8 @@ impl<'a> WebElement<'a> {
     /// ```
     pub async fn is_present(&self) -> WebDriverResult<bool> {
         let present = match self.tag_name().await {
-            Ok(_) => true,
-            Err(WebDriverError::NoSuchElement(_))
-            | Err(WebDriverError::StaleElementReference(_)) => false,
+            Ok(..) => true,
+            Err(WebDriverError::NoSuchElement(..)) => false,
             Err(e) => return Err(e),
         };
         Ok(present)
@@ -521,7 +515,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Css("div[data-section='section-buttons']")).await?;
     /// let child_elem = elem.find_element(By::Tag("button")).await?;
@@ -533,10 +527,13 @@ impl<'a> WebElement<'a> {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_element(&self, by: By<'_>) -> WebDriverResult<WebElement<'a>> {
-        let v =
-            self.cmd(Command::FindElementFromElement(self.element_id.clone(), by.into())).await?;
-        convert_element_async(self.handle, &v["value"])
+    pub async fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
+        let elem = self.element.find(by.locator()).await.map_err(|e| match e {
+            // It's generally only useful to know the element query that failed.
+            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
+            x => WebDriverError::CmdError(x),
+        })?;
+        Ok(WebElement::new(elem, self.handle.clone()))
     }
 
     /// Search for all child elements of this WebElement that match the
@@ -553,7 +550,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Css("div[data-section='section-buttons']")).await?;
     /// let child_elems = elem.find_elements(By::Tag("button")).await?;
@@ -566,17 +563,18 @@ impl<'a> WebElement<'a> {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_elements(&self, by: By<'_>) -> WebDriverResult<Vec<WebElement<'a>>> {
-        let v =
-            self.cmd(Command::FindElementsFromElement(self.element_id.clone(), by.into())).await?;
-        convert_elements_async(self.handle, &v["value"])
+    pub async fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
+        let elems = self.element.find_all(by.locator()).await.map_err(|e| match e {
+            // It's generally only useful to know the element query that failed.
+            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
+            x => WebDriverError::CmdError(x),
+        })?;
+        Ok(elems.into_iter().map(|x| WebElement::new(x, self.handle.clone())).collect())
     }
 
     /// Send the specified input.
     ///
     /// # Example:
-    /// You can specify anything that implements `Into<TypingData>`. This
-    /// includes &str and String.
     /// ```rust
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
@@ -584,7 +582,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find_element(By::Name("input1")).await?;
@@ -604,44 +602,29 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find_element(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
-    /// elem.send_keys(Keys::Control + "a").await?;
-    /// elem.send_keys(TypingData::from("thirtyfour") + Keys::Enter).await?;
+    /// elem.send_keys(Key::Control + "a".to_string()).await?;
+    /// elem.send_keys("thirtyfour" + Key::Enter).await?;
     /// #         assert_eq!(elem.value().await?, Some("thirtyfour".to_string()));
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn send_keys<S>(&self, keys: S) -> WebDriverResult<()>
-    where
-        S: Into<TypingData>,
-    {
-        self.cmd(Command::ElementSendKeys(self.element_id.clone(), keys.into())).await?;
-        Ok(())
-    }
-
-    /// Take a screenshot of this WebElement and return it as a base64-encoded
-    /// String.
-    pub async fn screenshot_as_base64(&self) -> WebDriverResult<String> {
-        let v = self.cmd(Command::TakeElementScreenshot(self.element_id.clone())).await?;
-        convert_json(&v["value"])
+    pub async fn send_keys(&self, keys: impl AsRef<str>) -> WebDriverResult<()> {
+        Ok(self.element.send_keys(keys.as_ref()).await?)
     }
 
     /// Take a screenshot of this WebElement and return it as PNG bytes.
     pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
-        let s = self.screenshot_as_base64().await?;
-        let bytes: Vec<u8> = decode(&s)?;
-        Ok(bytes)
+        Ok(self.element.screenshot().await?)
     }
 
-    /// Take a screenshot of this WebElement and write it to the specified
-    /// filename.
-    #[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
+    /// Take a screenshot of this WebElement and write it to the specified filename.
     pub async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
         let mut file = File::create(path).await?;
@@ -659,7 +642,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find_element(By::Name("input1")).await?;
@@ -672,9 +655,7 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn focus(&self) -> WebDriverResult<()> {
-        let mut args = ScriptArgs::new();
-        args.push(&self)?;
-        self.handle.execute_script_with_args(r#"arguments[0].focus();"#, &args).await?;
+        self.handle.execute_script(r#"arguments[0].focus();"#, vec![self.to_json()?]).await?;
         Ok(())
     }
 
@@ -688,7 +669,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
     /// elem.scroll_into_view().await?;
@@ -698,9 +679,9 @@ impl<'a> WebElement<'a> {
     /// # }
     /// ```
     pub async fn scroll_into_view(&self) -> WebDriverResult<()> {
-        let mut args = ScriptArgs::new();
-        args.push(&self)?;
-        self.handle.execute_script_with_args(r#"arguments[0].scrollIntoView();"#, &args).await?;
+        self.handle
+            .execute_script(r#"arguments[0].scrollIntoView();"#, vec![self.to_json()?])
+            .await?;
         Ok(())
     }
 
@@ -714,7 +695,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::XPath(r##"//*[@id="button1"]/.."##)).await?;
     /// let html = elem.inner_html().await?;
@@ -738,7 +719,7 @@ impl<'a> WebElement<'a> {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::XPath(r##"//*[@id="button1"]/.."##)).await?;
     /// let html = elem.outer_html().await?;
@@ -756,33 +737,26 @@ impl<'a> WebElement<'a> {
     ///
     /// Call this method on the element containing the `#shadowRoot` node.
     /// You can then use the returned `WebElement` to query elements within the shadowRoot node.
-    pub async fn get_shadow_root(&'a self) -> WebDriverResult<WebElement<'a>> {
-        let mut args = ScriptArgs::new();
-        args.push(&self)?;
-        let ret =
-            self.handle.execute_script_with_args("return arguments[0].shadowRoot", &args).await?;
+    pub async fn get_shadow_root(&self) -> WebDriverResult<WebElement> {
+        let ret = self
+            .handle
+            .execute_script("return arguments[0].shadowRoot", vec![self.to_json()?])
+            .await?;
         ret.get_element()
     }
 }
 
-impl<'a> fmt::Display for WebElement<'_> {
+impl<'a> fmt::Display for WebElement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            r#"(session="{}", element="{}")"#,
-            self.handle.config.get_session_id(),
-            self.element_id
-        )
+        write!(f, "{:?}", self.element)
     }
 }
 
-impl<'a> Serialize for WebElement<'_> {
+impl<'a> Serialize for WebElement {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let mut map = serializer.serialize_map(Some(1))?;
-        map.serialize_entry(MAGIC_ELEMENTID, &self.element_id.to_string())?;
-        map.end()
+        self.element.serialize(serializer)
     }
 }

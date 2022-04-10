@@ -1,60 +1,9 @@
+use crate::error::WebDriverResult;
+use crate::session::handle::SessionHandle;
 use std::ops::{Deref, DerefMut};
 
-use crate::http::connection_async::{HttpClientCreateParams, WebDriverHttpClientAsync};
-
-use crate::error::WebDriverError;
-use crate::runtime::imports::HttpClientAsync;
-use crate::session::handle::SessionHandle;
-use crate::session::start::start_session;
-use crate::{common::command::Command, error::WebDriverResult};
-use serde::Serialize;
-use std::time::Duration;
-
-#[derive(Debug, Clone)]
-pub struct WebDriverBuilder {
-    create_params: HttpClientCreateParams,
-    capabilities: Result<serde_json::Value, String>,
-}
-
-impl WebDriverBuilder {
-    /// Create a new WebDriverBuilder instance. You can use this to
-    /// customize the WebDriver parameters before building it.
-    pub fn new<C>(server_url: &str, capabilities: C) -> Self
-    where
-        C: Serialize,
-    {
-        Self {
-            create_params: HttpClientCreateParams {
-                server_url: server_url.to_string(),
-                timeout: Some(Duration::from_secs(120)),
-            },
-            capabilities: serde_json::to_value(capabilities).map_err(|e| e.to_string()),
-        }
-    }
-
-    /// Set the request timeout for the HTTP client.
-    pub fn timeout(&mut self, timeout: Option<Duration>) -> &mut Self {
-        self.create_params.timeout = timeout;
-        self
-    }
-
-    /// Build a WebDriver instance that uses the default HTTP client.
-    pub async fn build<'a>(&self) -> WebDriverResult<WebDriver> {
-        self.build_custom_client::<HttpClientAsync>().await
-    }
-
-    /// Build a WebDriver instance that uses a HTTP client that implements WebDriverHttpClientAsync.
-    pub async fn build_custom_client<T: 'static + WebDriverHttpClientAsync>(
-        &self,
-    ) -> WebDriverResult<WebDriver> {
-        let capabilities = self.capabilities.clone().map_err(WebDriverError::SessionCreateError)?;
-        let http_client = T::create(self.create_params.clone())?;
-        let handle = start_session(Box::new(http_client), capabilities).await?;
-        Ok(WebDriver {
-            handle,
-        })
-    }
-}
+use crate::TimeoutConfiguration;
+use fantoccini::wd::Capabilities;
 
 /// The `WebDriver` struct encapsulates an async Selenium WebDriver browser
 /// session.
@@ -67,7 +16,7 @@ impl WebDriverBuilder {
 /// fn main() -> WebDriverResult<()> {
 ///     block_on(async {
 ///         let caps = DesiredCapabilities::chrome();
-///         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+///         let driver = WebDriver::new("http://localhost:4444", caps).await?;
 ///         driver.get("http://webappdemo").await?;
 ///         driver.quit().await?;
 ///         Ok(())
@@ -90,7 +39,7 @@ impl WebDriver {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// let caps = DesiredCapabilities::chrome();
-    /// let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -101,56 +50,51 @@ impl WebDriver {
     ///     capabilities object is of the correct type for that webdriver.
     pub async fn new<C>(server_url: &str, capabilities: C) -> WebDriverResult<Self>
     where
-        C: Serialize,
+        C: Into<Capabilities>,
     {
-        WebDriverBuilder::new(server_url, capabilities).build().await
-    }
+        use fantoccini::ClientBuilder;
+        let caps: Capabilities = capabilities.into();
+        let client = ClientBuilder::native().capabilities(caps.clone()).connect(server_url).await?;
 
-    /// Creates a new WebDriver just like the `new` function. Allows a
-    /// configurable timeout for all HTTP requests including the session creation.
-    ///
-    /// Create a new WebDriver as follows:
-    ///
-    /// # Example
-    /// ```rust
-    /// # use thirtyfour::prelude::*;
-    /// # use thirtyfour::support::block_on;
-    /// # use std::time::Duration;
-    /// #
-    /// # fn main() -> WebDriverResult<()> {
-    /// #     block_on(async {
-    /// let caps = DesiredCapabilities::chrome();
-    /// let driver = WebDriver::new_with_timeout("http://localhost:4444/wd/hub", &caps, Some(Duration::from_secs(120))).await?;
-    /// #         driver.quit().await?;
-    /// #         Ok(())
-    /// #     })
-    /// # }
-    /// ```
-    pub async fn new_with_timeout<C>(
-        server_url: &str,
-        capabilities: C,
-        timeout: Option<Duration>,
-    ) -> WebDriverResult<Self>
-    where
-        C: Serialize,
-    {
-        WebDriverBuilder::new(server_url, capabilities).timeout(timeout).build().await
-    }
+        // Set default timeouts.
+        let timeouts = TimeoutConfiguration::default();
+        client.update_timeouts(timeouts).await?;
 
-    pub async fn new_with_client<C>(
-        client: Box<dyn WebDriverHttpClientAsync>,
-        capabilities: C,
-    ) -> WebDriverResult<Self>
-    where
-        C: Serialize,
-    {
-        let caps = serde_json::to_value(capabilities)
-            .map_err(|e| WebDriverError::SessionCreateError(e.to_string()))?;
-        let handle = start_session(client, caps).await?;
         Ok(Self {
-            handle,
+            handle: SessionHandle::new(client, caps).await?,
         })
     }
+
+    // /// Creates a new WebDriver just like the `new` function. Allows a
+    // /// configurable timeout for all HTTP requests including the session creation.
+    // ///
+    // /// Create a new WebDriver as follows:
+    // ///
+    // /// # Example
+    // /// ```rust
+    // /// # use thirtyfour::prelude::*;
+    // /// # use thirtyfour::support::block_on;
+    // /// # use std::time::Duration;
+    // /// #
+    // /// # fn main() -> WebDriverResult<()> {
+    // /// #     block_on(async {
+    // /// let caps = DesiredCapabilities::chrome();
+    // /// let driver = WebDriver::new_with_timeout("http://localhost:4444", &caps, Some(Duration::from_secs(120))).await?;
+    // /// #         driver.quit().await?;
+    // /// #         Ok(())
+    // /// #     })
+    // /// # }
+    // /// ```
+    // pub async fn new_with_timeout<C>(
+    //     _server_url: &str,
+    //     _capabilities: C,
+    //     _timeout: Option<Duration>,
+    // ) -> WebDriverResult<Self>
+    // where
+    //     C: Into<Capabilities>,
+    // {
+    //     unimplemented!()
+    // }
 
     /// End the webdriver session and close the browser.
     ///
@@ -158,7 +102,7 @@ impl WebDriver {
     ///           Thus if you intend for the browser to close once you are done with it, then
     ///           you must call this method at that point, and await it.
     pub async fn quit(self) -> WebDriverResult<()> {
-        self.handle.cmd(Command::DeleteSession).await?;
+        self.handle.client.close().await?;
         Ok(())
     }
 }

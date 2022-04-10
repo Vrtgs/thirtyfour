@@ -29,7 +29,7 @@ async fn main() -> color_eyre::Result<()> {
 
     // Get the user agent and verify.
     let js_user_agent: String =
-        driver.execute_script(r#"return navigator.userAgent;"#).await?.convert()?;
+        driver.execute_script(r#"return navigator.userAgent;"#, Vec::new()).await?.convert()?;
     assert_eq!(&js_user_agent, user_agent);
 
     // Always explicitly close the browser. There are no async destructors.

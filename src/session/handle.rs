@@ -1,41 +1,29 @@
+use serde_json::Value;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::future::Future;
-#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
 use std::path::Path;
-use std::sync::Arc;
 use std::time::Duration;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 
-use tokio::sync::mpsc::UnboundedSender;
-use tokio::sync::oneshot;
+use fantoccini::cookies::Cookie;
+use fantoccini::elements::Element;
+use fantoccini::error::CmdError;
+use fantoccini::wd::{Capabilities, TimeoutConfiguration, WebDriverStatus, WindowHandle};
 
 use crate::action_chain::ActionChain;
-use crate::common::command::Command;
 use crate::common::config::WebDriverConfig;
-use crate::common::connection_common::{convert_json, convert_json_vec};
 use crate::error::{WebDriverError, WebDriverResult};
-#[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
-use crate::runtime::imports::{AsyncWriteExt, File};
 use crate::session::scriptret::ScriptRet;
-use crate::session::task::{InternalCommand, SessionCommand};
-use crate::webelement::{convert_element_async, convert_elements_async};
-use crate::{
-    By, Cookie, DesiredCapabilities, ExtensionCommand, OptionRect, Rect, ScriptArgs, SessionId,
-    SwitchTo, TimeoutConfiguration, WebElement, WindowHandle,
-};
+use crate::{By, Rect, SessionId, SwitchTo, WebElement};
 
-/// The SessionHandle contains a shared reference to the `WebDriverConfig` as well
-/// as a sender to send commands to the async task that runs the session.
-///
-/// `SessionHandle` is intended to be stored in `WebDriver` and a reference to it
-/// passed around to all elements or anything that needs to communicate with the session.
-///
-/// The reason elements contain a reference rather than a clone is specifically so that
-/// Rust will not let you "use" the session after you call `WebDriver::quit()`
-/// (because that will consume the `WebDriver` instance and drop the `SessionHandle`).
+/// The SessionHandle contains a shared reference to the [`WebDriverConfig`] as well
+/// as the [`fantoccini::Client`] to allow sending commands to the underlying WebDriver.
+#[derive(Clone)]
 pub struct SessionHandle {
-    pub tx: UnboundedSender<SessionCommand>,
-    pub config: Arc<WebDriverConfig>,
+    pub(crate) client: fantoccini::Client,
+    pub config: WebDriverConfig,
 }
 
 impl Debug for SessionHandle {
@@ -45,72 +33,83 @@ impl Debug for SessionHandle {
 }
 
 impl SessionHandle {
-    /// Convenience wrapper for running WebDriver commands.
-    ///
-    /// For `thirtyfour` internal use only.
-    pub async fn cmd(&self, command: Command) -> WebDriverResult<serde_json::Value> {
-        let (ret_tx, ret_rx) = oneshot::channel();
-        self.tx.send(SessionCommand::WebDriverCommand(Box::new(command), ret_tx))?;
-        ret_rx.await?
+    /// Create new SessionHandle from a fantoccini Client.
+    pub(crate) async fn new(
+        client: fantoccini::Client,
+        capabilities: Capabilities,
+    ) -> WebDriverResult<Self> {
+        let session_id = client.session_id().await?.expect("session id to be valid");
+        Ok(Self {
+            client,
+            config: WebDriverConfig::new(SessionId::from(session_id), capabilities),
+        })
     }
 
-    /// Return a clone of the capabilities as returned by Selenium.
-    pub async fn capabilities(&mut self) -> WebDriverResult<DesiredCapabilities> {
-        let (ret_tx, ret_rx) = oneshot::channel();
-        self.tx.send(SessionCommand::Internal(InternalCommand::GetCapabilities(ret_tx)))?;
-        Ok(ret_rx.await?)
+    fn wrap_element(&self, element: Element) -> WebElement {
+        WebElement::new(element, self.clone())
+    }
+
+    /// Return a clone of the capabilities as originally requested.
+    pub fn capabilities(&mut self) -> Capabilities {
+        self.config.get_capabilities()
     }
 
     /// Get the session ID.
     pub async fn session_id(&self) -> WebDriverResult<SessionId> {
-        let (ret_tx, ret_rx) = oneshot::channel();
-        self.tx.send(SessionCommand::Internal(InternalCommand::GetSessionId(ret_tx)))?;
-        Ok(ret_rx.await?)
+        let id = self.client.session_id().await?;
+        Ok(SessionId::from(id.unwrap_or_default()))
     }
 
     /// Get a clone of the `WebDriverConfig`. You can update the config by modifying
-    /// it and passing it to `set_config()`.
-    pub async fn config(&self) -> WebDriverResult<WebDriverConfig> {
-        let (ret_tx, ret_rx) = oneshot::channel();
-        self.tx.send(SessionCommand::Internal(InternalCommand::GetConfig(ret_tx)))?;
-        Ok(ret_rx.await?)
+    /// it directly.
+    pub fn config(&self) -> WebDriverConfig {
+        self.config.clone()
     }
 
-    /// Set the `WebDriverConfig` for this session. Currently this allows you to set
-    /// the default `ElementPoller` used by `WebDriver::query()` and `WebElement::wait_until()`.
-    ///
-    /// If you implement your own Trait in order to extend `WebDriver`, this lets you store
-    /// configuration inside the inner `SessionHandle` that can be accessed by any instance
-    /// that contains a reference to it.
-    pub async fn set_config(&self, config: WebDriverConfig) -> WebDriverResult<()> {
-        self.tx.send(SessionCommand::Internal(InternalCommand::SetConfig(config)))?;
-        Ok(())
-    }
-
-    /// Set the request timeout for the HTTP client.
+    /// Get the WebDriver status.
     ///
     /// # Example
     /// ```rust
     /// # use thirtyfour::prelude::*;
-    /// # use std::time::Duration;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// let caps = DesiredCapabilities::chrome();
-    /// let mut driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// driver.set_request_timeout(Duration::from_secs(180)).await?;
+    /// let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// let status = driver.status().await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn set_request_timeout(&mut self, timeout: Duration) -> WebDriverResult<()> {
-        self.tx.send(SessionCommand::Internal(InternalCommand::SetRequestTimeout(timeout)))?;
-        Ok(())
+    pub async fn status(&self) -> WebDriverResult<WebDriverStatus> {
+        Ok(self.client.status().await?)
     }
 
-    /// Close the current window or tab.
+    // /// Set the request timeout for the HTTP client.
+    // ///
+    // /// # Example
+    // /// ```rust
+    // /// # use thirtyfour::prelude::*;
+    // /// # use std::time::Duration;
+    // /// # use thirtyfour::support::block_on;
+    // /// #
+    // /// # fn main() -> WebDriverResult<()> {
+    // /// #     block_on(async {
+    // /// let caps = DesiredCapabilities::chrome();
+    // /// let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
+    // /// driver.set_request_timeout(Duration::from_secs(180)).await?;
+    // /// #         driver.quit().await?;
+    // /// #         Ok(())
+    // /// #     })
+    // /// # }
+    // /// ```
+    // pub async fn set_request_timeout(&mut self, _timeout: Duration) -> WebDriverResult<()> {
+    //     unimplemented!()
+    // }
+
+    /// Close the current window or tab. This will close the session if no other windows exist.
     ///
     /// # Example:
     /// ```rust
@@ -120,13 +119,13 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#).await?;
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.window_handles().await?;
-    /// driver.switch_to().window(&handles[1]).await?;
+    /// driver.switch_to().window(handles[1].clone()).await?;
     /// // We are now controlling the new tab.
     /// driver.get("http://webappdemo").await?;
     /// // Close the tab. This will return to the original tab.
@@ -137,7 +136,8 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn close(&self) -> WebDriverResult<()> {
-        self.cmd(Command::CloseWindow).await.map(|_| ())
+        self.client.close_window().await?;
+        Ok(())
     }
 
     /// Navigate to the specified URL.
@@ -150,15 +150,18 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// driver.get("http://webappdemo").await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn get<S: Into<String> + Send>(&self, url: S) -> WebDriverResult<()> {
-        self.cmd(Command::NavigateTo(url.into())).await.map(|_| ())
+    pub async fn get<S>(&self, url: S) -> WebDriverResult<()>
+    where
+        S: AsRef<str>,
+    {
+        Ok(self.client.goto(url.as_ref()).await?)
     }
 
     /// Get the current URL as a String.
@@ -167,22 +170,22 @@ impl SessionHandle {
     /// ```rust
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
+    /// use url::Url;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// driver.get("http://webappdemo").await?;
     /// let url = driver.current_url().await?;
-    /// #         assert_eq!(url, "http://webappdemo/");
+    /// #         assert_eq!(url, Url::parse("http://webappdemo/")?);
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn current_url(&self) -> WebDriverResult<String> {
-        let v = self.cmd(Command::GetCurrentUrl).await?;
-        convert_json(&v["value"])
+    pub async fn current_url(&self) -> WebDriverResult<url::Url> {
+        Ok(self.client.current_url().await?)
     }
 
     /// Get the page source as a String.
@@ -195,7 +198,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// driver.get("http://webappdemo").await?;
     /// let source = driver.page_source().await?;
     /// #         assert!(source.starts_with(r#"<html lang="en">"#));
@@ -205,8 +208,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn page_source(&self) -> WebDriverResult<String> {
-        let v = self.cmd(Command::GetPageSource).await?;
-        convert_json(&v["value"])
+        Ok(self.client.source().await?)
     }
 
     /// Get the page title as a String.
@@ -219,7 +221,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// driver.get("http://webappdemo").await?;
     /// let title = driver.title().await?;
     /// #         assert_eq!(title, "Demo Web App");
@@ -229,8 +231,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn title(&self) -> WebDriverResult<String> {
-        let v = self.cmd(Command::GetTitle).await?;
-        Ok(v["value"].as_str().unwrap_or_default().to_owned())
+        Ok(self.client.title().await?)
     }
 
     /// Search for an element on the current page using the specified selector.
@@ -246,7 +247,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem_text = driver.find_element(By::Name("input1")).await?;
@@ -257,9 +258,13 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_element(&self, by: By<'_>) -> WebDriverResult<WebElement<'_>> {
-        let v = self.cmd(Command::FindElement(by.into())).await?;
-        convert_element_async(self, &v["value"])
+    pub async fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
+        let elem = self.client.find(by.locator()).await.map_err(|e| match e {
+            // It's generally only useful to know the element query that failed.
+            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
+            x => WebDriverError::CmdError(x),
+        })?;
+        Ok(self.wrap_element(elem))
     }
 
     /// Search for all elements on the current page that match the specified selector.
@@ -275,7 +280,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elems = driver.find_elements(By::ClassName("section")).await?;
     /// for elem in elems {
@@ -286,9 +291,13 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_elements(&self, by: By<'_>) -> WebDriverResult<Vec<WebElement<'_>>> {
-        let v = self.cmd(Command::FindElements(by.into())).await?;
-        convert_elements_async(self, &v["value"])
+    pub async fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
+        let elems = self.client.find_all(by.locator()).await.map_err(|e| match e {
+            // It's generally only useful to know the element query that failed.
+            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
+            x => WebDriverError::CmdError(x),
+        })?;
+        Ok(elems.into_iter().map(|x| self.wrap_element(x)).collect())
     }
 
     /// Execute the specified Javascript synchronously and return the result.
@@ -301,7 +310,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         // Use find_element() to wait for the page to load.
     /// #         driver.find_element(By::Id("button1")).await?;
@@ -309,7 +318,7 @@ impl SessionHandle {
     ///     let elem = document.getElementById("button1");
     ///     elem.click();
     ///     return elem;
-    ///     "#
+    ///     "#, Vec::new()
     /// ).await?;
     /// let elem_out = ret.get_element()?;
     /// assert_eq!(elem_out.text().await?, "BUTTON 1");
@@ -320,48 +329,38 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn execute_script(&self, script: &str) -> WebDriverResult<ScriptRet<'_>> {
-        let v = self.cmd(Command::ExecuteScript(script.to_owned(), Vec::new())).await?;
-        Ok(ScriptRet::new(self, v["value"].clone()))
-    }
-
-    /// Execute the specified Javascript synchronously and return the result.
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::ScriptArgs;
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
-    /// let mut args = ScriptArgs::new();
-    /// args.push(elem.clone())?;
-    /// args.push("TESTING")?;
-    /// let ret = driver.execute_script_with_args(r#"
+    /// let ret = driver.execute_script(r#"
     ///     arguments[0].innerHTML = arguments[1];
     ///     return arguments[0];
-    ///     "#, &args
+    ///     "#, vec![elem.to_json()?, serde_json::to_value("TESTING")?]
     /// ).await?;
     /// let elem_out = ret.get_element()?;
-    /// assert_eq!(elem_out.element_id, elem.element_id);
+    /// assert_eq!(elem_out.element_id(), elem.element_id());
     /// assert_eq!(elem_out.text().await?, "TESTING");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn execute_script_with_args(
+    pub async fn execute_script(
         &self,
         script: &str,
-        args: &ScriptArgs,
-    ) -> WebDriverResult<ScriptRet<'_>> {
-        let v = self.cmd(Command::ExecuteScript(script.to_owned(), args.get_args())).await?;
-        Ok(ScriptRet::new(self, v["value"].clone()))
+        args: Vec<Value>,
+    ) -> WebDriverResult<ScriptRet> {
+        let v = self.client.execute(script, args).await?;
+        Ok(ScriptRet::new(self.clone(), v))
     }
 
     /// Execute the specified Javascrypt asynchronously and return the result.
@@ -374,11 +373,11 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         // Use find_element() to wait for the page to load.
     /// #         driver.find_element(By::Id("button1")).await?;
-    /// let ret = driver.execute_async_script(r#"
+    /// let ret = driver.execute_script_async(r#"
     ///     // Selenium automatically provides an extra argument which is a
     ///     // function that receives the return value(s).
     ///     let done = arguments[0];
@@ -387,7 +386,7 @@ impl SessionHandle {
     ///         elem.click();
     ///         done(elem);
     ///     }, 1000);
-    ///     "#
+    ///     "#, Vec::new()
     /// ).await?;
     /// let elem_out = ret.get_element()?;
     /// assert_eq!(elem_out.text().await?, "BUTTON 1");
@@ -398,29 +397,20 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn execute_async_script(&self, script: &str) -> WebDriverResult<ScriptRet<'_>> {
-        let v = self.cmd(Command::ExecuteAsyncScript(script.to_owned(), Vec::new())).await?;
-        Ok(ScriptRet::new(self, v["value"].clone()))
-    }
-
-    /// Execute the specified Javascrypt asynchronously and return the result.
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::ScriptArgs;
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// let elem = driver.find_element(By::Id("button1")).await?;
-    /// let mut args = ScriptArgs::new();
-    /// args.push(elem.clone())?;
-    /// args.push("TESTING")?;
-    /// let ret = driver.execute_async_script_with_args(r#"
+    /// let args = vec![elem.to_json()?, serde_json::to_value("TESTING")?];
+    /// let ret = driver.execute_script_async(r#"
     ///     // Selenium automatically provides an extra argument which is a
     ///     // function that receives the return value(s).
     ///     let done = arguments[2];
@@ -428,23 +418,23 @@ impl SessionHandle {
     ///         arguments[0].innerHTML = arguments[1];
     ///         done(arguments[0]);
     ///     }, 1000);
-    ///     "#, &args
+    ///     "#, args
     /// ).await?;
     /// let elem_out = ret.get_element()?;
-    /// assert_eq!(elem_out.element_id, elem.element_id);
+    /// assert_eq!(elem_out.element_id(), elem.element_id());
     /// assert_eq!(elem_out.text().await?, "TESTING");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn execute_async_script_with_args(
+    pub async fn execute_script_async(
         &self,
         script: &str,
-        args: &ScriptArgs,
-    ) -> WebDriverResult<ScriptRet<'_>> {
-        let v = self.cmd(Command::ExecuteAsyncScript(script.to_owned(), args.get_args())).await?;
-        Ok(ScriptRet::new(self, v["value"].clone()))
+        args: Vec<Value>,
+    ) -> WebDriverResult<ScriptRet> {
+        let v = self.client.execute_async(script, args).await?;
+        Ok(ScriptRet::new(self.clone(), v))
     }
 
     /// Get the current window handle.
@@ -457,22 +447,22 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// // Get the current window handle.
     /// let handle = driver.current_window_handle().await?;
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#).await?;
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.window_handles().await?;
-    /// driver.switch_to().window(&handles[1]).await?;
+    /// driver.switch_to().window(handles[1].clone()).await?;
     /// // We are now controlling the new tab.
     /// driver.get("http://webappdemo").await?;
     /// assert_ne!(driver.current_window_handle().await?, handle);
     /// // Switch back to original tab.
-    /// driver.switch_to().window(&handle).await?;
+    /// driver.switch_to().window(handle.clone()).await?;
     /// assert_eq!(driver.current_window_handle().await?, handle);
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -480,8 +470,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
-        let v = self.cmd(Command::GetWindowHandle).await?;
-        convert_json::<String>(&v["value"]).map(WindowHandle::from)
+        Ok(self.client.window().await?)
     }
 
     /// Get all window handles for the current session.
@@ -494,26 +483,24 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// assert_eq!(driver.window_handles().await?.len(), 1);
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#).await?;
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.window_handles().await?;
     /// assert_eq!(handles.len(), 2);
-    /// driver.switch_to().window(&handles[1]).await?;
+    /// driver.switch_to().window(handles[1].clone()).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
     pub async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
-        let v = self.cmd(Command::GetWindowHandles).await?;
-        let strings: Vec<String> = convert_json_vec(&v["value"])?;
-        Ok(strings.iter().map(WindowHandle::from).collect())
+        Ok(self.client.windows().await?)
     }
 
     /// Maximize the current window.
@@ -526,7 +513,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// driver.maximize_window().await?;
     /// #         driver.quit().await?;
@@ -535,7 +522,8 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn maximize_window(&self) -> WebDriverResult<()> {
-        self.cmd(Command::MaximizeWindow).await.map(|_| ())
+        self.client.maximize_window().await?;
+        Ok(())
     }
 
     /// Minimize the current window.
@@ -550,7 +538,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// driver.minimize_window().await?;
     /// #         driver.quit().await?;
@@ -559,7 +547,8 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn minimize_window(&self) -> WebDriverResult<()> {
-        self.cmd(Command::MinimizeWindow).await.map(|_| ())
+        self.client.minimize_window().await?;
+        Ok(())
     }
 
     /// Make the current window fullscreen.
@@ -572,7 +561,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// driver.fullscreen_window().await?;
     /// #         driver.quit().await?;
@@ -581,7 +570,8 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn fullscreen_window(&self) -> WebDriverResult<()> {
-        self.cmd(Command::FullscreenWindow).await.map(|_| ())
+        self.client.fullscreen_window().await?;
+        Ok(())
     }
 
     /// Get the current window rectangle, in pixels.
@@ -591,73 +581,52 @@ impl SessionHandle {
     ///
     /// # Example:
     /// ```rust
-    /// use thirtyfour::OptionRect;
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
+    /// use thirtyfour::Rect;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let option_rect = OptionRect::new().with_pos(1, 1).with_size(800, 600);
-    /// driver.set_window_rect(option_rect.clone()).await?;
+    /// driver.set_window_rect(0, 0, 600, 400).await?;
     /// let rect = driver.get_window_rect().await?;
-    /// assert_eq!(OptionRect::from(rect), option_rect);
+    /// assert_eq!(rect, Rect::new(0, 0, 600, 400));
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
     pub async fn get_window_rect(&self) -> WebDriverResult<Rect> {
-        let v = self.cmd(Command::GetWindowRect).await?;
-        convert_json(&v["value"])
+        let (x, y, w, h) = self.client.get_window_rect().await?;
+        Ok(Rect::new(x as i64, y as i64, w as i64, h as i64))
     }
 
     /// Set the current window rectangle, in pixels.
     ///
-    /// This requires an OptionRect, which is similar to Rect except all
-    /// members are wrapped in Option.
-    ///
-    /// # Example:
     /// ```rust
-    /// use thirtyfour::OptionRect;
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// let r = OptionRect::new().with_size(1280, 720);
-    /// driver.set_window_rect(r).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// driver.set_window_rect(0, 0, 500, 400).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    ///
-    /// You can also convert from a Rect if you want to get the window size
-    /// and modify it before setting it again.
-    /// ```rust
-    /// use thirtyfour::OptionRect;
-    /// # use thirtyfour::prelude::*;
-    /// # use thirtyfour::support::block_on;
-    /// #
-    /// # fn main() -> WebDriverResult<()> {
-    /// #     block_on(async {
-    /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// let rect = driver.get_window_rect().await?;
-    /// let option_rect = OptionRect::from(rect);
-    /// driver.set_window_rect(option_rect.with_width(1024)).await?;
-    /// #         driver.quit().await?;
-    /// #         Ok(())
-    /// #     })
-    /// # }
-    /// ```
-    pub async fn set_window_rect(&self, rect: OptionRect) -> WebDriverResult<()> {
-        self.cmd(Command::SetWindowRect(rect)).await.map(|_| ())
+    pub async fn set_window_rect(
+        &self,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+    ) -> WebDriverResult<()> {
+        Ok(self.client.set_window_rect(x, y, width, height).await?)
     }
 
     /// Go back. This is equivalent to clicking the browser's back button.
@@ -670,7 +639,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// driver.back().await?;
@@ -681,7 +650,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn back(&self) -> WebDriverResult<()> {
-        self.cmd(Command::Back).await.map(|_| ())
+        Ok(self.client.back().await?)
     }
 
     /// Go forward. This is equivalent to clicking the browser's forward button.
@@ -694,7 +663,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// #         driver.back().await?;
@@ -707,7 +676,8 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn forward(&self) -> WebDriverResult<()> {
-        self.cmd(Command::Forward).await.map(|_| ())
+        self.client.forward().await?;
+        Ok(())
     }
 
     /// Refresh the current page.
@@ -720,7 +690,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// driver.refresh().await?;
@@ -731,7 +701,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn refresh(&self) -> WebDriverResult<()> {
-        self.cmd(Command::Refresh).await.map(|_| ())
+        Ok(self.client.refresh().await?)
     }
 
     /// Get all timeouts for the current session.
@@ -746,7 +716,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         let set_timeouts = TimeoutConfiguration::new(
     /// #             Some(Duration::new(1, 0)),
     /// #             Some(Duration::new(2, 0)),
@@ -764,8 +734,8 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn get_timeouts(&self) -> WebDriverResult<TimeoutConfiguration> {
-        let v = self.cmd(Command::GetTimeouts).await?;
-        convert_json(&v["value"])
+        let timeouts = self.client.get_timeouts().await?;
+        Ok(timeouts)
     }
 
     /// Set all timeouts for the current session.
@@ -790,7 +760,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// // Setting timeouts to None means those timeout values will not be updated.
     /// let timeouts = TimeoutConfiguration::new(None, Some(Duration::new(11, 0)), None);
     /// driver.set_timeouts(timeouts.clone()).await?;
@@ -802,7 +772,8 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
-        self.cmd(Command::SetTimeouts(timeouts)).await.map(|_| ())
+        self.client.update_timeouts(timeouts).await?;
+        Ok(())
     }
 
     /// Set the implicit wait timeout. This is how long the WebDriver will
@@ -830,7 +801,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// let delay = Duration::new(11, 0);
     /// driver.set_implicit_wait_timeout(delay).await?;
     /// #         let got_timeouts = driver.get_timeouts().await?;
@@ -864,7 +835,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// let delay = Duration::new(11, 0);
     /// driver.set_script_timeout(delay).await?;
     /// #         let got_timeouts = driver.get_timeouts().await?;
@@ -898,7 +869,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// let delay = Duration::new(11, 0);
     /// driver.set_page_load_timeout(delay).await?;
     /// #         let got_timeouts = driver.get_timeouts().await?;
@@ -925,7 +896,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// let elem_text = driver.find_element(By::Name("input1")).await?;
@@ -944,7 +915,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub fn action_chain(&self) -> ActionChain {
-        ActionChain::new(self)
+        ActionChain::new(self.clone())
     }
 
     /// Get all cookies.
@@ -953,28 +924,31 @@ impl SessionHandle {
     /// ```rust
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
+    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         let set_cookie = Cookie::new("key", serde_json::json!("value"));
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// #         driver.get("https://wikipedia.org").await?;
+    /// #         let mut set_cookie = Cookie::new("key", "value");
+    /// #         set_cookie.set_domain("wikipedia.org");
+    /// #         set_cookie.set_path("/");
+    /// #         set_cookie.set_same_site(Some(SameSite::Lax));
     /// #         driver.add_cookie(set_cookie).await?;
     /// let cookies = driver.get_cookies().await?;
     /// for cookie in &cookies {
     ///     println!("Got cookie: {}", cookie.value());
     /// }
     /// #         assert_eq!(
-    /// #             cookies.iter().filter(|x| x.value() == &serde_json::json!("value")).count(), 1);
+    /// #             cookies.iter().filter(|x| x.value() == "value").count(), 1);
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
-        let v = self.cmd(Command::GetAllCookies).await?;
-        convert_json_vec::<Cookie>(&v["value"])
+    pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie<'static>>> {
+        Ok(self.client.get_all_cookies().await?)
     }
 
     /// Get the specified cookie.
@@ -983,25 +957,28 @@ impl SessionHandle {
     /// ```rust
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
+    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         let set_cookie = Cookie::new("key", serde_json::json!("value"));
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// #         driver.get("https://wikipedia.org").await?;
+    /// #         let mut set_cookie = Cookie::new("key", "value");
+    /// #         set_cookie.set_domain("wikipedia.org");
+    /// #         set_cookie.set_path("/");
+    /// #         set_cookie.set_same_site(Some(SameSite::Lax));
     /// #         driver.add_cookie(set_cookie).await?;
     /// let cookie = driver.get_cookie("key").await?;
     /// println!("Got cookie: {}", cookie.value());
-    /// #         assert_eq!(cookie.value(), &serde_json::json!("value"));
+    /// #         assert_eq!(cookie.value(),"value");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
-        let v = self.cmd(Command::GetNamedCookie(name.to_string())).await?;
-        convert_json::<Cookie>(&v["value"])
+    pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie<'static>> {
+        Ok(self.client.get_named_cookie(name).await?)
     }
 
     /// Delete the specified cookie.
@@ -1010,13 +987,17 @@ impl SessionHandle {
     /// ```rust
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
+    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         let set_cookie = Cookie::new("key", serde_json::json!("value"));
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// #         driver.get("https://wikipedia.org").await?;
+    /// #         let mut set_cookie = Cookie::new("key","value");
+    /// #         set_cookie.set_domain("wikipedia.org");
+    /// #         set_cookie.set_path("/");
+    /// #         set_cookie.set_same_site(Some(SameSite::Lax));
     /// #         driver.add_cookie(set_cookie).await?;
     /// #         assert!(driver.get_cookie("key").await.is_ok());
     /// driver.delete_cookie("key").await?;
@@ -1027,7 +1008,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn delete_cookie(&self, name: &str) -> WebDriverResult<()> {
-        self.cmd(Command::DeleteCookie(name.to_string())).await.map(|_| ())
+        Ok(self.client.delete_cookie(name).await?)
     }
 
     /// Delete all cookies.
@@ -1036,13 +1017,17 @@ impl SessionHandle {
     /// ```rust
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
+    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         let set_cookie = Cookie::new("key", serde_json::json!("value"));
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// #         driver.get("https://wikipedia.org").await?;
+    /// #         let mut set_cookie = Cookie::new("key", "value");
+    /// #         set_cookie.set_domain("wikipedia.org");
+    /// #         set_cookie.set_path("/");
+    /// #         set_cookie.set_same_site(Some(SameSite::Lax));
     /// #         driver.add_cookie(set_cookie).await?;
     /// #         assert!(driver.get_cookie("key").await.is_ok());
     /// driver.delete_all_cookies().await?;
@@ -1054,7 +1039,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn delete_all_cookies(&self) -> WebDriverResult<()> {
-        self.cmd(Command::DeleteAllCookies).await.map(|_| ())
+        Ok(self.client.delete_all_cookies().await?)
     }
 
     /// Add the specified cookie.
@@ -1063,42 +1048,36 @@ impl SessionHandle {
     /// ```rust
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
+    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// let cookie = Cookie::new("key", serde_json::json!("value"));
-    /// driver.add_cookie(cookie).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// #         driver.get("https://wikipedia.org").await?;
+    /// let mut cookie = Cookie::new("key", "value");
+    /// cookie.set_domain("wikipedia.org");
+    /// cookie.set_path("/");
+    /// cookie.set_same_site(Some(SameSite::Lax));
+    /// driver.add_cookie(cookie.clone()).await?;
     /// #         let got_cookie = driver.get_cookie("key").await?;
-    /// #         assert_eq!(got_cookie.value(), &serde_json::json!("value"));
+    /// #         assert_eq!(got_cookie.value(), cookie.value());
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
-        self.cmd(Command::AddCookie(cookie)).await.map(|_| ())
-    }
-
-    /// Take a screenshot of the current window and return it as a
-    /// base64-encoded String.
-    pub async fn screenshot_as_base64(&self) -> WebDriverResult<String> {
-        let v = self.cmd(Command::TakeScreenshot).await?;
-        convert_json(&v["value"])
+    pub async fn add_cookie(&self, cookie: Cookie<'static>) -> WebDriverResult<()> {
+        self.client.add_cookie(cookie).await?;
+        Ok(())
     }
 
     /// Take a screenshot of the current window and return it as PNG bytes.
     pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
-        let s = self.screenshot_as_base64().await?;
-        let bytes: Vec<u8> = base64::decode(&s)?;
-        Ok(bytes)
+        Ok(self.client.screenshot().await?)
     }
 
-    /// Take a screenshot of the current window and write it to the specified
-    /// filename.
-    #[cfg(any(feature = "tokio-runtime", feature = "async-std-runtime"))]
+    /// Take a screenshot of the current window and write it to the specified filename.
     pub async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
         let mut file = File::create(path).await?;
@@ -1108,7 +1087,7 @@ impl SessionHandle {
 
     /// Return a SwitchTo struct for switching to another window or frame.
     pub fn switch_to(&self) -> SwitchTo {
-        SwitchTo::new(self)
+        SwitchTo::new(self.clone())
     }
 
     /// Set the current window name.
@@ -1122,7 +1101,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
@@ -1130,10 +1109,10 @@ impl SessionHandle {
     /// let handle = driver.current_window_handle().await?;
     /// driver.set_window_name("main").await?;
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#).await?;
+    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.window_handles().await?;
-    /// driver.switch_to().window(&handles[1]).await?;
+    /// driver.switch_to().window(handles[1].clone()).await?;
     /// // We are now controlling the new tab.
     /// driver.get("http://webappdemo").await?;
     /// assert_ne!(driver.current_window_handle().await?, handle);
@@ -1147,68 +1126,8 @@ impl SessionHandle {
     /// ```
     pub async fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
         let script = format!(r#"window.name = "{}""#, window_name);
-        self.execute_script(&script).await?;
+        self.execute_script(&script, Vec::new()).await?;
         Ok(())
-    }
-
-    /// Running an extension command.
-    /// Extension commands are browser specific commands and using browser specific endpoints and
-    /// parameters.
-    ///
-    /// # Example
-    /// ```no_run
-    /// use thirtyfour::prelude::*;
-    /// use thirtyfour::{ExtensionCommand, RequestMethod};
-    /// use thirtyfour::support::block_on;
-    /// use serde::Serialize;
-    ///
-    /// #[derive(Debug, Serialize)]
-    /// pub struct AddonInstallCommand {
-    ///     pub path: String,
-    ///     pub temporary: Option<bool>
-    /// }
-    ///
-    /// impl ExtensionCommand for AddonInstallCommand {
-    ///     fn parameters_json(&self)-> Option<serde_json::Value>{
-    ///        Some( serde_json::to_value(self).unwrap())
-    ///     }
-    ///
-    ///     fn method(&self)-> RequestMethod {
-    ///         RequestMethod::Post
-    ///     }
-    ///
-    ///     fn endpoint(&self)->String {
-    ///         String::from("/moz/addon/install")
-    ///     }
-    /// }
-    ///
-    ///
-    /// fn main()->WebDriverResult<()>{
-    ///     block_on(async {
-    ///         let caps = DesiredCapabilities::firefox();
-    ///         let driver = WebDriver::new("http://localhost:4444", &caps).await?;
-    ///
-    ///         let install_command = AddonInstallCommand {
-    ///             path: String::from("/path/to/addon.xpi"),
-    ///             temporary: Some(true)
-    ///         };
-    ///
-    ///         let response = driver.extension_command(install_command).await?;
-    ///
-    ///         assert_eq!(response.is_string(), true);
-    ///         driver.quit().await?;
-    ///
-    ///         Ok(())
-    ///     })
-    /// }
-    ///
-    /// ```
-    pub async fn extension_command<T: ExtensionCommand + Send + Sync + 'static>(
-        &self,
-        ext_cmd: T,
-    ) -> WebDriverResult<serde_json::Value> {
-        let response = self.cmd(Command::ExtensionCommand(Box::new(ext_cmd))).await?;
-        Ok(response["value"].clone())
     }
 
     /// Execute the specified function in a new browser tab, closing the tab when complete.
@@ -1222,7 +1141,7 @@ impl SessionHandle {
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
@@ -1249,21 +1168,18 @@ impl SessionHandle {
         let handle = self.current_window_handle().await?;
 
         // Open new tab.
-        self.execute_script(r#"window.open("about:blank", target="_blank");"#).await?;
+        self.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
         let mut new_handles = self.window_handles().await?;
         new_handles.retain(|h| !existing_handles.contains(h));
         if new_handles.len() != 1 {
-            return Err(WebDriverError::NotFound(
-                "new tab".to_string(),
-                "Unable to find window handle for new tab".to_string(),
-            ));
+            return Err(WebDriverError::CustomError("couldn't find new tab".to_string()));
         }
-        self.switch_to().window(&new_handles[0]).await?;
+        self.switch_to().window(new_handles[0].clone()).await?;
         let result = f().await;
 
         // Close tab.
-        self.execute_script(r#"window.close();"#).await?;
-        self.switch_to().window(&handle).await?;
+        self.execute_script(r#"window.close();"#, Vec::new()).await?;
+        self.switch_to().window(handle).await?;
 
         result
     }

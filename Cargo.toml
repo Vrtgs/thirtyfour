@@ -1,8 +1,8 @@
 [package]
 name = "thirtyfour"
-version = "0.28.3"
+version = "0.29.0-alpha.0"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT OR Apache-2.0"
 description = """
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
@@ -18,36 +18,28 @@ keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"
 categories = ["api-bindings", "development-tools::testing", "web-programming::http-client"]
 
 [features]
-default = ["tokio-runtime", "reqwest-default-tls"]
-tokio-runtime = ["reqwest"]
-async-std-runtime = ["async-std", "surf"]
-
-reqwest-default-tls = ["reqwest/default-tls"]
-reqwest-native-tls = ["reqwest/native-tls"]
-reqwest-native-tls-vendored = ["reqwest/native-tls-vendored"]
-reqwest-rustls-tls = ["reqwest/rustls-tls"]
-reqwest-rustls-tls-webpki-roots = ["reqwest/rustls-tls-webpki-roots"]
-reqwest-rustls-tls-native-roots = ["reqwest/rustls-tls-native-roots"]
-reqwest-rustls-tls-manual-roots = ["reqwest/rustls-tls-manual-roots"]
+default = ["rusttls-tls"]
+rusttls-tls = ["fantoccini/rustls-tls"]
+native-tls = ["fantoccini/native-tls"]
 
 [dependencies]
 async-trait = "0.1"
-futures = "0.3"
-tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread", "io-util", "sync"] }
-reqwest = { version = "0.11", default-features = false, features = ["json"], optional = true }
-async-std = { version = "1", features = ["attributes"], optional = true }
-surf = { version = "2", features = ["curl-client"], optional = true }
-serde_json = { version = "1", features = ["preserve_order"] }
-serde = { version = "1", features = ["derive"] }
-serde_repr = "0.1"
-log = "0.4"
-urlparse = "0.7"
 base64 = "0.13"
 chrono = { version = "0.4", features = ["serde"] }
-thiserror = "1"
-displaydoc = "0.2"
-stringmatch = "0.3"
+cookie = { version = "0.16.0", features = ["percent-encode"] }
+fantoccini = { git = "https://github.com/stevepryde/fantoccini.git"}
+futures = "0.3"
+http = "0.2.6"
+log = "0.4"
 parking_lot = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+serde_repr = "0.1"
+stringmatch = "0.3"
+thiserror = "1"
+tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread", "io-util", "sync"] }
+url = "2.2.2"
+urlparse = "0.7"
 
 [dev-dependencies]
 regex = "1"
@@ -56,42 +48,29 @@ assert_matches = "1.5.0"
 
 [[example]]
 name = "tokio_async"
-required-features = ["tokio-runtime"]
 
 [[example]]
 name = "tokio_basic"
-required-features = ["tokio-runtime"]
-
-[[example]]
-name = "async_std_example"
-required-features = ["async-std-runtime"]
 
 [[example]]
 name = "selenium_example"
-required-features = ["tokio-runtime"]
 
 [[example]]
 name = "minimal_async"
-required-features = ["tokio-runtime"]
 
 [[example]]
 name = "chrome_devtools"
-required-features = ["tokio-runtime"]
 
 [[example]]
 name = "chrome_options"
-required-features = ["tokio-runtime"]
 
 [[example]]
 name = "wikipedia"
 path = "examples/query/wikipedia.rs"
-required-features = ["tokio-runtime"]
 
 [[example]]
 name = "firefox_preferences"
 path = "examples/firefox_preferences.rs"
-required-features = ["tokio-runtime"]
 
 [[example]]
 name = "shadowroot"
-required-features = ["tokio-runtime"]

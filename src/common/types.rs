@@ -1,29 +1,30 @@
-use std::{fmt, ops::Deref, time::Duration};
+use fantoccini::elements::ElementRef;
+use std::{fmt, ops::Deref};
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ElementRect {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
 }
 
 impl ElementRect {
-    pub fn center(&self) -> (f32, f32) {
-        (self.x + (self.width / 2.0), self.y + (self.height / 2.0))
+    pub fn icenter(&self) -> (i64, i64) {
+        (self.x as i64 + (self.width / 2.0) as i64, self.y as i64 + (self.height / 2.0) as i64)
     }
 
-    pub fn icenter(&self) -> (i32, i32) {
-        let c = self.center();
-        (c.0 as i32, c.1 as i32)
+    pub fn center(&self) -> (f64, f64) {
+        (self.x + (self.width / 2.0), self.y + (self.height / 2.0))
     }
 }
 
+/// Helper to Deserialize ElementRef from JSON Value.
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-pub enum ElementRef {
+pub enum ElementRefHelper {
     Element {
         #[serde(rename(deserialize = "element-6066-11e4-a52e-4f735466cecf"))]
         id: String,
@@ -34,16 +35,30 @@ pub enum ElementRef {
     },
 }
 
-impl ElementRef {
+impl ElementRefHelper {
     pub fn id(&self) -> &str {
         match &self {
-            ElementRef::Element {
+            ElementRefHelper::Element {
                 id,
             } => id,
-            ElementRef::ShadowElement {
+            ElementRefHelper::ShadowElement {
                 id,
             } => id,
         }
+    }
+}
+
+impl From<ElementRefHelper> for ElementRef {
+    fn from(element_ref: ElementRefHelper) -> Self {
+        let id = match element_ref {
+            ElementRefHelper::Element {
+                id,
+            } => id,
+            ElementRefHelper::ShadowElement {
+                id,
+            } => id,
+        };
+        ElementRef::from(id)
     }
 }
 
@@ -85,51 +100,6 @@ impl fmt::Display for SessionId {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
-#[serde(transparent)]
-pub struct ElementId {
-    id: String,
-}
-
-impl<S> From<S> for ElementId
-where
-    S: Into<String>,
-{
-    fn from(value: S) -> Self {
-        ElementId {
-            id: value.into(),
-        }
-    }
-}
-
-impl fmt::Display for ElementId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.id)
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
-pub struct WindowHandle {
-    handle: String,
-}
-
-impl<S> From<S> for WindowHandle
-where
-    S: Into<String>,
-{
-    fn from(value: S) -> Self {
-        WindowHandle {
-            handle: value.into(),
-        }
-    }
-}
-
-impl fmt::Display for WindowHandle {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.handle)
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum WindowType {
     Tab,
@@ -149,162 +119,21 @@ impl fmt::Display for WindowType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Rect {
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
+    pub x: i64,
+    pub y: i64,
+    pub width: i64,
+    pub height: i64,
 }
 
 impl Rect {
-    pub fn new(x: i32, y: i32, width: i32, height: i32) -> Self {
+    pub fn new(x: i64, y: i64, width: i64, height: i64) -> Self {
         Rect {
             x,
             y,
             width,
             height,
         }
-    }
-}
-
-#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize)]
-pub struct OptionRect {
-    pub x: Option<i32>,
-    pub y: Option<i32>,
-    pub width: Option<i32>,
-    pub height: Option<i32>,
-}
-
-impl OptionRect {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn with_x(mut self, value: i32) -> Self {
-        self.x = Some(value);
-        self
-    }
-
-    pub fn with_y(mut self, value: i32) -> Self {
-        self.y = Some(value);
-        self
-    }
-
-    pub fn with_width(mut self, value: i32) -> Self {
-        self.width = Some(value);
-        self
-    }
-
-    pub fn with_height(mut self, value: i32) -> Self {
-        self.height = Some(value);
-        self
-    }
-
-    pub fn with_pos(mut self, x: i32, y: i32) -> Self {
-        self.x = Some(x);
-        self.y = Some(y);
-        self
-    }
-
-    pub fn with_size(mut self, width: i32, height: i32) -> Self {
-        self.width = Some(width);
-        self.height = Some(height);
-        self
-    }
-}
-
-impl From<Rect> for OptionRect {
-    fn from(value: Rect) -> Self {
-        OptionRect {
-            x: Some(value.x),
-            y: Some(value.y),
-            width: Some(value.width),
-            height: Some(value.height),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TimeoutConfiguration {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    script: Option<u64>,
-    #[serde(rename = "pageLoad", skip_serializing_if = "Option::is_none")]
-    page_load: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    implicit: Option<u64>,
-}
-
-impl Default for TimeoutConfiguration {
-    fn default() -> Self {
-        TimeoutConfiguration::new(
-            Some(Duration::from_secs(60)),
-            Some(Duration::from_secs(60)),
-            // NOTE: Implicit wait must default to zero in order to support ElementQuery.
-            Some(Duration::from_secs(0)),
-        )
-    }
-}
-
-impl TimeoutConfiguration {
-    pub fn new(
-        script: Option<Duration>,
-        page_load: Option<Duration>,
-        implicit: Option<Duration>,
-    ) -> Self {
-        TimeoutConfiguration {
-            script: script.map(|x| x.as_millis() as u64),
-            page_load: page_load.map(|x| x.as_millis() as u64),
-            implicit: implicit.map(|x| x.as_millis() as u64),
-        }
-    }
-
-    pub fn script(&self) -> Option<Duration> {
-        self.script.map(Duration::from_millis)
-    }
-
-    pub fn set_script(&mut self, timeout: Option<Duration>) {
-        self.script = timeout.map(|x| x.as_millis() as u64);
-    }
-
-    pub fn page_load(&self) -> Option<Duration> {
-        self.page_load.map(Duration::from_millis)
-    }
-
-    pub fn set_page_load(&mut self, timeout: Option<Duration>) {
-        self.page_load = timeout.map(|x| x.as_millis() as u64);
-    }
-
-    pub fn implicit(&self) -> Option<Duration> {
-        self.implicit.map(Duration::from_millis)
-    }
-
-    pub fn set_implicit(&mut self, timeout: Option<Duration>) {
-        self.implicit = timeout.map(|x| x.as_millis() as u64);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use assert_matches::assert_matches;
-    use serde_json::json;
-
-    #[test]
-    fn test_element_ref() {
-        let id = "daaea226-43aa-400f-896c-210e5af2ac62";
-        let value = json!({ "element-6066-11e4-a52e-4f735466cecf": id });
-        let elem_ref: ElementRef = serde_json::from_value(value).unwrap();
-        assert_matches!(&elem_ref, ElementRef::Element { id: x} if x == id);
-        assert_eq!(elem_ref.id(), id);
-    }
-
-    #[test]
-    fn test_shadow_element_ref() {
-        let id = "daaea226-43aa-400f-896c-210e5af2ac62";
-        let value = json!({ "shadow-6066-11e4-a52e-4f735466cecf": id });
-        let elem_ref: ElementRef = serde_json::from_value(value).unwrap();
-        assert_matches!(&elem_ref, ElementRef::ShadowElement { id: x} if x == id);
-        assert_eq!(elem_ref.id(), id);
     }
 }
