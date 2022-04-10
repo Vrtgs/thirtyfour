@@ -193,7 +193,7 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn class_name(&self) -> WebDriverResult<Option<String>> {
-        Ok(self.get_attribute("class").await?)
+        self.get_attribute("class").await
     }
 
     /// Get the id for this WebElement.
