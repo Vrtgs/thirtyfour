@@ -275,12 +275,12 @@ pub trait CapabilitiesHelper {
 
     /// Get whether the session can interact with modal popups such as `window.alert`.
     fn handles_alerts(&self) -> Option<bool> {
-        self.get("handlesAlerts").map(|x| x.as_bool()).flatten()
+        self.get("handlesAlerts").and_then(|x| x.as_bool())
     }
 
     /// Get whether the session supports CSS selectors when searching for elements.
     fn css_selectors_enabled(&self) -> Option<bool> {
-        self.get("cssSelectorsEnabled").map(|x| x.as_bool()).flatten()
+        self.get("cssSelectorsEnabled").and_then(|x| x.as_bool())
     }
 }
 
