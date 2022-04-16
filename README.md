@@ -6,9 +6,6 @@ Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI 
 
 It supports the full W3C WebDriver spec. Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
 
-Async only (`tokio` and `async-std` runtimes supported via feature flags).
-For synchronous support, use the [thirtyfour_sync](https://docs.rs/thirtyfour_sync) crate instead.
-
 ## MAJOR UPDATE ANNOUNCEMENT
 
 In order to reduce duplication of effort, `thirtyfour` is switching to `fantoccini` as the
@@ -23,7 +20,6 @@ are some breaking changes (see the section on breaking changes for v0.29.x below
 ## Features
 
 - All W3C WebDriver and WebElement methods supported
-- Async / await support (both **tokio** and **async-std** runtimes supported via feature flags)
 - Create new browser session directly via WebDriver (e.g. chromedriver)
 - Create new browser session via Selenium Standalone or Grid
 - Find elements (via all common selectors e.g. Id, Class, CSS, Tag, XPath)

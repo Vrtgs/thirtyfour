@@ -27,7 +27,7 @@ async-trait = "0.1"
 base64 = "0.13"
 chrono = { version = "0.4", features = ["serde"] }
 cookie = { version = "0.16.0", features = ["percent-encode"] }
-fantoccini = { git = "https://github.com/stevepryde/fantoccini.git"}
+fantoccini = "0.19.0-rc.3"
 futures = "0.3"
 http = "0.2.6"
 log = "0.4"
@@ -42,9 +42,9 @@ url = "2.2.2"
 urlparse = "0.7"
 
 [dev-dependencies]
-regex = "1"
-color-eyre = "0.5"
 assert_matches = "1.5.0"
+color-eyre = "0.5"
+regex = "1"
 
 [[example]]
 name = "tokio_async"
