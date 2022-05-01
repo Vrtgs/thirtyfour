@@ -6,9 +6,9 @@ Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI 
 
 It supports the full W3C WebDriver spec. Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
 
-## MAJOR UPDATE ANNOUNCEMENT (COMING SOON)
+## UPDATE ANNOUNCEMENT - v0.29.0
 
-The `thirtyfour` crate is switching to `fantoccini` as the `WebDriver` client backend 
+The `thirtyfour` crate has switched to `fantoccini` as the `WebDriver` client backend 
 from Version 0.29 and onwards, with the goal of reducing duplication of effort and 
 creating a more stable ecosystem around Web Browser automation in Rust.
 
