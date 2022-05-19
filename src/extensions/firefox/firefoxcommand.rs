@@ -9,6 +9,7 @@ pub enum FirefoxCommand {
         path: String,
         temporary: Option<bool>,
     },
+    FullScreenshot {},
 }
 
 impl WebDriverCompatibleCommand for FirefoxCommand {
@@ -18,6 +19,7 @@ impl WebDriverCompatibleCommand for FirefoxCommand {
             FirefoxCommand::InstallAddon {
                 ..
             } => base.join("moz/addon/install"),
+            FirefoxCommand::FullScreenshot {} => base.join("moz/screenshot/full"),
         }
     }
 
@@ -27,6 +29,7 @@ impl WebDriverCompatibleCommand for FirefoxCommand {
                 path,
                 temporary,
             } => (Method::POST, Some(json!({"path": path, "temporary": temporary}).to_string())),
+            FirefoxCommand::FullScreenshot {} => (Method::GET, None),
         }
     }
 }
