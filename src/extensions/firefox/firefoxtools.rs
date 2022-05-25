@@ -1,4 +1,10 @@
-use crate::error::WebDriverResult;
+use std::path::Path;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
+
+use fantoccini::error::CmdError;
+
+use crate::error::{WebDriverError, WebDriverResult};
 use crate::extensions::firefox::FirefoxCommand;
 use crate::session::handle::SessionHandle;
 
@@ -43,6 +49,24 @@ impl FirefoxTools {
                 temporary,
             })
             .await?;
+        Ok(())
+    }
+
+    /// Take a full-page screenshot of the current window and return it as PNG bytes.
+    pub async fn full_screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
+        let src = self.handle.client.issue_cmd(FirefoxCommand::FullScreenshot {}).await?;
+        if let Some(src) = src.as_str() {
+            base64::decode(src).map_err(|x| WebDriverError::CmdError(CmdError::ImageDecodeError(x)))
+        } else {
+            Err(WebDriverError::CmdError(CmdError::NotW3C(src)))
+        }
+    }
+
+    /// Take a full-page screenshot of the current window and write it to the specified filename.
+    pub async fn full_screenshot(&self, path: &Path) -> WebDriverResult<()> {
+        let png = self.full_screenshot_as_png().await?;
+        let mut file = File::create(path).await?;
+        file.write_all(&png).await?;
         Ok(())
     }
 }
