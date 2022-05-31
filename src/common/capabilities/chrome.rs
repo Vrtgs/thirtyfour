@@ -42,7 +42,9 @@ impl ChromeCapabilities {
     where
         T: DeserializeOwned + Default,
     {
-        from_value(self.capabilities["goog:chromeOptions"][key].clone()).unwrap_or_default()
+        self.capabilities.get("goog:chromeOptions").map(|options| {
+            options.get(key).map(|option| from_value(option.clone()).unwrap_or_default()).unwrap_or_default()
+        }).unwrap_or_default()
     }
 
     /// Get the current list of command-line arguments to `chromedriver` as a vec.
