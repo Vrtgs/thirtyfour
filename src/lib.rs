@@ -119,7 +119,7 @@ pub use common::{
 };
 
 pub use cookie;
-pub use fantoccini::wd::TimeoutConfiguration;
+pub use fantoccini::wd::{TimeoutConfiguration, WindowHandle};
 pub use switch_to::SwitchTo;
 pub use webdriver::WebDriver;
 pub use webelement::WebElement;
