@@ -56,7 +56,7 @@ impl FirefoxCapabilities {
     /// Set the page load strategy to use.
     /// Valid values are: `normal` (the default)
     pub fn set_page_load_strategy(&mut self, strategy: PageLoadStrategy) -> WebDriverResult<()> {
-        self.add("pageLoadingStrategy", strategy)
+        self.add("pageLoadStrategy", strategy)
     }
 
     /// Set the firefox preferences to use.
