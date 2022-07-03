@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use fantoccini::wd::Capabilities;
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{from_value, json, to_value, Value};
 
@@ -74,14 +75,21 @@ impl FirefoxCapabilities {
         self.add_firefox_option("args", to_value(args)?)
     }
 
+    /// Get the specified Firefox option.
+    pub fn get_firefox_option<T>(&self, key: &str) -> T
+    where
+        T: DeserializeOwned + Default,
+    {
+        self.capabilities
+            .get("moz:firefoxOptions")
+            .and_then(|options| options.get(key))
+            .and_then(|option| from_value(option.clone()).ok())
+            .unwrap_or_default()
+    }
+
     /// Get the current list of command-line arguments to `geckodriver` as a vec.
     pub fn get_args(&self) -> Vec<String> {
-        let caps =
-            self.capabilities.get("moz:firefoxOptions").and_then(|options| options.get("args"));
-        match caps {
-            None => vec![],
-            Some(caps) => from_value(caps.clone()).unwrap_or_default(),
-        }
+        self.get_firefox_option("args")
     }
 
     /// Set the browser to run headless.
