@@ -746,13 +746,13 @@ impl WebElement {
     }
 }
 
-impl<'a> fmt::Display for WebElement {
+impl fmt::Display for WebElement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.element)
     }
 }
 
-impl<'a> Serialize for WebElement {
+impl Serialize for WebElement {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
