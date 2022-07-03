@@ -225,7 +225,7 @@ To install docker, see [https://docs.docker.com/install/](https://docs.docker.co
 
 Once you have docker installed, you can start the selenium server, as follows:
 
-    docker run --rm -d -p 4444:4444 -p 5900:5900 --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome-debug:3.141.59-zinc
+    docker run --rm -d -p 4444:4444 -p 5900:5900 --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome:4.1.0-20211123
 
 We will use the `-debug` container because it starts a VNC server, allowing us to view the browser session in real time.
 To connect to the VNC server you will need to use a VNC viewer application. Point it at `localhost:5900` (the default password is `secret`).
