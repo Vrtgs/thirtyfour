@@ -44,12 +44,8 @@ impl ChromeCapabilities {
     {
         self.capabilities
             .get("goog:chromeOptions")
-            .map(|options| {
-                options
-                    .get(key)
-                    .map(|option| from_value(option.clone()).unwrap_or_default())
-                    .unwrap_or_default()
-            })
+            .and_then(|options| options.get(key))
+            .and_then(|option| from_value(option.clone()).ok())
             .unwrap_or_default()
     }
 
