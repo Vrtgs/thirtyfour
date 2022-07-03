@@ -76,7 +76,15 @@ impl FirefoxCapabilities {
 
     /// Get the current list of command-line arguments to `geckodriver` as a vec.
     pub fn get_args(&self) -> Vec<String> {
-        from_value(self.capabilities["moz:firefoxOptions"]["args"].clone()).unwrap_or_default()
+        let caps = self
+            .capabilities
+            .get("moz:firefoxOptions")
+            .map(|options| options.get("args"))
+            .flatten();
+        match caps {
+            None => vec![],
+            Some(caps) => from_value(caps.clone()).unwrap_or_default(),
+        }
     }
 
     /// Set the browser to run headless.
