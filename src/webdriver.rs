@@ -54,7 +54,13 @@ impl WebDriver {
     {
         use fantoccini::ClientBuilder;
         let caps: Capabilities = capabilities.into();
-        let client = ClientBuilder::native().capabilities(caps.clone()).connect(server_url).await?;
+
+        #[cfg(feature = "native-tls")]
+        let mut builder = ClientBuilder::native();
+        #[cfg(feature = "rusttls-tls")]
+        let mut builder = ClientBuilder::rustls();
+
+        let client = builder.capabilities(caps.clone()).connect(server_url).await?;
 
         // Set default timeouts.
         let timeouts = TimeoutConfiguration::default();
