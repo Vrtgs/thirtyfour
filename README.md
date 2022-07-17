@@ -6,6 +6,15 @@ Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI 
 
 It supports the full W3C WebDriver spec. Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
 
+## UPDATE ANNOUNCEMENT - v0.30.0
+
+A number of methods in the `thirtyfour` API have been renamed to more closely align 
+with `fantoccini`, as part of the move towards greater compatibility.
+The existing method names remain but have been deprecated.
+
+There are no plans to remove the old methods in the short term, however you should 
+aim to migrate code away from the deprecated methods as soon as is practical.
+
 ## UPDATE ANNOUNCEMENT - v0.29.0
 
 The `thirtyfour` crate has switched to `fantoccini` as the `WebDriver` client backend 
@@ -43,7 +52,7 @@ It is named after the atomic number for the Selenium chemical element (Se).
 
 ## Examples
 
-The examples assume you have a WebDriver running at localhost:4444.
+The examples assume you have `chromedriver` running on your system.
 
 You can use Selenium (see instructions below) or you can use chromedriver 
 directly by downloading the chromedriver that matches your Chrome version,
@@ -51,7 +60,7 @@ from here: [https://chromedriver.chromium.org/downloads](https://chromedriver.ch
 
 Then run it like this:
 
-    chromedriver --port=4444
+    chromedriver
 
 ### Example (async):
 
@@ -61,32 +70,31 @@ To run this example:
 
 ```rust
 use thirtyfour::prelude::*;
-use tokio;
 
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
      let caps = DesiredCapabilities::chrome();
-     let driver = WebDriver::new("http://localhost:4444", caps).await?;
+     let driver = WebDriver::new("http://localhost:9515", caps).await?;
 
      // Navigate to https://wikipedia.org.
-     driver.get("https://wikipedia.org").await?;
-     let elem_form = driver.find_element(By::Id("search-form")).await?;
+     driver.goto("https://wikipedia.org").await?;
+     let elem_form = driver.find(By::Id("search-form")).await?;
 
      // Find element from element.
-     let elem_text = elem_form.find_element(By::Id("searchInput")).await?;
+     let elem_text = elem_form.find(By::Id("searchInput")).await?;
 
      // Type in the search terms.
      elem_text.send_keys("selenium").await?;
 
      // Click the search button.
-     let elem_button = elem_form.find_element(By::Css("button[type='submit']")).await?;
+     let elem_button = elem_form.find(By::Css("button[type='submit']")).await?;
      elem_button.click().await?;
 
      // Look for header to implicitly wait for the page to load.
-     driver.find_element(By::ClassName("firstHeading")).await?;
+     driver.find(By::ClassName("firstHeading")).await?;
      assert_eq!(driver.title().await?, "Selenium - Wikipedia");
     
-     // Always explicitly close the browser. There are no async destructors.
+     // Always explicitly close the browser.
      driver.quit().await?;
 
      Ok(())
@@ -197,7 +205,7 @@ If there are other changes I've missed that should be on this list, please let m
 
 ## Running against selenium
 
-**NOTE:** To run the selenium example, start selenium (instructions below) then run:
+**NOTE:** To run the selenium example, start selenium server and then run:
 
     cargo run --example selenium_example
 
@@ -227,45 +235,35 @@ Once you have docker installed, you can start the selenium server, as follows:
 
     docker run --rm -d -p 4444:4444 -p 5900:5900 --name selenium-server -v /dev/shm:/dev/shm selenium/standalone-chrome:4.1.0-20211123
 
-We will use the `-debug` container because it starts a VNC server, allowing us to view the browser session in real time.
-To connect to the VNC server you will need to use a VNC viewer application. Point it at `localhost:5900` (the default password is `secret`).
-If you don't want to use a VNC viewer you don't have to, but then you won't see what is happening when you run the examples.
+For more information on running selenium in docker, visit
+[docker-selenium](https://github.com/SeleniumHQ/docker-selenium)
 
-If you want to run on Firefox instead, or customize the browser setup, see
-[docker-selenium](https://github.com/SeleniumHQ/docker-selenium) on GitHub for more options
-
-## Running the tests for `thirtyfour`, including doctests
+## Running the tests for `thirtyfour`
 
 You generally only need to run the tests if you plan on contributing to the development of `thirtyfour`. If you just want to use the crate in your own project, you can skip this section.
 
-Just like the examples above, the tests in this crate require a running instance of Selenium at `http://localhost:4444`.
+Make sure selenium is not still running (or anything else that might use port 4444 or port 9515).
 
-If you still have the docker container running from the examples above, you will need to bring it down (otherwise the next step will complain that port 4444 is already in use):
+To run the tests, you need to have an instance of `geckodriver` and an instance of `chromedriver` running in the background, perhaps in separate tabs in your terminal.
 
-    docker stop selenium-server 
+Download links for these are here:
 
-The tests also require a small web app called `webappdemo` that was purpose-built for testing the `thirtyfour` crate.
+* chromedriver: https://chromedriver.chromium.org/downloads
+* geckodriver: https://github.com/mozilla/geckodriver/releases
 
-Both can be run easily using docker-compose. To install docker-compose, see [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
+In separate terminal tabs, run the following:
 
-Once you have docker-compose installed, you can start the required containers, as follows:
+* Tab 1:
 
-    docker-compose up -d
+      chromedriver
 
-Then, to run the tests:
+* Tab 2:
 
-    cargo test -- --test-threads=1
+      geckodriver
 
-We need to limit the tests to a single thread because the selenium server only supports 1 browser instance at a time.
-(You can increase this limit in the `docker-compose.yml` file if you want. Remember to restart the containers afterwards)
+* Tab 3 (navigate to the root of this repository):
 
-If you need to restart the docker containers:
-
-    docker-compose restart 
-
-And finally, to remove them:
-
-    docker-compose down
+      cargo test
 
 ## LICENSE
 

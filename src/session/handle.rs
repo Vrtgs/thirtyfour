@@ -46,6 +46,7 @@ impl SessionHandle {
         })
     }
 
+    /// Convert a fantoccini `Element` into a thirtyfour `WebElement`.
     fn wrap_element(&self, element: Element) -> WebElement {
         WebElement::new(element, self.clone())
     }
@@ -61,8 +62,9 @@ impl SessionHandle {
         Ok(SessionId::from(id.unwrap_or_default()))
     }
 
-    /// Get a clone of the `WebDriverConfig`. You can update the config by modifying
-    /// it directly.
+    /// Get a clone of the `WebDriverConfig`.
+    ///
+    /// You can update the config by modifying it directly.
     pub fn config(&self) -> WebDriverConfig {
         self.config.clone()
     }

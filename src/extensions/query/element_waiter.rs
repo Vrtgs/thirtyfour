@@ -1,7 +1,7 @@
+use super::conditions::handle_errors;
+use super::{conditions, ElementPoller, ElementPollerTicker, ElementPredicate};
 use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
-use crate::query::conditions::handle_errors;
-use crate::query::{conditions, ElementPoller, ElementPollerTicker, ElementPredicate};
 use crate::WebElement;
 use std::time::Duration;
 use stringmatch::Needle;
@@ -14,7 +14,6 @@ use stringmatch::Needle;
 /// # use thirtyfour::support::block_on;
 /// #
 /// # fn main() -> WebDriverResult<()> {
-/// #     use thirtyfour::query::ElementPoller;
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;

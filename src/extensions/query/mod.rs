@@ -41,7 +41,7 @@
 //! ```no_run
 //! # use thirtyfour::prelude::*;
 //! # use thirtyfour::support::block_on;
-//! # use thirtyfour::query::StringMatch;
+//! # use thirtyfour::extensions::query::StringMatch;
 //! # use std::time::Duration;
 //! #
 //! # fn main() -> WebDriverResult<()> {
@@ -122,7 +122,6 @@
 //! ```no_run
 //! # use thirtyfour::prelude::*;
 //! # use thirtyfour::support::block_on;
-//! # use thirtyfour::query::ElementPoller;
 //! # use std::time::Duration;
 //! #
 //! # fn main() -> WebDriverResult<()> {

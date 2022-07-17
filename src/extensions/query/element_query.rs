@@ -1,13 +1,11 @@
-use std::time::Duration;
-
+use super::conditions::{handle_errors, negate};
+use super::{conditions, ElementPoller, ElementPollerTicker, ElementPredicate};
 use crate::error::WebDriverError;
 use crate::prelude::{WebDriver, WebDriverResult};
-use crate::{By, WebElement};
-use stringmatch::Needle;
-
-use crate::query::conditions::{handle_errors, negate};
-use crate::query::{conditions, ElementPoller, ElementPollerTicker, ElementPredicate};
 use crate::session::handle::SessionHandle;
+use crate::{By, WebElement};
+use std::time::Duration;
+use stringmatch::Needle;
 
 /// Get String containing comma-separated list of selectors used.
 fn get_selector_summary(selectors: &[ElementSelector]) -> String {
@@ -90,7 +88,6 @@ pub enum ElementQuerySource {
 /// # use thirtyfour::support::block_on;
 /// #
 /// # fn main() -> WebDriverResult<()> {
-/// #     use thirtyfour::query::ElementPoller;
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;

@@ -117,7 +117,6 @@ pub use common::{
     command::By,
     types::*,
 };
-
 pub use cookie;
 pub use fantoccini::wd::{TimeoutConfiguration, WindowHandle};
 pub use switch_to::SwitchTo;
@@ -128,7 +127,7 @@ pub use webelement::WebElement;
 pub mod prelude {
     pub use crate::alert::Alert;
     pub use crate::error::{WebDriverError, WebDriverResult};
-    pub use crate::query::{ElementQueryable, ElementWaitable};
+    pub use crate::extensions::query::{ElementPoller, ElementQueryable, ElementWaitable};
     pub use crate::session::scriptret::ScriptRet;
     pub use crate::switch_to::SwitchTo;
     pub use crate::webdriver::WebDriver;
@@ -141,69 +140,26 @@ pub mod prelude {
 
 /// Action chains allow for more complex user interactions with the keyboard and mouse.
 pub mod action_chain;
-mod alert;
+/// Alert handling.
+pub mod alert;
+/// Common types used by both async and sync implementations.
+pub mod common;
+/// Wrappers for specific component types.
+pub mod components;
+/// Error types.
+pub mod error;
+/// Extensions for specific browsers.
+pub mod extensions;
 /// Everything related to driving the underlying WebDriver session.
-pub mod session {
-    pub mod handle;
-    pub mod scriptret;
-}
-
+pub mod session;
 /// Miscellaneous support functions for `thirtyfour` tests.
 pub mod support;
 mod switch_to;
 mod webdriver;
 mod webelement;
 
-/// Common types used by both async and sync implementations.
-pub mod common {
-    pub mod capabilities {
-        pub mod chrome;
-        pub mod desiredcapabilities;
-        pub mod edge;
-        pub mod firefox;
-        pub mod ie;
-        pub mod opera;
-        pub mod safari;
-    }
-    pub mod command;
-    pub mod config;
-    pub mod types;
-}
-
-/// Extensions for specific browsers.
-pub mod extensions {
-    /// Extensions for working with Chromium-based browsers.
-    pub mod chrome {
-        mod chromecommand;
-        mod devtools;
-        mod networkconditions;
-
-        pub use chromecommand::ChromeCommand;
-        pub use devtools::ChromeDevTools;
-        pub use networkconditions::NetworkConditions;
-    }
-
-    /// Extensions for working with Firefox.
-    pub mod firefox {
-        mod firefoxcommand;
-        mod firefoxtools;
-
-        pub use firefoxcommand::FirefoxCommand;
-        pub use firefoxtools::FirefoxTools;
-    }
-}
-
-/// Wrappers for specific component types.
-pub mod components {
-    /// Wrapper for `<select>` elements.
-    pub mod select;
-}
-
-/// Error types.
-pub mod error;
-
-// ElementQuery and ElementWaiter interfaces.
-pub mod query;
+// Re-export StringMatch if needed.
+pub use stringmatch;
 
 // Re-export fantoccini types.
 pub use fantoccini::key::Key;

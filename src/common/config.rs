@@ -1,5 +1,5 @@
 use crate::error::WebDriverResult;
-use crate::query::ElementPoller;
+use crate::extensions::query::ElementPoller;
 use crate::SessionId;
 use fantoccini::wd::Capabilities;
 use parking_lot::RwLock;
