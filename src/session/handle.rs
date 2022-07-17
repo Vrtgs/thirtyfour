@@ -34,6 +34,7 @@ impl Debug for SessionHandle {
 
 impl SessionHandle {
     /// Create new SessionHandle from a fantoccini Client.
+    #[allow(dead_code)]
     pub(crate) async fn new(
         client: fantoccini::Client,
         capabilities: Capabilities,

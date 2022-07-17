@@ -2,7 +2,6 @@ use crate::error::WebDriverResult;
 use crate::session::handle::SessionHandle;
 use std::ops::{Deref, DerefMut};
 
-use crate::TimeoutConfiguration;
 use fantoccini::wd::Capabilities;
 
 /// The `WebDriver` struct encapsulates an async Selenium WebDriver browser
@@ -48,27 +47,35 @@ impl WebDriver {
     ///
     /// **NOTE:** If the webdriver appears to hang or give no response, please check that the
     ///     capabilities object is of the correct type for that webdriver.
+    #[allow(unused_variables)]
     pub async fn new<C>(server_url: &str, capabilities: C) -> WebDriverResult<Self>
     where
         C: Into<Capabilities>,
     {
-        use fantoccini::ClientBuilder;
-        let caps: Capabilities = capabilities.into();
+        #[cfg(not(any(feature = "rusttls-tls", feature = "native-tls")))]
+        panic!("please set either the rusttls-tls or native-tls feature");
 
-        #[cfg(feature = "native-tls")]
-        let mut builder = ClientBuilder::native();
-        #[cfg(feature = "rusttls-tls")]
-        let mut builder = ClientBuilder::rustls();
+        #[cfg(any(feature = "rusttls-tls", feature = "native-tls"))]
+        {
+            use crate::TimeoutConfiguration;
+            use fantoccini::ClientBuilder;
+            let caps: Capabilities = capabilities.into();
 
-        let client = builder.capabilities(caps.clone()).connect(server_url).await?;
+            #[cfg(feature = "native-tls")]
+            let mut builder = ClientBuilder::native();
+            #[cfg(feature = "rusttls-tls")]
+            let mut builder = ClientBuilder::rustls();
 
-        // Set default timeouts.
-        let timeouts = TimeoutConfiguration::default();
-        client.update_timeouts(timeouts).await?;
+            let client = builder.capabilities(caps.clone()).connect(server_url).await?;
 
-        Ok(Self {
-            handle: SessionHandle::new(client, caps).await?,
-        })
+            // Set default timeouts.
+            let timeouts = TimeoutConfiguration::default();
+            client.update_timeouts(timeouts).await?;
+
+            Ok(Self {
+                handle: SessionHandle::new(client, caps).await?,
+            })
+        }
     }
 
     // /// Creates a new WebDriver just like the `new` function. Allows a
