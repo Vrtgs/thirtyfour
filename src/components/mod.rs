@@ -1,2 +1,4 @@
 /// Wrapper for `<select>` elements.
-pub mod select;
+mod select;
+
+pub use select::*;

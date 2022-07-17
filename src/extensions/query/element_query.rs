@@ -91,7 +91,7 @@ pub enum ElementQuerySource {
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
-/// #         driver.goto("http://webappdemo").await?;
+/// #         driver.goto("http://localhost:8000").await?;
 /// // WebDriver::query() example.
 /// let elem = driver.query(By::Css("div[data-section='section-buttons']")).first().await?;
 /// // WebElement::query() example.

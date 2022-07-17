@@ -17,7 +17,7 @@ use stringmatch::Needle;
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
-/// #         driver.goto("http://webappdemo").await?;
+/// #         driver.goto("http://localhost:8000").await?;
 /// #         let elem = driver.query(By::Id("button1")).first().await?;
 /// // Wait until the element is displayed.
 /// elem.wait_until().displayed().await?;

@@ -1,4 +1,4 @@
-use fantoccini::wd::Capabilities;
+pub use fantoccini::wd::Capabilities;
 use serde::Serialize;
 use serde_json::{json, to_value, Value};
 

@@ -115,7 +115,7 @@ pub mod prelude {
     pub use crate::switch_to::SwitchTo;
     pub use crate::webdriver::WebDriver;
     pub use crate::webelement::WebElement;
-    pub use crate::{By, DesiredCapabilities};
+    pub use crate::{By, Capabilities, DesiredCapabilities};
     pub use crate::{TimeoutConfiguration, WindowHandle};
     pub use fantoccini::cookies::Cookie;
     pub use fantoccini::key::Key;

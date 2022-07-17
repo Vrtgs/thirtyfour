@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
-use serde_json::map;
 use std::convert::Infallible;
 use std::future::Future;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -11,21 +10,20 @@ use tokio::fs::read_to_string;
 
 const ASSETS_DIR: &str = "tests/test_html";
 
-pub fn make_capabilities(s: &str) -> map::Map<String, serde_json::Value> {
+pub fn make_capabilities(s: &str) -> Capabilities {
     match s {
         "firefox" => {
-            let mut caps = serde_json::map::Map::new();
-            let opts = serde_json::json!({ "args": ["--headless"] });
-            caps.insert("moz:firefoxOptions".to_string(), opts);
-            caps
+            let mut caps = DesiredCapabilities::firefox();
+            caps.set_headless().unwrap();
+            caps.into()
         }
         "chrome" => {
-            let mut caps = serde_json::map::Map::new();
-            let opts = serde_json::json!({
-                "args": ["--headless", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage"],
-            });
-            caps.insert("goog:chromeOptions".to_string(), opts);
-            caps
+            let mut caps = DesiredCapabilities::chrome();
+            caps.set_headless().unwrap();
+            caps.set_no_sandbox().unwrap();
+            caps.set_disable_gpu().unwrap();
+            caps.set_disable_dev_shm_usage().unwrap();
+            caps.into()
         }
         browser => unimplemented!("unsupported browser backend {}", browser),
     }

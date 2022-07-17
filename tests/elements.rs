@@ -97,6 +97,23 @@ async fn element_send_keys(c: WebDriver, port: u16) -> Result<(), WebDriverError
     Ok(())
 }
 
+async fn serialize_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+    let elem = c.find(By::Css("#other_page_id")).await?;
+
+    // Check that webdriver understands it
+    c.execute("arguments[0].scrollIntoView(true);", vec![serde_json::to_value(elem)?]).await?;
+
+    // Check that it fails with an invalid serialization (from a previous run of the test)
+    let json = r#"{"element-6066-11e4-a52e-4f735466cecf":"fbe5004d-ec8b-4c7b-ad08-642c55d84505"}"#;
+    c.execute("arguments[0].scrollIntoView(true);", vec![serde_json::from_str(json)?])
+        .await
+        .expect_err("Failure expected with an invalid ID");
+
+    c.close_window().await
+}
+
 mod firefox {
     use super::*;
 
@@ -141,6 +158,12 @@ mod firefox {
     fn element_send_keys_test() {
         local_tester!(element_send_keys, "firefox");
     }
+
+    #[test]
+    #[serial]
+    fn serialize_element_test() {
+        local_tester!(serialize_element, "firefox");
+    }
 }
 
 mod chrome {
@@ -179,5 +202,10 @@ mod chrome {
     #[test]
     fn element_send_keys_test() {
         local_tester!(element_send_keys, "chrome");
+    }
+
+    #[test]
+    fn serialize_element_test() {
+        local_tester!(serialize_element, "chrome");
     }
 }

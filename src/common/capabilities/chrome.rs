@@ -169,6 +169,30 @@ impl ChromeCapabilities {
     pub fn unset_ignore_certificate_errors(&mut self) -> WebDriverResult<()> {
         self.remove_chrome_arg("--ignore-certificate-errors")
     }
+
+    pub fn set_no_sandbox(&mut self) -> WebDriverResult<()> {
+        self.add_chrome_arg("--no-sandbox")
+    }
+
+    pub fn unset_no_sandbox(&mut self) -> WebDriverResult<()> {
+        self.remove_chrome_arg("--no-sandbox")
+    }
+
+    pub fn set_disable_gpu(&mut self) -> WebDriverResult<()> {
+        self.add_chrome_arg("--disable-gpu")
+    }
+
+    pub fn unset_disable_gpu(&mut self) -> WebDriverResult<()> {
+        self.remove_chrome_arg("--disable-gpu")
+    }
+
+    pub fn set_disable_dev_shm_usage(&mut self) -> WebDriverResult<()> {
+        self.add_chrome_arg("--disable-dev-shm-usage")
+    }
+
+    pub fn unset_disable_dev_shm_usage(&mut self) -> WebDriverResult<()> {
+        self.remove_chrome_arg("--disable-dev-shm-usage")
+    }
 }
 
 impl CapabilitiesHelper for ChromeCapabilities {

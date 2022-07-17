@@ -26,7 +26,7 @@ use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHe
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-/// #         driver.goto("http://webappdemo").await?;
+/// #         driver.goto("http://localhost:8000").await?;
 /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
 /// let elem = driver.find(By::Id("input-result")).await?;
 /// #         assert_eq!(elem.attr("id").await?, Some("input-result".to_string()));
@@ -45,7 +45,7 @@ use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHe
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-/// #         driver.goto("http://webappdemo").await?;
+/// #         driver.goto("http://localhost:8000").await?;
 /// let elem = driver.find(By::Css("div[data-section='section-buttons']")).await?;
 /// let child_elem = elem.find(By::Tag("button")).await?;
 /// #         child_elem.click().await?;
@@ -112,7 +112,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::Id("button1")).await?;
     /// let r = elem.rect().await?;
     /// #         assert!(r.x > 0.0f64);
@@ -150,7 +150,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::Id("button1")).await?;
     /// assert_eq!(elem.tag_name().await?, "button");
     /// #         driver.quit().await?;
@@ -173,7 +173,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::Id("button1")).await?;
     /// let class_name_option = elem.class_name().await?;  // Option<String>
     /// #         assert!(class_name_option.expect("Missing class name").contains("pure-button"));
@@ -197,7 +197,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::Id("button1")).await?;
     /// let id_option = elem.id().await?;  // Option<String>
     /// #         assert_eq!(id_option, Some("button1".to_string()));
@@ -221,7 +221,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         driver.find(By::Id("button1")).await?.click().await?;
     /// let elem = driver.find(By::Id("button-result")).await?;
     /// let text = elem.text().await?;
@@ -251,7 +251,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::Id("button1")).await?;
     /// elem.click().await?;
     /// #         let elem = driver.find(By::Id("button-result")).await?;
@@ -277,7 +277,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find(By::Name("input2")).await?;
     /// elem.clear().await?;
@@ -303,7 +303,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find(By::Name("input2")).await?;
     /// let property_value_option = elem.prop("checked").await?; // Option<String>
@@ -334,7 +334,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find(By::Name("input2")).await?;
     /// let attribute_option = elem.attr("name").await?;  // Option<String>
@@ -365,7 +365,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find(By::Name("input2")).await?;
     /// let css_color = elem.css_value("color").await?;
@@ -401,7 +401,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         let elem = driver.find(By::Id("button1")).await?;
     /// let displayed = elem.is_displayed().await?;
     /// #         assert_eq!(displayed, true);
@@ -425,7 +425,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         let elem = driver.find(By::Id("button1")).await?;
     /// let enabled = elem.is_enabled().await?;
     /// #         assert_eq!(enabled, true);
@@ -450,7 +450,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         let elem = driver.find(By::Id("button1")).await?;
     /// let clickable = elem.is_clickable().await?;
     /// #         assert_eq!(clickable, true);
@@ -485,7 +485,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         let elem = driver.find(By::Id("button1")).await?;
     /// let present = elem.is_present().await?;
     /// #         assert_eq!(present, true);
@@ -521,7 +521,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::Css("div[data-section='section-buttons']")).await?;
     /// let child_elem = elem.find(By::Tag("button")).await?;
     /// #         child_elem.click().await?;
@@ -562,7 +562,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::Css("div[data-section='section-buttons']")).await?;
     /// let child_elems = elem.find_all(By::Tag("button")).await?;
     /// #         assert_eq!(child_elems.len(), 2);
@@ -600,7 +600,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
@@ -620,7 +620,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// #         let elem = driver.find(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
@@ -660,7 +660,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// let elem = driver.find(By::Name("input1")).await?;
     /// elem.focus().await?;
@@ -687,7 +687,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::Id("button1")).await?;
     /// elem.scroll_into_view().await?;
     /// #         driver.quit().await?;
@@ -711,7 +711,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::XPath(r##"//*[@id="button1"]/.."##)).await?;
     /// let html = elem.inner_html().await?;
     /// #         assert_eq!(html, r##"<button class="pure-button pure-button-primary" id="button1">BUTTON 1</button>"##);
@@ -735,7 +735,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// let elem = driver.find(By::XPath(r##"//*[@id="button1"]/.."##)).await?;
     /// let html = elem.outer_html().await?;
     /// #         assert_eq!(html, r##"<div class="pure-u-1-6"><button class="pure-button pure-button-primary" id="button1">BUTTON 1</button></div>"##);
@@ -769,7 +769,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.goto("http://localhost:8000").await?;
     /// #         driver.find(By::Id("pageiframe")).await?.click().await?;
     /// let elem_iframe = driver.find(By::Id("iframeid1")).await?;
     /// elem_iframe.enter_frame().await?;
