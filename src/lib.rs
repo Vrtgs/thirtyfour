@@ -7,8 +7,7 @@
 //! ## Features
 //!
 //! - All W3C WebDriver and WebElement methods supported
-//! - Async / await support (both **tokio** and **async-std** runtimes supported via feature flags)
-//! - Synchronous support (use the `thirtyfour_sync` crate)
+//! - Async / await support (tokio only)
 //! - Create new browser session directly via WebDriver (e.g. chromedriver)
 //! - Create new browser session via Selenium Standalone or Grid
 //! - Find elements (via all common selectors e.g. Id, Class, CSS, Tag, XPath)
@@ -20,63 +19,47 @@
 //! - Shadow DOM support
 //! - Alert support
 //! - Capture / Save screenshot of browser or individual element as PNG
-//! - Chrome DevTools Protocol (CDP) support
+//! - Some Chrome DevTools Protocol (CDP) support
 //! - Advanced query interface including explicit waits and various predicates
+//! - Extendable via traits (you can store configuration in the WebDriver struct)
 //!
 //! ## Feature Flags
 //!
 //! * `rusttls-tls`: (Default) Use rusttls to provide TLS support (via fantoccini/hyper).
 //! * `native-tls`: Use native TLS (via fantoccini/hyper).
 //!
-//! ## Examples
+//! ## Example
 //!
-//! The following examples assume you have a selenium server running
-//! at localhost:4444, and a demo web app running at http://webappdemo
-//!
-//! You can set these up using docker-compose, as follows:
-//!
-//! ```ignore
-//! docker-compose up -d
-//! ```
-//!
-//! The included web app demo is purely for demonstration / unit testing
-//! purposes and is not required in order to use this library in other projects.
-//!
-//! ### Example (async):
+//! The following example assumes you have chromedriver running locally, and
+//! a compatible version of Chrome installed.
 //!
 //! ```no_run
 //! use thirtyfour::prelude::*;
-//! use tokio;
 //!
 //! #[tokio::main]
 //! async fn main() -> WebDriverResult<()> {
 //!     let caps = DesiredCapabilities::chrome();
-//!     let driver = WebDriver::new("http://localhost:4444", caps).await?;
+//!     let driver = WebDriver::new("http://localhost:9515", caps).await?;
 //!
-//!     // Navigate to URL.
-//!     driver.get("http://webappdemo").await?;
-//!
-//!     // Navigate to page, by chaining futures together and awaiting the result.
-//!     driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-//!
-//!     // Find element.
-//!     let elem_div = driver.find_element(By::Css("div[data-section='section-input']")).await?;
+//!     // Navigate to https://wikipedia.org.
+//!     driver.goto("https://wikipedia.org").await?;
+//!     let elem_form = driver.find(By::Id("search-form")).await?;
 //!
 //!     // Find element from element.
-//!     let elem_text = elem_div.find_element(By::Name("input1")).await?;
+//!     let elem_text = elem_form.find(By::Id("searchInput")).await?;
 //!
 //!     // Type in the search terms.
 //!     elem_text.send_keys("selenium").await?;
 //!
-//!     // Click the button.
-//!     let elem_button = elem_div.find_element(By::Tag("button")).await?;
+//!     // Click the search button.
+//!     let elem_button = elem_form.find(By::Css("button[type='submit']")).await?;
 //!     elem_button.click().await?;
 //!
-//!     // Get text value of element.
-//!     let elem_result = driver.find_element(By::Id("input-result")).await?;
-//!     assert_eq!(elem_result.text().await?, "selenium");
-//!
-//!     // Always explicitly close the browser. There are no async destructors.
+//!     // Look for header to implicitly wait for the page to load.
+//!     driver.find(By::ClassName("firstHeading")).await?;
+//!     assert_eq!(driver.title().await?, "Selenium - Wikipedia");
+//!    
+//!     // Always explicitly close the browser.
 //!     driver.quit().await?;
 //!
 //!     Ok(())
