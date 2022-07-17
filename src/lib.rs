@@ -106,7 +106,7 @@ pub use switch_to::SwitchTo;
 pub use webdriver::WebDriver;
 pub use webelement::WebElement;
 
-/// Allow importing the common async structs via `use thirtyfour::prelude::*`.
+/// Allow importing the common types via `use thirtyfour::prelude::*`.
 pub mod prelude {
     pub use crate::alert::Alert;
     pub use crate::error::{WebDriverError, WebDriverResult};
