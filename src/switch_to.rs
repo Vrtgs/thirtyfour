@@ -23,7 +23,7 @@ impl SwitchTo {
     /// Return the element with focus, or the `<body>` element if nothing has focus.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -64,7 +64,7 @@ impl SwitchTo {
     /// Switch to the default frame.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -93,7 +93,7 @@ impl SwitchTo {
     /// Switch to an iframe by index. The first iframe on the page has index 0.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -122,7 +122,7 @@ impl SwitchTo {
     /// Switch to the specified iframe element.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -153,7 +153,7 @@ impl SwitchTo {
     /// Switch to the parent frame.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -187,7 +187,7 @@ impl SwitchTo {
     /// Switch to the specified window.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -222,7 +222,7 @@ impl SwitchTo {
     /// You can set a window name via `WebDriver::set_window_name("someName").await?`.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #

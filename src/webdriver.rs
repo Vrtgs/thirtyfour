@@ -8,7 +8,7 @@ use fantoccini::wd::Capabilities;
 /// session.
 ///
 /// # Example:
-/// ```rust
+/// ```no_run
 /// use thirtyfour::prelude::*;
 /// use thirtyfour::support::block_on;
 ///
@@ -31,7 +31,7 @@ impl WebDriver {
     /// Create a new WebDriver as follows:
     ///
     /// # Example
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -84,7 +84,7 @@ impl WebDriver {
     // /// Create a new WebDriver as follows:
     // ///
     // /// # Example
-    // /// ```rust
+    // /// ```no_run
     // /// # use thirtyfour::prelude::*;
     // /// # use thirtyfour::support::block_on;
     // /// # use std::time::Duration;

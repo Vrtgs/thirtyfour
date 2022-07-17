@@ -110,7 +110,7 @@ impl ActionChain {
     /// Reset all actions, reverting all input devices back to default states.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -154,7 +154,7 @@ impl ActionChain {
     /// Click and release the left mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -181,7 +181,7 @@ impl ActionChain {
     /// Click on the specified element using the left mouse button and release.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -207,7 +207,7 @@ impl ActionChain {
     /// Click the left mouse button and hold it down.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -237,7 +237,7 @@ impl ActionChain {
     /// hold the button down.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -266,7 +266,7 @@ impl ActionChain {
     /// Click and release the right mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -293,7 +293,7 @@ impl ActionChain {
     /// Click on the specified element using the right mouse button and release.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -319,7 +319,7 @@ impl ActionChain {
     /// Double-click the left mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -344,7 +344,7 @@ impl ActionChain {
     /// Double-click on the specified element.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -419,7 +419,7 @@ impl ActionChain {
     /// Press the specified key down.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -446,7 +446,7 @@ impl ActionChain {
     /// Click the specified element and then press the specified key down.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -472,7 +472,7 @@ impl ActionChain {
     /// Release the specified key. This usually follows a `key_down()` action.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -505,7 +505,7 @@ impl ActionChain {
     /// Click the specified element and release the specified key.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -537,7 +537,7 @@ impl ActionChain {
     /// Move the mouse cursor to the specified X and Y coordinates.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -567,7 +567,7 @@ impl ActionChain {
     /// Move the mouse cursor by the specified X and Y offsets.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -601,7 +601,7 @@ impl ActionChain {
     /// Move the mouse cursor to the center of the specified element.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -632,7 +632,7 @@ impl ActionChain {
     ///
     /// # Example:
     ///
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -676,7 +676,7 @@ impl ActionChain {
     /// Release the left mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -704,7 +704,7 @@ impl ActionChain {
     /// Move the mouse to the specified element and release the mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -731,7 +731,7 @@ impl ActionChain {
     /// Send the specified keystrokes to the active element.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// use thirtyfour::Key;
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
@@ -767,7 +767,7 @@ impl ActionChain {
     /// Click on the specified element and send the specified keystrokes.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #

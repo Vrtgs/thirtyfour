@@ -12,7 +12,7 @@ use crate::session::handle::SessionHandle;
 /// [https://chromedevtools.github.io/devtools-protocol/](https://chromedevtools.github.io/devtools-protocol/])
 ///
 /// # Example
-/// ```
+/// ```no_run
 /// # use thirtyfour::prelude::*;
 /// # use thirtyfour::support::block_on;
 /// # use thirtyfour::extensions::chrome::ChromeDevTools;
@@ -39,7 +39,7 @@ impl ChromeDevTools {
     /// Create a new ChromeDevTools struct.
     ///
     /// # Example:
-    /// ```
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::ChromeDevTools;
@@ -69,7 +69,7 @@ impl ChromeDevTools {
     /// Get the current network conditions. You must set the conditions first.
     ///
     /// # Example:
-    /// ```
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::{ChromeDevTools, NetworkConditions};
@@ -103,7 +103,7 @@ impl ChromeDevTools {
     /// Set the network conditions.
     ///
     /// # Example:
-    /// ```
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::{ChromeDevTools, NetworkConditions};
@@ -151,7 +151,7 @@ impl ChromeDevTools {
     /// [https://chromedevtools.github.io/devtools-protocol/](https://chromedevtools.github.io/devtools-protocol/])
     ///
     /// # Example:
-    /// ```
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::ChromeDevTools;
@@ -182,7 +182,7 @@ impl ChromeDevTools {
     /// [https://chromedevtools.github.io/devtools-protocol/](https://chromedevtools.github.io/devtools-protocol/])
     ///
     /// # Example:
-    /// ```
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::chrome::ChromeDevTools;

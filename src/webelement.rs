@@ -19,7 +19,7 @@ use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHe
 /// they are returned from a 'find_element()' operation using a WebDriver.
 ///
 /// # Example:
-/// ```rust
+/// ```no_run
 /// # use thirtyfour::prelude::*;
 /// # use thirtyfour::support::block_on;
 /// #
@@ -38,7 +38,7 @@ use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHe
 /// ```
 ///
 /// You can also search for a child element of another element as follows:
-/// ```rust
+/// ```no_run
 /// # use thirtyfour::prelude::*;
 /// # use thirtyfour::support::block_on;
 /// #
@@ -119,7 +119,7 @@ impl WebElement {
     /// Get the bounding rectangle for this WebElement.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -152,7 +152,7 @@ impl WebElement {
     /// Get the tag name for this WebElement.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -175,7 +175,7 @@ impl WebElement {
     /// Get the class name for this WebElement.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -199,7 +199,7 @@ impl WebElement {
     /// Get the id for this WebElement.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -223,7 +223,7 @@ impl WebElement {
     /// Get the text contents for this WebElement.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -253,7 +253,7 @@ impl WebElement {
     /// Click the WebElement.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -279,7 +279,7 @@ impl WebElement {
     /// Clear the WebElement contents.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -305,7 +305,7 @@ impl WebElement {
     /// Get the specified property.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -331,7 +331,7 @@ impl WebElement {
     /// Get the specified attribute.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -357,7 +357,7 @@ impl WebElement {
     /// Get the specified CSS property.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -388,7 +388,7 @@ impl WebElement {
     /// Return true if the WebElement is currently displayed, otherwise false.
     ///
     /// # Example
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -412,7 +412,7 @@ impl WebElement {
     /// Return true if the WebElement is currently enabled, otherwise false.
     ///
     /// # Example
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -437,7 +437,7 @@ impl WebElement {
     /// otherwise false.
     ///
     /// # Example
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -472,7 +472,7 @@ impl WebElement {
     /// to simply search for the element again.
     ///
     /// # Example
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -508,7 +508,7 @@ impl WebElement {
     ///  [WebElement::query()](struct.WebElement.html#impl-ElementQueryable) method instead.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -543,7 +543,7 @@ impl WebElement {
     /// [WebElement::query()](struct.WebElement.html#impl-ElementQueryable) method instead.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -575,7 +575,7 @@ impl WebElement {
     /// Send the specified input.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -595,7 +595,7 @@ impl WebElement {
     /// ```
     ///
     /// You can also send special key combinations like this:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -635,7 +635,7 @@ impl WebElement {
     /// Focus this WebElement using JavaScript.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -662,7 +662,7 @@ impl WebElement {
     /// Scroll this element into view using JavaScript.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -688,7 +688,7 @@ impl WebElement {
     /// Get the innerHtml property of this element.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -712,7 +712,7 @@ impl WebElement {
     /// Get the outerHtml property of this element.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #

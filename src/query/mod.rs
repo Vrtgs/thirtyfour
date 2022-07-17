@@ -11,7 +11,7 @@
 //!
 //! Now, using the query interface you can do things like this:
 //!
-//! ```rust
+//! ```no_run
 //! # use thirtyfour::prelude::*;
 //! # use thirtyfour::support::block_on;
 //! #
@@ -38,7 +38,7 @@
 //!
 //! You can also filter on one or both query branches like this:
 //!
-//! ```rust
+//! ```no_run
 //! # use thirtyfour::prelude::*;
 //! # use thirtyfour::support::block_on;
 //! # use thirtyfour::query::StringMatch;
@@ -119,7 +119,7 @@
 //!
 //! See [ElementPoller::default()](enum.ElementPoller.html#impl-Default) for more details
 //! about the default polling behaviour.
-//! ```rust
+//! ```no_run
 //! # use thirtyfour::prelude::*;
 //! # use thirtyfour::support::block_on;
 //! # use thirtyfour::query::ElementPoller;

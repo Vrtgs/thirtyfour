@@ -70,7 +70,7 @@ impl SessionHandle {
     /// Get the WebDriver status.
     ///
     /// # Example
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -91,7 +91,7 @@ impl SessionHandle {
     // /// Set the request timeout for the HTTP client.
     // ///
     // /// # Example
-    // /// ```rust
+    // /// ```no_run
     // /// # use thirtyfour::prelude::*;
     // /// # use std::time::Duration;
     // /// # use thirtyfour::support::block_on;
@@ -113,7 +113,7 @@ impl SessionHandle {
     /// Close the current window or tab. This will close the session if no other windows exist.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -144,7 +144,7 @@ impl SessionHandle {
     /// Navigate to the specified URL.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -168,7 +168,7 @@ impl SessionHandle {
     /// Get the current URL as a String.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use url::Url;
@@ -192,7 +192,7 @@ impl SessionHandle {
     /// Get the page source as a String.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -215,7 +215,7 @@ impl SessionHandle {
     /// Get the page title as a String.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -241,7 +241,7 @@ impl SessionHandle {
     /// [WebDriver::query()](struct.WebDriver.html#method.query) method instead.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -274,7 +274,7 @@ impl SessionHandle {
     /// [WebDriver::query()](struct.WebDriver.html#method.query) method instead.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -304,7 +304,7 @@ impl SessionHandle {
     /// Execute the specified Javascript synchronously and return the result.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -332,7 +332,7 @@ impl SessionHandle {
     /// ```
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -367,7 +367,7 @@ impl SessionHandle {
     /// Execute the specified Javascrypt asynchronously and return the result.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -400,7 +400,7 @@ impl SessionHandle {
     /// ```
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -441,7 +441,7 @@ impl SessionHandle {
     /// Get the current window handle.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -477,7 +477,7 @@ impl SessionHandle {
     /// Get all window handles for the current session.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -507,7 +507,7 @@ impl SessionHandle {
     /// Maximize the current window.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -555,7 +555,7 @@ impl SessionHandle {
     /// Make the current window fullscreen.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -581,7 +581,7 @@ impl SessionHandle {
     /// all i32.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::Rect;
@@ -606,7 +606,7 @@ impl SessionHandle {
 
     /// Set the current window rectangle, in pixels.
     ///
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -633,7 +633,7 @@ impl SessionHandle {
     /// Go back. This is equivalent to clicking the browser's back button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -657,7 +657,7 @@ impl SessionHandle {
     /// Go forward. This is equivalent to clicking the browser's forward button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -684,7 +684,7 @@ impl SessionHandle {
     /// Refresh the current page.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -708,7 +708,7 @@ impl SessionHandle {
     /// Get all timeouts for the current session.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::TimeoutConfiguration;
@@ -752,7 +752,7 @@ impl SessionHandle {
     ///           See `WebDriver::set_request_timeout()` for more details.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::TimeoutConfiguration;
@@ -793,7 +793,7 @@ impl SessionHandle {
     ///           See `WebDriver::set_request_timeout()` for more details.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::TimeoutConfiguration;
@@ -827,7 +827,7 @@ impl SessionHandle {
     ///           See `WebDriver::set_request_timeout()` for more details.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::TimeoutConfiguration;
@@ -861,7 +861,7 @@ impl SessionHandle {
     ///           See `WebDriver::set_request_timeout()` for more details.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::TimeoutConfiguration;
@@ -890,7 +890,7 @@ impl SessionHandle {
     /// mouse movements, mouse click, right-click, and more.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -922,7 +922,7 @@ impl SessionHandle {
     /// Get all cookies.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::cookie::SameSite;
@@ -955,7 +955,7 @@ impl SessionHandle {
     /// Get the specified cookie.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::cookie::SameSite;
@@ -985,7 +985,7 @@ impl SessionHandle {
     /// Delete the specified cookie.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::cookie::SameSite;
@@ -1015,7 +1015,7 @@ impl SessionHandle {
     /// Delete all cookies.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::cookie::SameSite;
@@ -1046,7 +1046,7 @@ impl SessionHandle {
     /// Add the specified cookie.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::cookie::SameSite;
@@ -1095,7 +1095,7 @@ impl SessionHandle {
     /// Useful for switching between windows/tabs using `driver.switch_to().window_name(name)`.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -1135,7 +1135,7 @@ impl SessionHandle {
     /// The return value will be that of the supplied function, unless an error occurs while
     /// opening or closing the tab.
     ///
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #

@@ -18,7 +18,7 @@ impl Alert {
     /// Get the active alert text.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -45,7 +45,7 @@ impl Alert {
     /// Dismiss the active alert.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -72,7 +72,7 @@ impl Alert {
     /// Accept the active alert.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -101,7 +101,7 @@ impl Alert {
     /// # Example:
     /// You can specify anything that implements `Into<TypingData>`. This
     /// includes &str and String.
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
@@ -124,7 +124,7 @@ impl Alert {
     /// ```
     ///
     /// You can also send special key combinations like this:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #

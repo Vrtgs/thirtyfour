@@ -85,7 +85,7 @@ pub enum ElementQuerySource {
 /// builder pattern.
 ///
 /// # Example:
-/// ```rust
+/// ```no_run
 /// # use thirtyfour::prelude::*;
 /// # use thirtyfour::support::block_on;
 /// #

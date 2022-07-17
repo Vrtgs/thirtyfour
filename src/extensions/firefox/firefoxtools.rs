@@ -17,7 +17,7 @@ impl FirefoxTools {
     /// Create a new FirefoxTools struct.
     ///
     /// # Example:
-    /// ```
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// use thirtyfour::extensions::firefox::FirefoxTools;

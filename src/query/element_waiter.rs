@@ -9,7 +9,7 @@ use stringmatch::Needle;
 /// High-level interface for performing explicit waits using the builder pattern.
 ///
 /// # Example:
-/// ```rust
+/// ```no_run
 /// # use thirtyfour::prelude::*;
 /// # use thirtyfour::support::block_on;
 /// #

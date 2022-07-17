@@ -44,7 +44,7 @@
 //!
 //! ### Example (async):
 //!
-//! ```rust
+//! ```no_run
 //! use thirtyfour::prelude::*;
 //! use tokio;
 //!
