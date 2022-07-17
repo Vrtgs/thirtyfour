@@ -12,6 +12,11 @@ jobs:
         run: docker-compose up -d
       - name: Check running containers
         run: docker ps -a
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
       - name: Install cargo-tarpaulin
         uses: actions-rs/install@v0.1
         with:
