@@ -21,7 +21,7 @@ impl SwitchTo {
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebDriver::active_element()"
     )]
     pub async fn active_element(self) -> WebDriverResult<WebElement> {
@@ -30,7 +30,7 @@ impl SwitchTo {
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been deprecated. See the `Alert` module for new method names"
     )]
     pub fn alert(self) -> Alert {
@@ -38,7 +38,7 @@ impl SwitchTo {
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebDriver::enter_default_frame()"
     )]
     pub async fn default_content(self) -> WebDriverResult<()> {
@@ -46,17 +46,14 @@ impl SwitchTo {
         Ok(())
     }
 
-    #[deprecated(
-        since = "v0.30.0",
-        note = "This method has been moved to WebDriver::enter_frame()"
-    )]
+    #[deprecated(since = "0.30.0", note = "This method has been moved to WebDriver::enter_frame()")]
     pub async fn frame_number(self, frame_number: u16) -> WebDriverResult<()> {
         self.handle.client.enter_frame(Some(frame_number)).await?;
         Ok(())
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebElement::enter_frame()"
     )]
     pub async fn frame_element(self, frame_element: &WebElement) -> WebDriverResult<()> {
@@ -66,7 +63,7 @@ impl SwitchTo {
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebDriver::enter_parent_frame()"
     )]
     pub async fn parent_frame(self) -> WebDriverResult<()> {
@@ -74,20 +71,20 @@ impl SwitchTo {
         Ok(())
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been moved to WebDriver::new_window()")]
+    #[deprecated(since = "0.30.0", note = "This method has been moved to WebDriver::new_window()")]
     pub async fn new_window(self) -> WebDriverResult<WindowHandle> {
         let response = self.handle.client.new_window(false).await?;
         Ok(response.handle)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been moved to WebDriver::new_tab()")]
+    #[deprecated(since = "0.30.0", note = "This method has been moved to WebDriver::new_tab()")]
     pub async fn new_tab(self) -> WebDriverResult<WindowHandle> {
         let response = self.handle.client.new_window(true).await?;
         Ok(response.handle)
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebDriver::switch_to_window()"
     )]
     pub async fn window(self, handle: WindowHandle) -> WebDriverResult<()> {
@@ -96,7 +93,7 @@ impl SwitchTo {
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebDriver::switch_to_named_window()"
     )]
     pub async fn window_name(self, name: &str) -> WebDriverResult<()> {

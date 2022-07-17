@@ -106,7 +106,7 @@ impl<'a> From<Locator<'a>> for By {
     }
 }
 
-pub fn locator_to_string<'a>(locator: Locator<'a>) -> String {
+pub fn locator_to_string(locator: Locator<'_>) -> String {
     match locator {
         Locator::Css(s) => format!("Css({s})"),
         Locator::Id(s) => format!("Id({s}"),

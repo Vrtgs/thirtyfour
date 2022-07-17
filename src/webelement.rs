@@ -318,7 +318,7 @@ impl WebElement {
         Ok(self.element.prop(name).await?)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to prop()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to prop()")]
     pub async fn get_property(&self, name: &str) -> WebDriverResult<Option<String>> {
         self.prop(name).await
     }
@@ -349,7 +349,7 @@ impl WebElement {
         Ok(self.element.attr(name).await?)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to attr()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to attr()")]
     pub async fn get_attribute(&self, name: &str) -> WebDriverResult<Option<String>> {
         self.attr(name).await
     }
@@ -380,7 +380,7 @@ impl WebElement {
         Ok(self.element.css_value(name).await?)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to css_value()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to css_value()")]
     pub async fn get_css_property(&self, name: &str) -> WebDriverResult<String> {
         self.css_value(name).await
     }
@@ -542,7 +542,7 @@ impl WebElement {
         Ok(WebElement::new(elem, self.handle.clone()))
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to find()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to find()")]
     pub async fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
         self.find(by).await
     }
@@ -584,7 +584,7 @@ impl WebElement {
         Ok(elems.into_iter().map(|x| WebElement::new(x, self.handle.clone())).collect())
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to find_all()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to find_all()")]
     pub async fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         self.find_all(by).await
     }

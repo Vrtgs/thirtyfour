@@ -29,7 +29,7 @@ impl ScriptRet {
         &self.value
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to json()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to json()")]
     pub fn value(&self) -> &serde_json::Value {
         self.json()
     }
@@ -48,7 +48,7 @@ impl ScriptRet {
         WebElement::from_json(self.value, self.handle)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to element()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to element()")]
     pub fn get_element(self) -> WebDriverResult<WebElement> {
         self.element()
     }
@@ -61,7 +61,7 @@ impl ScriptRet {
         values.into_iter().map(|x| WebElement::from_json(x, handle.clone())).collect()
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to elements()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to elements()")]
     pub fn get_elements(self) -> WebDriverResult<Vec<WebElement>> {
         self.elements()
     }

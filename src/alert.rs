@@ -16,7 +16,7 @@ impl Alert {
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebDriver::get_alert_text()"
     )]
     pub async fn text(&self) -> WebDriverResult<String> {
@@ -24,7 +24,7 @@ impl Alert {
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebDriver::dismiss_alert()"
     )]
     pub async fn dismiss(&self) -> WebDriverResult<()> {
@@ -33,7 +33,7 @@ impl Alert {
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebDriver::accept_alert()"
     )]
     pub async fn accept(&self) -> WebDriverResult<()> {
@@ -42,7 +42,7 @@ impl Alert {
     }
 
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "This method has been moved to WebDriver::send_alert_text()"
     )]
     pub async fn send_keys(&self, keys: impl AsRef<str>) -> WebDriverResult<()> {

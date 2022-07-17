@@ -143,7 +143,7 @@ impl SessionHandle {
         Ok(())
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to close_window()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to close_window()")]
     pub async fn close(&self) -> WebDriverResult<()> {
         self.client.close_window().await?;
         Ok(())
@@ -173,7 +173,7 @@ impl SessionHandle {
         Ok(self.client.goto(url.as_ref()).await?)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to goto()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to goto()")]
     pub async fn get<S>(&self, url: S) -> WebDriverResult<()>
     where
         S: AsRef<str>,
@@ -228,7 +228,7 @@ impl SessionHandle {
         Ok(self.client.source().await?)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to source()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to source()")]
     pub async fn page_source(&self) -> WebDriverResult<String> {
         self.source().await
     }
@@ -290,7 +290,7 @@ impl SessionHandle {
         Ok(self.wrap_element(elem))
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to find()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to find()")]
     pub async fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
         self.find(by).await
     }
@@ -329,7 +329,7 @@ impl SessionHandle {
         Ok(elems.into_iter().map(|x| self.wrap_element(x)).collect())
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to find_all()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to find_all()")]
     pub async fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         self.find_all(by).await
     }
@@ -393,7 +393,7 @@ impl SessionHandle {
         Ok(ScriptRet::new(self.clone(), v))
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to execute()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to execute()")]
     pub async fn execute_script(
         &self,
         script: &str,
@@ -476,7 +476,7 @@ impl SessionHandle {
         Ok(ScriptRet::new(self.clone(), v))
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to execute_async()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to execute_async()")]
     pub async fn execute_script_async(
         &self,
         script: &str,
@@ -521,7 +521,7 @@ impl SessionHandle {
         Ok(self.client.window().await?)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to window()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to window()")]
     pub async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
         self.window().await
     }
@@ -556,7 +556,7 @@ impl SessionHandle {
         Ok(self.client.windows().await?)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to windows()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to windows()")]
     pub async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
         self.windows().await
     }
@@ -834,7 +834,7 @@ impl SessionHandle {
         Ok(())
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to update_timeouts()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to update_timeouts()")]
     pub async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
         self.update_timeouts(timeouts).await
     }
@@ -1046,7 +1046,7 @@ impl SessionHandle {
         Ok(self.client.get_all_cookies().await?)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to get_all_cookies()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to get_all_cookies()")]
     pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie<'static>>> {
         self.get_all_cookies().await
     }
@@ -1081,7 +1081,7 @@ impl SessionHandle {
         Ok(self.client.get_named_cookie(name).await?)
     }
 
-    #[deprecated(since = "v0.30.0", note = "This method has been renamed to get_named_cookie()")]
+    #[deprecated(since = "0.30.0", note = "This method has been renamed to get_named_cookie()")]
     pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie<'static>> {
         self.get_named_cookie(name).await
     }
@@ -1192,7 +1192,7 @@ impl SessionHandle {
 
     /// Return a SwitchTo struct for switching to another window or frame.
     #[deprecated(
-        since = "v0.30.0",
+        since = "0.30.0",
         note = "SwitchTo has been deprecated. Use WebDriver::switch_to_*() methods instead"
     )]
     pub fn switch_to(&self) -> SwitchTo {
