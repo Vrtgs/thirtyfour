@@ -27,7 +27,7 @@ async fn main() -> color_eyre::Result<()> {
     let driver = WebDriver::new("http://localhost:4444", caps).await?;
 
     // Navigate to https://wikipedia.org.
-    driver.get("https://wikipedia.org").await?;
+    driver.goto("https://wikipedia.org").await?;
 
     // Always explicitly close the browser. There are no async destructors.
     driver.quit().await?;

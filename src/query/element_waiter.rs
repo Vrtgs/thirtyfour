@@ -18,7 +18,7 @@ use stringmatch::Needle;
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
-/// #         driver.get("http://webappdemo").await?;
+/// #         driver.goto("http://webappdemo").await?;
 /// #         let elem = driver.query(By::Id("button1")).first().await?;
 /// // Wait until the element is displayed.
 /// elem.wait_until().displayed().await?;
@@ -383,7 +383,7 @@ async fn _test_is_send() -> WebDriverResult<()> {
     // Pre values
     let caps = DesiredCapabilities::chrome();
     let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    let elem = driver.find_element(By::Css(r#"div"#)).await?;
+    let elem = driver.find(By::Css(r#"div"#)).await?;
 
     // ElementWaitCondition
     is_send_val(&elem.wait_until().stale());

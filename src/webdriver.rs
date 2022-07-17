@@ -16,7 +16,7 @@ use fantoccini::wd::Capabilities;
 ///     block_on(async {
 ///         let caps = DesiredCapabilities::chrome();
 ///         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-///         driver.get("http://webappdemo").await?;
+///         driver.goto("http://webappdemo").await?;
 ///         driver.quit().await?;
 ///         Ok(())
 ///     })

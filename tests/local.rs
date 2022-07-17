@@ -8,157 +8,154 @@ mod common;
 
 async fn goto(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
-    c.get(&url).await?;
+    c.goto(&url).await?;
     let current_url = c.current_url().await?;
     assert_eq!(url.as_str(), current_url.as_str());
-    c.close().await
+    c.close_window().await
 }
 
 async fn find_and_click_link(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
-    c.get(&url).await?;
-    c.find_element(By::Css("#other_page_id")).await?.click().await?;
+    c.goto(&url).await?;
+    c.find(By::Css("#other_page_id")).await?.click().await?;
 
     let new_url = c.current_url().await?;
     let expected_url = other_page_url(port);
     assert_eq!(new_url.as_str(), expected_url.as_str());
 
-    c.close().await
+    c.close_window().await
 }
 
 async fn get_active_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
-    c.get(&url).await?;
-    c.find_element(By::Css("#select1")).await?.click().await?;
+    c.goto(&url).await?;
+    c.find(By::Css("#select1")).await?.click().await?;
 
-    let active = c.switch_to().active_element().await?;
-    assert_eq!(active.get_attribute("id").await?, Some(String::from("select1")));
+    let active = c.active_element().await?;
+    assert_eq!(active.attr("id").await?, Some(String::from("select1")));
 
-    c.close().await
+    c.close_window().await
 }
 
 async fn serialize_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
-    c.get(&url).await?;
-    let elem = c.find_element(By::Css("#other_page_id")).await?;
+    c.goto(&url).await?;
+    let elem = c.find(By::Css("#other_page_id")).await?;
 
     // Check that webdriver understands it
-    c.execute_script("arguments[0].scrollIntoView(true);", vec![serde_json::to_value(elem)?])
-        .await?;
+    c.execute("arguments[0].scrollIntoView(true);", vec![serde_json::to_value(elem)?]).await?;
 
     // Check that it fails with an invalid serialization (from a previous run of the test)
     let json = r#"{"element-6066-11e4-a52e-4f735466cecf":"fbe5004d-ec8b-4c7b-ad08-642c55d84505"}"#;
-    c.execute_script("arguments[0].scrollIntoView(true);", vec![serde_json::from_str(json)?])
+    c.execute("arguments[0].scrollIntoView(true);", vec![serde_json::from_str(json)?])
         .await
         .expect_err("Failure expected with an invalid ID");
 
-    c.close().await
+    c.close_window().await
 }
 
 async fn iframe_switch(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
-    c.get(&url).await?;
+    c.goto(&url).await?;
     // Go to the page that holds the iframe
-    c.find_element(By::Css("#iframe_page_id")).await?.click().await?;
+    c.find(By::Css("#iframe_page_id")).await?.click().await?;
 
-    c.find_element(By::Id("iframe_button"))
-        .await
-        .expect_err("should not find the button in the iframe");
-    c.find_element(By::Id("root_button")).await?; // Can find the button in the root context though.
+    c.find(By::Id("iframe_button")).await.expect_err("should not find the button in the iframe");
+    c.find(By::Id("root_button")).await?; // Can find the button in the root context though.
 
     // find and switch into the iframe
-    let iframe_element = c.find_element(By::Id("iframe")).await?;
-    c.switch_to().frame_element(&iframe_element).await?;
+    let iframe_element = c.find(By::Id("iframe")).await?;
+    iframe_element.enter_frame().await?;
 
     // search for something in the iframe
-    let button_in_iframe = c.find_element(By::Id("iframe_button")).await?;
+    let button_in_iframe = c.find(By::Id("iframe_button")).await?;
     button_in_iframe.click().await?;
-    c.find_element(By::Id("root_button"))
+    c.find(By::Id("root_button"))
         .await
         .expect_err("Should not be able to access content in the root context");
 
     // switch back to the root context and access content there.
-    c.switch_to().parent_frame().await?;
-    c.find_element(By::Id("root_button")).await?;
+    c.enter_parent_frame().await?;
+    c.find(By::Id("root_button")).await?;
 
-    c.close().await
+    c.close_window().await
 }
 
 async fn new_window(c: WebDriver) -> Result<(), WebDriverError> {
-    c.switch_to().new_window().await?;
-    let windows = c.window_handles().await?;
+    c.new_window().await?;
+    let windows = c.windows().await?;
     assert_eq!(windows.len(), 2);
-    c.close().await
+    c.close_window().await
 }
 
 async fn new_window_switch(c: WebDriver) -> Result<(), WebDriverError> {
-    let window_1 = c.current_window_handle().await?;
-    c.switch_to().new_window().await?;
-    let window_2 = c.current_window_handle().await?;
+    let window_1 = c.window().await?;
+    c.new_window().await?;
+    let window_2 = c.window().await?;
     assert_eq!(
         window_1, window_2,
         "After creating a new window, the session should not have switched to it"
     );
 
-    let all_windows = c.window_handles().await?;
+    let all_windows = c.windows().await?;
     assert_eq!(all_windows.len(), 2);
     let new_window = all_windows
         .into_iter()
         .find(|handle| handle != &window_1)
         .expect("Should find a differing window handle");
 
-    c.switch_to().window(new_window).await?;
+    c.switch_to_window(new_window).await?;
 
-    let window_3 = c.current_window_handle().await?;
+    let window_3 = c.window().await?;
     assert_ne!(
         window_3, window_2,
         "After switching to a new window, the window handle returned from window() should differ now."
     );
 
-    c.close().await
+    c.close_window().await
 }
 
 async fn new_tab_switch(c: WebDriver) -> Result<(), WebDriverError> {
-    let window_1 = c.current_window_handle().await?;
-    c.switch_to().new_tab().await?;
-    let window_2 = c.current_window_handle().await?;
+    let window_1 = c.window().await?;
+    c.new_tab().await?;
+    let window_2 = c.window().await?;
     assert_eq!(
         window_1, window_2,
         "After creating a new window, the session should not have switched to it"
     );
 
-    let all_windows = c.window_handles().await?;
+    let all_windows = c.windows().await?;
     assert_eq!(all_windows.len(), 2);
     let new_window = all_windows
         .into_iter()
         .find(|handle| handle != &window_1)
         .expect("Should find a differing window handle");
 
-    c.switch_to().window(new_window).await?;
+    c.switch_to_window(new_window).await?;
 
-    let window_3 = c.current_window_handle().await?;
+    let window_3 = c.window().await?;
     assert_ne!(
         window_3, window_2,
         "After switching to a new window, the window handle returned from window() should differ now."
     );
 
-    c.close().await
+    c.close_window().await
 }
 
 async fn close_window(c: WebDriver) -> Result<(), WebDriverError> {
-    let window_1 = c.current_window_handle().await?;
-    c.switch_to().new_tab().await?;
-    let window_2 = c.current_window_handle().await?;
+    let window_1 = c.window().await?;
+    c.new_tab().await?;
+    let window_2 = c.window().await?;
     assert_eq!(
         window_1, window_2,
         "Creating a new window should not cause the client to switch to it."
     );
 
-    let handles = c.window_handles().await?;
+    let handles = c.windows().await?;
     assert_eq!(handles.len(), 2);
 
-    c.close().await?;
-    c.current_window_handle()
+    c.close_window().await?;
+    c.window()
         .await
         .expect_err("After closing a window, the client can't find its currently selected window.");
 
@@ -166,28 +163,28 @@ async fn close_window(c: WebDriver) -> Result<(), WebDriverError> {
         .into_iter()
         .find(|handle| handle != &window_2)
         .expect("Should find a differing handle");
-    c.switch_to().window(other_window).await?;
+    c.switch_to_window(other_window).await?;
 
     // Close the session by closing the remaining window
-    c.close().await?;
+    c.close_window().await?;
 
-    c.window_handles().await.expect_err("Session should be closed.");
+    c.windows().await.expect_err("Session should be closed.");
     Ok(())
 }
 
 async fn close_window_twice_errors(c: WebDriver) -> Result<(), WebDriverError> {
-    c.close().await?;
-    c.close().await.expect_err("Should get a no such window error");
+    c.close_window().await?;
+    c.close_window().await.expect_err("Should get a no such window error");
     Ok(())
 }
 
 async fn stale_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
-    c.get(&url).await?;
-    let elem = c.find_element(By::Css("#other_page_id")).await?;
+    c.goto(&url).await?;
+    let elem = c.find(By::Css("#other_page_id")).await?;
 
     // Remove the element from the DOM
-    c.execute_script(
+    c.execute(
         "var elem = document.getElementById('other_page_id');
          elem.parentNode.removeChild(elem);",
         vec![],
@@ -202,31 +199,31 @@ async fn stale_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
 
 async fn select_by_index(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
-    c.get(&url).await?;
+    c.goto(&url).await?;
 
-    let elem = c.find_element(By::Css("#select1")).await?;
+    let elem = c.find(By::Css("#select1")).await?;
     let select_element = SelectElement::new(&elem).await?;
 
     // Get first display text
-    let initial_text = elem.get_property("value").await?;
+    let initial_text = elem.prop("value").await?;
     assert_eq!(Some("Select1-Option1".into()), initial_text);
 
     // Select 2nd option by index.
     select_element.select_by_index(1).await?;
 
     // Get display text after selection
-    let text_after_selecting = elem.get_property("value").await?;
+    let text_after_selecting = elem.prop("value").await?;
     assert_eq!(Some("Select1-Option2".into()), text_after_selecting);
 
     // Check that the second select is not changed
-    let select2_text = c.find_element(By::Css("#select2")).await?.get_property("value").await?;
+    let select2_text = c.find(By::Css("#select2")).await?.prop("value").await?;
     assert_eq!(Some("Select2-Option1".into()), select2_text);
 
     // Show off that it selects only options and skip any other elements
-    let elem = c.find_element(By::Css("#select2")).await?;
+    let elem = c.find(By::Css("#select2")).await?;
     let select_element = SelectElement::new(&elem).await?;
     select_element.select_by_index(1).await?;
-    let text = elem.get_property("value").await?;
+    let text = elem.prop("value").await?;
     assert_eq!(Some("Select2-Option2".into()), text);
 
     Ok(())
@@ -234,24 +231,24 @@ async fn select_by_index(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
 
 async fn select_by_label(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
-    c.get(&url).await?;
+    c.goto(&url).await?;
 
-    let elem = c.find_element(By::Css("#select1")).await?;
+    let elem = c.find(By::Css("#select1")).await?;
     let select_element = SelectElement::new(&elem).await?;
 
     // Get first display text
-    let initial_text = elem.get_property("value").await?;
+    let initial_text = elem.prop("value").await?;
     assert_eq!(Some("Select1-Option1".into()), initial_text);
 
     // Select second option
     select_element.select_by_exact_text("Select1-Option2").await?;
 
     // Get display text after selection
-    let text_after_selecting = elem.get_property("value").await?;
+    let text_after_selecting = elem.prop("value").await?;
     assert_eq!(Some("Select1-Option2".into()), text_after_selecting);
 
     // Check that the second select is not changed
-    let select2_text = c.find_element(By::Css("#select2")).await?.get_property("value").await?;
+    let select2_text = c.find(By::Css("#select2")).await?.prop("value").await?;
     assert_eq!(Some("Select2-Option1".into()), select2_text);
 
     Ok(())
@@ -259,13 +256,10 @@ async fn select_by_label(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
 
 async fn resolve_execute_async_value(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
-    c.get(&url).await?;
+    c.goto(&url).await?;
 
     let count: u64 = c
-        .execute_script_async(
-            "setTimeout(() => arguments[1](arguments[0] + 1))",
-            vec![1_u32.into()],
-        )
+        .execute_async("setTimeout(() => arguments[1](arguments[0] + 1))", vec![1_u32.into()])
         .await?
         .convert()
         .expect("should be integer variant");
@@ -273,7 +267,7 @@ async fn resolve_execute_async_value(c: WebDriver, port: u16) -> Result<(), WebD
     assert_eq!(2, count);
 
     let count: u64 = c
-        .execute_script_async("setTimeout(() => arguments[0](2))", vec![])
+        .execute_async("setTimeout(() => arguments[0](2))", vec![])
         .await?
         .convert()
         .expect("should be integer variant");
@@ -285,12 +279,12 @@ async fn resolve_execute_async_value(c: WebDriver, port: u16) -> Result<(), WebD
 
 async fn back_and_forward(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let sample_url = sample_page_url(port);
-    c.get(&sample_url).await?;
+    c.goto(&sample_url).await?;
 
     assert_eq!(c.current_url().await?.as_str(), sample_url);
 
     let other_url = other_page_url(port);
-    c.get(&other_url).await?;
+    c.goto(&other_url).await?;
     assert_eq!(c.current_url().await?.as_str(), other_url);
 
     c.back().await?;
@@ -318,7 +312,7 @@ async fn status_chrome(c: WebDriver, _: u16) -> Result<(), WebDriverError> {
 
 async fn page_title(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let sample_url = sample_page_url(port);
-    c.get(&sample_url).await?;
+    c.goto(&sample_url).await?;
     assert_eq!(c.title().await?, "Sample Page");
     Ok(())
 }
@@ -329,14 +323,14 @@ async fn timeouts(c: WebDriver, _: u16) -> Result<(), WebDriverError> {
         Some(Duration::from_secs(60)),
         Some(Duration::from_secs(30)),
     );
-    c.set_timeouts(new_timeouts.clone()).await?;
+    c.update_timeouts(new_timeouts.clone()).await?;
 
     let got_timeouts = c.get_timeouts().await?;
     assert_eq!(got_timeouts, new_timeouts);
 
     // Ensure partial update also works.
     let update_timeouts = TimeoutConfiguration::new(None, None, Some(Duration::from_secs(0)));
-    c.set_timeouts(update_timeouts.clone()).await?;
+    c.update_timeouts(update_timeouts.clone()).await?;
 
     let got_timeouts = c.get_timeouts().await?;
     assert_eq!(

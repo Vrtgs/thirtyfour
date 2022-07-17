@@ -121,21 +121,27 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
+    /// driver.new_tab().await?;
     /// // Get window handles and switch to the new tab.
-    /// let handles = driver.window_handles().await?;
-    /// driver.switch_to().window(handles[1].clone()).await?;
+    /// let handles = driver.windows().await?;
+    /// driver.switch_to_window(handles[1].clone()).await?;
     /// // We are now controlling the new tab.
-    /// driver.get("http://webappdemo").await?;
+    /// driver.goto("http://webappdemo").await?;
     /// // Close the tab. This will return to the original tab.
-    /// driver.close().await?;
+    /// driver.close_window().await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
+    pub async fn close_window(&self) -> WebDriverResult<()> {
+        self.client.close_window().await?;
+        Ok(())
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to close_window()")]
     pub async fn close(&self) -> WebDriverResult<()> {
         self.client.close_window().await?;
         Ok(())
@@ -152,17 +158,25 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// driver.get("http://webappdemo").await?;
+    /// driver.goto("http://webappdemo").await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn get<S>(&self, url: S) -> WebDriverResult<()>
+    pub async fn goto<S>(&self, url: S) -> WebDriverResult<()>
     where
         S: AsRef<str>,
     {
         Ok(self.client.goto(url.as_ref()).await?)
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to goto()")]
+    pub async fn get<S>(&self, url: S) -> WebDriverResult<()>
+    where
+        S: AsRef<str>,
+    {
+        self.goto(url).await
     }
 
     /// Get the current URL as a String.
@@ -177,7 +191,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// driver.get("http://webappdemo").await?;
+    /// driver.goto("http://webappdemo").await?;
     /// let url = driver.current_url().await?;
     /// #         assert_eq!(url, Url::parse("http://webappdemo/")?);
     /// #         driver.quit().await?;
@@ -200,16 +214,21 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// driver.get("http://webappdemo").await?;
-    /// let source = driver.page_source().await?;
+    /// driver.goto("http://webappdemo").await?;
+    /// let source = driver.source().await?;
     /// #         assert!(source.starts_with(r#"<html lang="en">"#));
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn page_source(&self) -> WebDriverResult<String> {
+    pub async fn source(&self) -> WebDriverResult<String> {
         Ok(self.client.source().await?)
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to source()")]
+    pub async fn page_source(&self) -> WebDriverResult<String> {
+        self.source().await
     }
 
     /// Get the page title as a String.
@@ -223,7 +242,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// driver.get("http://webappdemo").await?;
+    /// driver.goto("http://webappdemo").await?;
     /// let title = driver.title().await?;
     /// #         assert_eq!(title, "Demo Web App");
     /// #         driver.quit().await?;
@@ -249,23 +268,29 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// let elem_text = driver.find_element(By::Name("input1")).await?;
-    /// let elem_button = driver.find_element(By::Id("button-set")).await?;
-    /// let elem_result = driver.find_element(By::Id("input-result")).await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
+    /// let elem_text = driver.find(By::Name("input1")).await?;
+    /// let elem_button = driver.find(By::Id("button-set")).await?;
+    /// let elem_result = driver.find(By::Id("input-result")).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
+    pub async fn find(&self, by: impl Into<By>) -> WebDriverResult<WebElement> {
+        let by = by.into();
         let elem = self.client.find(by.locator()).await.map_err(|e| match e {
             // It's generally only useful to know the element query that failed.
             CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
             x => WebDriverError::CmdError(x),
         })?;
         Ok(self.wrap_element(elem))
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to find()")]
+    pub async fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
+        self.find(by).await
     }
 
     /// Search for all elements on the current page that match the specified selector.
@@ -282,8 +307,8 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// let elems = driver.find_elements(By::ClassName("section")).await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// let elems = driver.find_all(By::ClassName("section")).await?;
     /// for elem in elems {
     ///     assert!(elem.get_attribute("class").await?.expect("Missing class on element").contains("section"));
     /// }
@@ -292,13 +317,19 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
+    pub async fn find_all(&self, by: impl Into<By>) -> WebDriverResult<Vec<WebElement>> {
+        let by = by.into();
         let elems = self.client.find_all(by.locator()).await.map_err(|e| match e {
             // It's generally only useful to know the element query that failed.
             CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
             x => WebDriverError::CmdError(x),
         })?;
         Ok(elems.into_iter().map(|x| self.wrap_element(x)).collect())
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to find_all()")]
+    pub async fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
+        self.find_all(by).await
     }
 
     /// Execute the specified Javascript synchronously and return the result.
@@ -312,18 +343,18 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// #         // Use find_element() to wait for the page to load.
-    /// #         driver.find_element(By::Id("button1")).await?;
-    /// let ret = driver.execute_script(r#"
+    /// #         driver.find(By::Id("button1")).await?;
+    /// let ret = driver.execute(r#"
     ///     let elem = document.getElementById("button1");
     ///     elem.click();
     ///     return elem;
     ///     "#, Vec::new()
     /// ).await?;
-    /// let elem_out = ret.get_element()?;
+    /// let elem_out = ret.element()?;
     /// assert_eq!(elem_out.text().await?, "BUTTON 1");
-    /// let elem = driver.find_element(By::Id("button-result")).await?;
+    /// let elem = driver.find(By::Id("button-result")).await?;
     /// assert_eq!(elem.text().await?, "Button 1 clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -340,14 +371,14 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
-    /// let ret = driver.execute_script(r#"
+    /// #         driver.goto("http://webappdemo").await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
+    /// let ret = driver.execute(r#"
     ///     arguments[0].innerHTML = arguments[1];
     ///     return arguments[0];
     ///     "#, vec![elem.to_json()?, serde_json::to_value("TESTING")?]
     /// ).await?;
-    /// let elem_out = ret.get_element()?;
+    /// let elem_out = ret.element()?;
     /// assert_eq!(elem_out.element_id(), elem.element_id());
     /// assert_eq!(elem_out.text().await?, "TESTING");
     /// #         driver.quit().await?;
@@ -355,13 +386,18 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
+    pub async fn execute(&self, script: &str, args: Vec<Value>) -> WebDriverResult<ScriptRet> {
+        let v = self.client.execute(script, args).await?;
+        Ok(ScriptRet::new(self.clone(), v))
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to execute()")]
     pub async fn execute_script(
         &self,
         script: &str,
         args: Vec<Value>,
     ) -> WebDriverResult<ScriptRet> {
-        let v = self.client.execute(script, args).await?;
-        Ok(ScriptRet::new(self.clone(), v))
+        self.execute(script, args).await
     }
 
     /// Execute the specified Javascrypt asynchronously and return the result.
@@ -375,10 +411,10 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// #         // Use find_element() to wait for the page to load.
-    /// #         driver.find_element(By::Id("button1")).await?;
-    /// let ret = driver.execute_script_async(r#"
+    /// #         driver.find(By::Id("button1")).await?;
+    /// let ret = driver.execute_async(r#"
     ///     // Selenium automatically provides an extra argument which is a
     ///     // function that receives the return value(s).
     ///     let done = arguments[0];
@@ -389,9 +425,9 @@ impl SessionHandle {
     ///     }, 1000);
     ///     "#, Vec::new()
     /// ).await?;
-    /// let elem_out = ret.get_element()?;
+    /// let elem_out = ret.element()?;
     /// assert_eq!(elem_out.text().await?, "BUTTON 1");
-    /// let elem = driver.find_element(By::Id("button-result")).await?;
+    /// let elem = driver.find(By::Id("button-result")).await?;
     /// assert_eq!(elem.text().await?, "Button 1 clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -408,10 +444,10 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// let args = vec![elem.to_json()?, serde_json::to_value("TESTING")?];
-    /// let ret = driver.execute_script_async(r#"
+    /// let ret = driver.execute_async(r#"
     ///     // Selenium automatically provides an extra argument which is a
     ///     // function that receives the return value(s).
     ///     let done = arguments[2];
@@ -421,7 +457,7 @@ impl SessionHandle {
     ///     }, 1000);
     ///     "#, args
     /// ).await?;
-    /// let elem_out = ret.get_element()?;
+    /// let elem_out = ret.element()?;
     /// assert_eq!(elem_out.element_id(), elem.element_id());
     /// assert_eq!(elem_out.text().await?, "TESTING");
     /// #         driver.quit().await?;
@@ -429,13 +465,22 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn execute_script_async(
+    pub async fn execute_async(
         &self,
         script: &str,
         args: Vec<Value>,
     ) -> WebDriverResult<ScriptRet> {
         let v = self.client.execute_async(script, args).await?;
         Ok(ScriptRet::new(self.clone(), v))
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to execute_async()")]
+    pub async fn execute_script_async(
+        &self,
+        script: &str,
+        args: Vec<Value>,
+    ) -> WebDriverResult<ScriptRet> {
+        self.execute_async(script, args).await
     }
 
     /// Get the current window handle.
@@ -449,29 +494,34 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// // Get the current window handle.
-    /// let handle = driver.current_window_handle().await?;
+    /// let handle = driver.window().await?;
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
+    /// driver.new_tab().await?;
     /// // Get window handles and switch to the new tab.
-    /// let handles = driver.window_handles().await?;
-    /// driver.switch_to().window(handles[1].clone()).await?;
+    /// let handles = driver.windows().await?;
+    /// driver.switch_to_window(handles[1].clone()).await?;
     /// // We are now controlling the new tab.
-    /// driver.get("http://webappdemo").await?;
-    /// assert_ne!(driver.current_window_handle().await?, handle);
+    /// driver.goto("http://webappdemo").await?;
+    /// assert_ne!(driver.window().await?, handle);
     /// // Switch back to original tab.
-    /// driver.switch_to().window(handle.clone()).await?;
-    /// assert_eq!(driver.current_window_handle().await?, handle);
+    /// driver.switch_to_window(handle.clone()).await?;
+    /// assert_eq!(driver.window().await?, handle);
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
+    pub async fn window(&self) -> WebDriverResult<WindowHandle> {
         Ok(self.client.window().await?)
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to window()")]
+    pub async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
+        self.window().await
     }
 
     /// Get all window handles for the current session.
@@ -485,23 +535,28 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
-    /// assert_eq!(driver.window_handles().await?.len(), 1);
+    /// assert_eq!(driver.windows().await?.len(), 1);
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
+    /// driver.new_tab().await?;
     /// // Get window handles and switch to the new tab.
-    /// let handles = driver.window_handles().await?;
+    /// let handles = driver.windows().await?;
     /// assert_eq!(handles.len(), 2);
-    /// driver.switch_to().window(handles[1].clone()).await?;
+    /// driver.switch_to_window(handles[1].clone()).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
+    pub async fn windows(&self) -> WebDriverResult<Vec<WindowHandle>> {
         Ok(self.client.windows().await?)
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to windows()")]
+    pub async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
+        self.windows().await
     }
 
     /// Maximize the current window.
@@ -515,7 +570,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// driver.maximize_window().await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -540,7 +595,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// driver.minimize_window().await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -563,7 +618,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// driver.fullscreen_window().await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -590,7 +645,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// driver.set_window_rect(0, 0, 600, 400).await?;
     /// let rect = driver.get_window_rect().await?;
     /// assert_eq!(rect, Rect::new(0, 0, 600, 400));
@@ -641,7 +696,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// driver.back().await?;
     /// #         assert_eq!(driver.title().await?, "");
@@ -665,7 +720,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// #         driver.back().await?;
     /// #         assert_eq!(driver.title().await?, "");
@@ -692,7 +747,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.goto("http://webappdemo").await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// driver.refresh().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
@@ -723,7 +778,7 @@ impl SessionHandle {
     /// #             Some(Duration::new(2, 0)),
     /// #             Some(Duration::new(3, 0))
     /// #         );
-    /// #         driver.set_timeouts(set_timeouts.clone()).await?;
+    /// #         driver.update_timeouts(set_timeouts.clone()).await?;
     /// let timeouts = driver.get_timeouts().await?;
     /// println!("Page load timeout = {:?}", timeouts.page_load());
     /// #         assert_eq!(timeouts.script(), Some(Duration::new(1, 0)));
@@ -764,7 +819,7 @@ impl SessionHandle {
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// // Setting timeouts to None means those timeout values will not be updated.
     /// let timeouts = TimeoutConfiguration::new(None, Some(Duration::new(11, 0)), None);
-    /// driver.set_timeouts(timeouts.clone()).await?;
+    /// driver.update_timeouts(timeouts.clone()).await?;
     /// #         let got_timeouts = driver.get_timeouts().await?;
     /// #         assert_eq!(got_timeouts.page_load(), Some(Duration::new(11, 0)));
     /// #         driver.quit().await?;
@@ -772,9 +827,14 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
+    pub async fn update_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
         self.client.update_timeouts(timeouts).await?;
         Ok(())
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to update_timeouts()")]
+    pub async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
+        self.update_timeouts(timeouts).await
     }
 
     /// Set the implicit wait timeout. This is how long the WebDriver will
@@ -814,7 +874,7 @@ impl SessionHandle {
     /// ```
     pub async fn set_implicit_wait_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, None, Some(time_to_wait));
-        self.set_timeouts(timeouts).await
+        self.update_timeouts(timeouts).await
     }
 
     /// Set the script timeout. This is how long the WebDriver will wait for a
@@ -848,7 +908,7 @@ impl SessionHandle {
     /// ```
     pub async fn set_script_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(Some(time_to_wait), None, None);
-        self.set_timeouts(timeouts).await
+        self.update_timeouts(timeouts).await
     }
 
     /// Set the page load timeout. This is how long the WebDriver will wait
@@ -882,7 +942,7 @@ impl SessionHandle {
     /// ```
     pub async fn set_page_load_timeout(&self, time_to_wait: Duration) -> WebDriverResult<()> {
         let timeouts = TimeoutConfiguration::new(None, Some(time_to_wait), None);
-        self.set_timeouts(timeouts).await
+        self.update_timeouts(timeouts).await
     }
 
     /// Create a new action chain for this session. Action chains can be used
@@ -898,17 +958,17 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// let elem_text = driver.find_element(By::Name("input1")).await?;
-    /// let elem_button = driver.find_element(By::Id("button-set")).await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
+    /// let elem_text = driver.find(By::Name("input1")).await?;
+    /// let elem_button = driver.find(By::Id("button-set")).await?;
     ///
     /// driver.action_chain()
     ///     .send_keys_to_element(&elem_text, "thirtyfour")
     ///     .move_to_element_center(&elem_button)
     ///     .click()
     ///     .perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("input-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("input-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "thirtyfour");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -917,6 +977,38 @@ impl SessionHandle {
     /// ```
     pub fn action_chain(&self) -> ActionChain {
         ActionChain::new(self.clone())
+    }
+
+    /// Create a new Actions chain.
+    ///
+    /// Also see [`WebDriver::action_chain()`] for a builder-based alternative.
+    ///
+    /// ```ignore
+    /// let mouse_actions = MouseActions::new("mouse")
+    ///     .then(PointerAction::Down {
+    ///         button: MOUSE_BUTTON_LEFT,
+    ///     })
+    ///     .then(PointerAction::MoveBy {
+    ///         duration: Some(Duration::from_secs(2)),
+    ///         x: 100,
+    ///         y: 0,
+    ///     })
+    ///     .then(PointerAction::Up {
+    ///         button: MOUSE_BUTTON_LEFT,
+    ///     });
+    /// client.perform_actions(mouse_actions).await?;
+    /// ```
+    ///
+    /// See the documentation for [`Actions`] for more information.
+    /// Perform the specified input actions.
+    ///
+    /// [`Actions`]: fantoccini::actions::Actions
+    pub async fn perform_actions(
+        &self,
+        actions: impl Into<fantoccini::actions::Actions>,
+    ) -> WebDriverResult<()> {
+        self.client.perform_actions(actions).await?;
+        Ok(())
     }
 
     /// Get all cookies.
@@ -931,13 +1023,13 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("https://wikipedia.org").await?;
+    /// #         driver.goto("https://wikipedia.org").await?;
     /// #         let mut set_cookie = Cookie::new("key", "value");
     /// #         set_cookie.set_domain("wikipedia.org");
     /// #         set_cookie.set_path("/");
     /// #         set_cookie.set_same_site(Some(SameSite::Lax));
     /// #         driver.add_cookie(set_cookie).await?;
-    /// let cookies = driver.get_cookies().await?;
+    /// let cookies = driver.get_all_cookies().await?;
     /// for cookie in &cookies {
     ///     println!("Got cookie: {}", cookie.value());
     /// }
@@ -948,8 +1040,13 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie<'static>>> {
+    pub async fn get_all_cookies(&self) -> WebDriverResult<Vec<Cookie<'static>>> {
         Ok(self.client.get_all_cookies().await?)
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to get_all_cookies()")]
+    pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie<'static>>> {
+        self.get_all_cookies().await
     }
 
     /// Get the specified cookie.
@@ -964,13 +1061,13 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("https://wikipedia.org").await?;
+    /// #         driver.goto("https://wikipedia.org").await?;
     /// #         let mut set_cookie = Cookie::new("key", "value");
     /// #         set_cookie.set_domain("wikipedia.org");
     /// #         set_cookie.set_path("/");
     /// #         set_cookie.set_same_site(Some(SameSite::Lax));
     /// #         driver.add_cookie(set_cookie).await?;
-    /// let cookie = driver.get_cookie("key").await?;
+    /// let cookie = driver.get_named_cookie("key").await?;
     /// println!("Got cookie: {}", cookie.value());
     /// #         assert_eq!(cookie.value(),"value");
     /// #         driver.quit().await?;
@@ -978,8 +1075,13 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie<'static>> {
+    pub async fn get_named_cookie(&self, name: &str) -> WebDriverResult<Cookie<'static>> {
         Ok(self.client.get_named_cookie(name).await?)
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to get_named_cookie()")]
+    pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie<'static>> {
+        self.get_named_cookie(name).await
     }
 
     /// Delete the specified cookie.
@@ -994,15 +1096,15 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("https://wikipedia.org").await?;
+    /// #         driver.goto("https://wikipedia.org").await?;
     /// #         let mut set_cookie = Cookie::new("key","value");
     /// #         set_cookie.set_domain("wikipedia.org");
     /// #         set_cookie.set_path("/");
     /// #         set_cookie.set_same_site(Some(SameSite::Lax));
     /// #         driver.add_cookie(set_cookie).await?;
-    /// #         assert!(driver.get_cookie("key").await.is_ok());
+    /// #         assert!(driver.get_named_cookie("key").await.is_ok());
     /// driver.delete_cookie("key").await?;
-    /// #         assert!(driver.get_cookie("key").await.is_err());
+    /// #         assert!(driver.get_named_cookie("key").await.is_err());
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -1024,16 +1126,16 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("https://wikipedia.org").await?;
+    /// #         driver.goto("https://wikipedia.org").await?;
     /// #         let mut set_cookie = Cookie::new("key", "value");
     /// #         set_cookie.set_domain("wikipedia.org");
     /// #         set_cookie.set_path("/");
     /// #         set_cookie.set_same_site(Some(SameSite::Lax));
     /// #         driver.add_cookie(set_cookie).await?;
-    /// #         assert!(driver.get_cookie("key").await.is_ok());
+    /// #         assert!(driver.get_named_cookie("key").await.is_ok());
     /// driver.delete_all_cookies().await?;
-    /// #         assert!(driver.get_cookie("key").await.is_err());
-    /// #         assert!(driver.get_cookies().await?.is_empty());
+    /// #         assert!(driver.get_named_cookie("key").await.is_err());
+    /// #         assert!(driver.get_all_cookies().await?.is_empty());
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -1055,13 +1157,13 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("https://wikipedia.org").await?;
+    /// #         driver.goto("https://wikipedia.org").await?;
     /// let mut cookie = Cookie::new("key", "value");
     /// cookie.set_domain("wikipedia.org");
     /// cookie.set_path("/");
     /// cookie.set_same_site(Some(SameSite::Lax));
     /// driver.add_cookie(cookie.clone()).await?;
-    /// #         let got_cookie = driver.get_cookie("key").await?;
+    /// #         let got_cookie = driver.get_named_cookie("key").await?;
     /// #         assert_eq!(got_cookie.value(), cookie.value());
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -1087,12 +1189,16 @@ impl SessionHandle {
     }
 
     /// Return a SwitchTo struct for switching to another window or frame.
+    #[deprecated(
+        since = "v0.30.0",
+        note = "SwitchTo has been deprecated. Use WebDriver::switch_to_*() methods instead"
+    )]
     pub fn switch_to(&self) -> SwitchTo {
         SwitchTo::new(self.clone())
     }
 
     /// Set the current window name.
-    /// Useful for switching between windows/tabs using `driver.switch_to().window_name(name)`.
+    /// Useful for switching between windows/tabs using `driver.switch_to_named_window(name)`.
     ///
     /// # Example:
     /// ```no_run
@@ -1103,23 +1209,23 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// // Get the current window handle.
-    /// let handle = driver.current_window_handle().await?;
+    /// let handle = driver.window().await?;
     /// driver.set_window_name("main").await?;
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
+    /// driver.new_tab().await?;
     /// // Get window handles and switch to the new tab.
-    /// let handles = driver.window_handles().await?;
-    /// driver.switch_to().window(handles[1].clone()).await?;
+    /// let handles = driver.windows().await?;
+    /// driver.switch_to_window(handles[1].clone()).await?;
     /// // We are now controlling the new tab.
-    /// driver.get("http://webappdemo").await?;
-    /// assert_ne!(driver.current_window_handle().await?, handle);
+    /// driver.goto("http://webappdemo").await?;
+    /// assert_ne!(driver.window().await?, handle);
     /// // Switch back to original tab using window name.
-    /// driver.switch_to().window_name("main").await?;
-    /// assert_eq!(driver.current_window_handle().await?, handle);
+    /// driver.switch_to_named_window("main").await?;
+    /// assert_eq!(driver.window().await?, handle);
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -1127,7 +1233,7 @@ impl SessionHandle {
     /// ```
     pub async fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
         let script = format!(r#"window.name = "{}""#, window_name);
-        self.execute_script(&script, Vec::new()).await?;
+        self.execute(&script, Vec::new()).await?;
         Ok(())
     }
 
@@ -1143,17 +1249,17 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// #         // Get the current window handle.
-    /// #         let handle = driver.current_window_handle().await?;
+    /// #         let handle = driver.window().await?;
     /// let window_title = driver.in_new_tab(|| async {
-    ///     driver.get("https://www.google.com").await?;
+    ///     driver.goto("https://www.google.com").await?;
     ///     driver.title().await
     /// }).await?;
     /// #         assert_eq!(window_title, "Google");
-    /// #         assert_eq!(driver.current_window_handle().await?, handle);
+    /// #         assert_eq!(driver.window().await?, handle);
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -1165,15 +1271,15 @@ impl SessionHandle {
         Fut: Future<Output = WebDriverResult<T>> + Send,
         T: Send,
     {
-        let handle = self.current_window_handle().await?;
+        let handle = self.window().await?;
 
         // Open new tab.
-        self.switch_to().new_tab().await?;
+        self.new_tab().await?;
         let result = f().await;
 
         // Close tab.
-        self.close().await?;
-        self.switch_to().window(handle).await?;
+        self.close_window().await?;
+        self.switch_to_window(handle).await?;
 
         result
     }

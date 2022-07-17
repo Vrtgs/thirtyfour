@@ -15,6 +15,43 @@ impl Alert {
         }
     }
 
+    #[deprecated(
+        since = "v0.30.0",
+        note = "This method has been moved to WebDriver::get_alert_text()"
+    )]
+    pub async fn text(&self) -> WebDriverResult<String> {
+        Ok(self.handle.client.get_alert_text().await?)
+    }
+
+    #[deprecated(
+        since = "v0.30.0",
+        note = "This method has been moved to WebDriver::dismiss_alert()"
+    )]
+    pub async fn dismiss(&self) -> WebDriverResult<()> {
+        self.handle.client.dismiss_alert().await?;
+        Ok(())
+    }
+
+    #[deprecated(
+        since = "v0.30.0",
+        note = "This method has been moved to WebDriver::accept_alert()"
+    )]
+    pub async fn accept(&self) -> WebDriverResult<()> {
+        self.handle.client.accept_alert().await?;
+        Ok(())
+    }
+
+    #[deprecated(
+        since = "v0.30.0",
+        note = "This method has been moved to WebDriver::send_alert_text()"
+    )]
+    pub async fn send_keys(&self, keys: impl AsRef<str>) -> WebDriverResult<()> {
+        self.handle.client.send_alert_text(keys.as_ref()).await?;
+        Ok(())
+    }
+}
+
+impl SessionHandle {
     /// Get the active alert text.
     ///
     /// # Example:
@@ -26,20 +63,19 @@ impl Alert {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find_element(By::Id("alertbutton1")).await?.click().await?;
-    /// let alert = driver.switch_to().alert();
-    /// let text = alert.text().await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find(By::Id("alertbutton1")).await?.click().await?;
+    /// let text = driver.get_alert_text().await?;
     /// #         assert_eq!(text, "Alert 1 showing");
-    /// #         alert.dismiss().await?;
+    /// #         driver.dismiss_alert().await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn text(&self) -> WebDriverResult<String> {
-        Ok(self.handle.client.get_alert_text().await?)
+    pub async fn get_alert_text(&self) -> WebDriverResult<String> {
+        Ok(self.client.get_alert_text().await?)
     }
 
     /// Dismiss the active alert.
@@ -53,19 +89,19 @@ impl Alert {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find_element(By::Id("alertbutton2")).await?.click().await?;
-    /// driver.switch_to().alert().dismiss().await?;
-    /// #         let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find(By::Id("alertbutton2")).await?.click().await?;
+    /// driver.dismiss_alert().await?;
+    /// #         let elem = driver.find(By::Id("alert-result")).await?;
     /// #         assert_eq!(elem.text().await?, "Alert 2 clicked false");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn dismiss(&self) -> WebDriverResult<()> {
-        self.handle.client.dismiss_alert().await?;
+    pub async fn dismiss_alert(&self) -> WebDriverResult<()> {
+        self.client.dismiss_alert().await?;
         Ok(())
     }
 
@@ -80,19 +116,19 @@ impl Alert {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find_element(By::Id("alertbutton2")).await?.click().await?;
-    /// driver.switch_to().alert().accept().await?;
-    /// #         let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find(By::Id("alertbutton2")).await?.click().await?;
+    /// driver.accept_alert().await?;
+    /// #         let elem = driver.find(By::Id("alert-result")).await?;
     /// #         assert_eq!(elem.text().await?, "Alert 2 clicked true");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn accept(&self) -> WebDriverResult<()> {
-        self.handle.client.accept_alert().await?;
+    pub async fn accept_alert(&self) -> WebDriverResult<()> {
+        self.client.accept_alert().await?;
         Ok(())
     }
 
@@ -109,13 +145,12 @@ impl Alert {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find_element(By::Id("alertbutton3")).await?.click().await?;
-    /// let alert = driver.switch_to().alert();
-    /// alert.send_keys("selenium").await?;
-    /// alert.accept().await?;
-    /// #         let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find(By::Id("alertbutton3")).await?.click().await?;
+    /// driver.send_alert_text("selenium").await?;
+    /// driver.accept_alert().await?;
+    /// #         let elem = driver.find(By::Id("alert-result")).await?;
     /// #         assert_eq!(elem.text().await?, "selenium");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -132,23 +167,22 @@ impl Alert {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find_element(By::Id("alertbutton3")).await?.click().await?;
-    /// let alert = driver.switch_to().alert();
-    /// alert.send_keys("selenium").await?;
-    /// alert.send_keys(Key::Control + "a".to_string()).await?;
-    /// alert.send_keys("thirtyfour").await?;
-    /// #         alert.accept().await?;
-    /// #         let elem = driver.find_element(By::Id("alert-result")).await?;
+    /// #         driver.goto("http://webappdemo").await?;
+    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
+    /// #         driver.find(By::Id("alertbutton3")).await?.click().await?;
+    /// # driver.send_alert_text("selenium").await?;
+    /// driver.send_alert_text(Key::Control + "a".to_string()).await?;
+    /// driver.send_alert_text("thirtyfour").await?;
+    /// #         driver.accept_alert().await?;
+    /// #         let elem = driver.find(By::Id("alert-result")).await?;
     /// #         assert_eq!(elem.text().await?, "thirtyfour");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn send_keys(&self, keys: impl AsRef<str>) -> WebDriverResult<()> {
-        self.handle.client.send_alert_text(keys.as_ref()).await?;
+    pub async fn send_alert_text(&self, keys: impl AsRef<str>) -> WebDriverResult<()> {
+        self.client.send_alert_text(keys.as_ref()).await?;
         Ok(())
     }
 }

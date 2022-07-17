@@ -186,7 +186,7 @@ where
         let attribute_name: String = attribute_name.clone();
         let value = value.clone();
         Box::pin(async move {
-            match elem.get_attribute(&attribute_name).await {
+            match elem.attr(&attribute_name).await {
                 Ok(Some(x)) => Ok(value.is_match(&x)),
                 Ok(None) => Ok(false),
                 Err(e) => handle_errors(Err(e), ignore_errors),
@@ -211,7 +211,7 @@ where
         let attribute_name: String = attribute_name.clone();
         let value = value.clone();
         Box::pin(async move {
-            match elem.get_attribute(&attribute_name).await {
+            match elem.attr(&attribute_name).await {
                 Ok(Some(x)) => Ok(!value.is_match(&x)),
                 Ok(None) => Ok(true),
                 Err(e) => handle_errors(Err(e), ignore_errors),
@@ -236,7 +236,7 @@ where
         let desired_attributes = desired_attributes.clone();
         Box::pin(async move {
             for (attribute_name, value) in &desired_attributes {
-                match elem.get_attribute(attribute_name).await {
+                match elem.attr(attribute_name).await {
                     Ok(Some(x)) => {
                         if !value.is_match(&x) {
                             return Ok(false);
@@ -267,7 +267,7 @@ where
         let desired_attributes = desired_attributes.clone();
         Box::pin(async move {
             for (attribute_name, value) in &desired_attributes {
-                match elem.get_attribute(attribute_name).await {
+                match elem.attr(attribute_name).await {
                     Ok(Some(x)) => {
                         if value.is_match(&x) {
                             return Ok(false);
@@ -298,7 +298,7 @@ where
         let property_name = property_name.clone();
         let value = value.clone();
         Box::pin(async move {
-            match elem.get_property(&property_name).await {
+            match elem.prop(&property_name).await {
                 Ok(Some(x)) => Ok(value.is_match(&x)),
                 Ok(None) => Ok(false),
                 Err(e) => handle_errors(Err(e), ignore_errors),
@@ -323,7 +323,7 @@ where
         let property_name = property_name.clone();
         let value = value.clone();
         Box::pin(async move {
-            match elem.get_property(&property_name).await {
+            match elem.prop(&property_name).await {
                 Ok(Some(x)) => Ok(!value.is_match(&x)),
                 Ok(None) => Ok(true),
                 Err(e) => handle_errors(Err(e), ignore_errors),
@@ -348,7 +348,7 @@ where
         let desired_properties = desired_properties.clone();
         Box::pin(async move {
             for (property_name, value) in &desired_properties {
-                match elem.get_property(property_name).await {
+                match elem.prop(property_name).await {
                     Ok(Some(x)) => {
                         if !value.is_match(&x) {
                             return Ok(false);
@@ -379,7 +379,7 @@ where
         let desired_properties = desired_properties.clone();
         Box::pin(async move {
             for (property_name, value) in &desired_properties {
-                match elem.get_property(property_name).await {
+                match elem.prop(property_name).await {
                     Ok(Some(x)) => {
                         if value.is_match(&x) {
                             return Ok(false);
@@ -411,7 +411,7 @@ where
         let value = value.clone();
         Box::pin(async move {
             handle_errors(
-                elem.get_css_property(&css_property_name).await.map(|x| value.is_match(&x)),
+                elem.css_value(&css_property_name).await.map(|x| value.is_match(&x)),
                 ignore_errors,
             )
         })
@@ -435,7 +435,7 @@ where
         let value = value.clone();
         Box::pin(async move {
             handle_errors(
-                elem.get_css_property(&css_property_name).await.map(|x| !value.is_match(&x)),
+                elem.css_value(&css_property_name).await.map(|x| !value.is_match(&x)),
                 ignore_errors,
             )
         })
@@ -459,7 +459,7 @@ where
         let desired_css_properties = desired_css_properties.clone();
         Box::pin(async move {
             for (css_property_name, value) in &desired_css_properties {
-                match elem.get_css_property(css_property_name).await {
+                match elem.css_value(css_property_name).await {
                     Ok(x) => {
                         if !value.is_match(&x) {
                             return Ok(false);
@@ -490,7 +490,7 @@ where
         let desired_css_properties = desired_css_properties.clone();
         Box::pin(async move {
             for (css_property_name, value) in &desired_css_properties {
-                match elem.get_css_property(css_property_name).await {
+                match elem.css_value(css_property_name).await {
                     Ok(x) => {
                         if value.is_match(&x) {
                             return Ok(false);

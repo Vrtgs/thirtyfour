@@ -74,7 +74,7 @@ pub struct SelectElement {
 impl SelectElement {
     /// Instantiate a new SelectElement struct. The specified element must be a `<select>` element.
     pub async fn new(element: &WebElement) -> WebDriverResult<SelectElement> {
-        let multiple = element.get_attribute("multiple").await?.filter(|x| x != "false").is_some();
+        let multiple = element.attr("multiple").await?.filter(|x| x != "false").is_some();
         let element = element.clone();
         Ok(SelectElement {
             element,
@@ -84,7 +84,7 @@ impl SelectElement {
 
     /// Return a vec of all options belonging to this select tag.
     pub async fn options(&self) -> WebDriverResult<Vec<WebElement>> {
-        self.element.find_elements(By::Tag("option")).await
+        self.element.find_all(By::Tag("option")).await
     }
 
     /// Return a vec of all selected options belonging to this select tag.
@@ -119,7 +119,7 @@ impl SelectElement {
     /// Set the selection state of options matching the specified value.
     async fn set_selection_by_value(&self, value: &str, select: bool) -> WebDriverResult<()> {
         let selector = format!("option[value={}]", escape_string(value));
-        let options = self.element.find_elements(By::Css(&selector)).await?;
+        let options = self.element.find_all(By::Css(&selector)).await?;
         for option in options {
             set_selected(&option, select).await?;
             if !self.multiple {
@@ -132,7 +132,7 @@ impl SelectElement {
     /// Set the selection state of the option at the specified index.
     async fn set_selection_by_index(&self, index: u32, select: bool) -> WebDriverResult<()> {
         let selector = format!("option:nth-of-type({})", index + 1);
-        let option = self.element.find_element(By::Css(&selector)).await?;
+        let option = self.element.find(By::Css(&selector)).await?;
         set_selected(&option, select).await?;
         Ok(())
     }
@@ -148,7 +148,7 @@ impl SelectElement {
     ///       selenium library.
     async fn set_selection_by_visible_text(&self, text: &str, select: bool) -> WebDriverResult<()> {
         let mut xpath = format!(".//option[normalize-space(.) = {}]", escape_string(text));
-        let options = match self.element.find_elements(By::XPath(&xpath)).await {
+        let options = match self.element.find_all(By::XPath(&xpath)).await {
             Ok(elems) => elems,
             Err(WebDriverError::NoSuchElement(_)) => Vec::new(),
             Err(e) => return Err(e),
@@ -170,7 +170,7 @@ impl SelectElement {
             } else {
                 xpath =
                     format!(".//option[contains(.,{})]", escape_string(substring_without_space));
-                self.element.find_elements(By::XPath(&xpath)).await?
+                self.element.find_all(By::XPath(&xpath)).await?
             };
             for candidate in candidates {
                 if text == candidate.text().await? {
@@ -200,7 +200,7 @@ impl SelectElement {
         select: bool,
     ) -> WebDriverResult<()> {
         let xpath = format!(".//option[{}]", condition);
-        let options = self.element.find_elements(By::XPath(&xpath)).await?;
+        let options = self.element.find_all(By::XPath(&xpath)).await?;
         if options.is_empty() {
             return Err(WebDriverError::NoSuchElement(format!(
                 "Could not locate element matching XPath condition: {:?}",

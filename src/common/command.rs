@@ -88,3 +88,29 @@ impl By {
         }
     }
 }
+
+impl<'a> From<&'a By> for Locator<'a> {
+    fn from(by: &'a By) -> Self {
+        by.locator()
+    }
+}
+
+impl<'a> From<Locator<'a>> for By {
+    fn from(locator: Locator<'a>) -> Self {
+        match locator {
+            Locator::Css(s) => By::Css(s),
+            Locator::Id(s) => By::Id(s),
+            Locator::LinkText(s) => By::LinkText(s),
+            Locator::XPath(s) => By::XPath(s),
+        }
+    }
+}
+
+pub fn locator_to_string<'a>(locator: Locator<'a>) -> String {
+    match locator {
+        Locator::Css(s) => format!("Css({s})"),
+        Locator::Id(s) => format!("Id({s}"),
+        Locator::LinkText(s) => format!("LinkText({s})"),
+        Locator::XPath(s) => format!("XPath({s})"),
+    }
+}

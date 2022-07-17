@@ -94,7 +94,7 @@ pub enum ElementQuerySource {
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
-/// #         driver.get("http://webappdemo").await?;
+/// #         driver.goto("http://webappdemo").await?;
 /// // WebDriver::query() example.
 /// let elem = driver.query(By::Css("div[data-section='section-buttons']")).first().await?;
 /// // WebElement::query() example.
@@ -304,8 +304,8 @@ impl ElementQuery {
     /// Execute the specified selector and return any matched WebElements.
     async fn fetch_elements_from_source(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         match &self.source {
-            ElementQuerySource::Driver(driver) => driver.find_elements(by).await,
-            ElementQuerySource::Element(element) => element.find_elements(by).await,
+            ElementQuerySource::Driver(driver) => driver.find_all(by).await,
+            ElementQuerySource::Element(element) => element.find_all(by).await,
         }
     }
 

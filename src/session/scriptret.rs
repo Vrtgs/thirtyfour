@@ -25,8 +25,13 @@ impl ScriptRet {
     }
 
     /// Get the raw JSON value.
-    pub fn value(&self) -> &serde_json::Value {
+    pub fn json(&self) -> &serde_json::Value {
         &self.value
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to json()")]
+    pub fn value(&self) -> &serde_json::Value {
+        self.json()
     }
 
     pub fn convert<T>(&self) -> WebDriverResult<T>
@@ -39,15 +44,25 @@ impl ScriptRet {
 
     /// Get a single WebElement return value.
     /// Your script must return only a single element for this to work.
-    pub fn get_element(self) -> WebDriverResult<WebElement> {
+    pub fn element(self) -> WebDriverResult<WebElement> {
         WebElement::from_json(self.value, self.handle)
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to element()")]
+    pub fn get_element(self) -> WebDriverResult<WebElement> {
+        self.element()
     }
 
     /// Get a vec of WebElements from the return value.
     /// Your script must return an array of elements for this to work.
-    pub fn get_elements(self) -> WebDriverResult<Vec<WebElement>> {
+    pub fn elements(self) -> WebDriverResult<Vec<WebElement>> {
         let values: Vec<Value> = serde_json::from_value(self.value)?;
         let handle = self.handle;
         values.into_iter().map(|x| WebElement::from_json(x, handle.clone())).collect()
+    }
+
+    #[deprecated(since = "v0.30.0", note = "This method has been renamed to elements()")]
+    pub fn get_elements(self) -> WebDriverResult<Vec<WebElement>> {
+        self.elements()
     }
 }
