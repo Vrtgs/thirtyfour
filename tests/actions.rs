@@ -1,9 +1,7 @@
 //! Actions tests
 use crate::common::sample_page_url;
 use serial_test::serial;
-use std::time::Duration;
 use thirtyfour::prelude::*;
-use time::Instant;
 
 mod common;
 
@@ -14,12 +12,12 @@ async fn actions_key(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     // Test key down/up.
     let elem = c.find_element(By::Id("text-input")).await?;
     elem.send_keys("a").await?;
-    assert_eq!(elem.prop("value").await?.unwrap(), "a");
+    assert_eq!(elem.get_property("value").await?.unwrap(), "a");
 
     elem.click().await?;
     c.action_chain().key_down(Key::Backspace).key_up(Key::Backspace).perform().await?;
     let elem = c.find_element(By::Id("text-input")).await?;
-    assert_eq!(elem.prop("value").await?.unwrap(), "");
+    assert_eq!(elem.get_property("value").await?.unwrap(), "");
     Ok(())
 }
 
@@ -45,9 +43,9 @@ async fn actions_mouse_move(c: WebDriver, port: u16) -> Result<(), WebDriverErro
     c.get(&sample_url).await?;
 
     let elem = c.find_element(By::Id("button-alert")).await?;
-    let rect = elem.rectangle().await?;
-    let elem_center_x = rect.0 + (rect.2 / 2.0);
-    let elem_center_y = rect.1 + (rect.3 / 2.0);
+    let rect = elem.rect().await?;
+    let elem_center_x = rect.x + (rect.width / 2.0);
+    let elem_center_y = rect.y + (rect.height / 2.0);
 
     // Test mouse MoveBy.
 
@@ -77,7 +75,7 @@ async fn actions_release(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
 
     // Add initial text.
     let elem = c.find_element(By::Id("text-input")).await?;
-    assert_eq!(elem.prop("value").await?.unwrap(), "");
+    assert_eq!(elem.get_property("value").await?.unwrap(), "");
 
     // Press CONTROL key down and hold it.
     c.action_chain().key_down(Key::Control).perform().await?;
@@ -93,7 +91,7 @@ async fn actions_release(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
     // However if the Control key was released (as expected)
     // then this will type 'a' into the text element.
     c.action_chain().key_down('a').perform().await?;
-    assert_eq!(elem.prop("value").await?.unwrap(), "a");
+    assert_eq!(elem.get_property("value").await?.unwrap(), "a");
     Ok(())
 }
 

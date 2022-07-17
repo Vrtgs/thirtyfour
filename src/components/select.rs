@@ -129,17 +129,12 @@ impl SelectElement {
         Ok(())
     }
 
-    /// Set the selection state of the option at the specified index. This is done by examining
-    /// the "index" attribute of an element and not merely by counting.
+    /// Set the selection state of the option at the specified index.
     async fn set_selection_by_index(&self, index: u32, select: bool) -> WebDriverResult<()> {
-        let str_index: String = index.to_string();
-        for option in self.options().await? {
-            if option.get_attribute("index").await?.filter(|i| i == &str_index).is_some() {
-                set_selected(&option, select).await?;
-                return Ok(());
-            }
-        }
-        Err(WebDriverError::NoSuchElement(format!("Could not locate element with index {}", index)))
+        let selector = format!("option:nth-of-type({})", index + 1);
+        let option = self.element.find_element(By::Css(&selector)).await?;
+        set_selected(&option, select).await?;
+        Ok(())
     }
 
     /// Set the selection state of options that display text matching the specified text.

@@ -25,8 +25,8 @@ async fn element_attr(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let sample_url = sample_page_url(port);
     c.get(&sample_url).await?;
     let elem = c.find_element(By::Id("checkbox-option-1")).await?;
-    assert_eq!(elem.attr("id").await?.unwrap(), "checkbox-option-1");
-    assert!(elem.attr("invalid-attribute").await?.is_none());
+    assert_eq!(elem.get_attribute("id").await?.unwrap(), "checkbox-option-1");
+    assert!(elem.get_attribute("invalid-attribute").await?.is_none());
     Ok(())
 }
 
@@ -34,9 +34,9 @@ async fn element_prop(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let sample_url = sample_page_url(port);
     c.get(&sample_url).await?;
     let elem = c.find_element(By::Id("checkbox-option-1")).await?;
-    assert_eq!(elem.prop("id").await?.unwrap(), "checkbox-option-1");
-    assert_eq!(elem.prop("checked").await?.unwrap(), "false");
-    assert!(elem.attr("invalid-property").await?.is_none());
+    assert_eq!(elem.get_property("id").await?.unwrap(), "checkbox-option-1");
+    assert_eq!(elem.get_property("checked").await?.unwrap(), "false");
+    assert!(elem.get_attribute("invalid-property").await?.is_none());
     Ok(())
 }
 
@@ -44,8 +44,8 @@ async fn element_css_value(c: WebDriver, port: u16) -> Result<(), WebDriverError
     let sample_url = sample_page_url(port);
     c.get(&sample_url).await?;
     let elem = c.find_element(By::Id("checkbox-hidden")).await?;
-    assert_eq!(elem.css_value("display").await?, "none");
-    assert_eq!(elem.css_value("invalid-css-value").await?, "");
+    assert_eq!(elem.get_css_property("display").await?, "none");
+    assert_eq!(elem.get_css_property("invalid-css-value").await?, "");
     Ok(())
 }
 
@@ -62,18 +62,18 @@ async fn element_rect(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let sample_url = sample_page_url(port);
     c.get(&sample_url).await?;
     let elem = c.find_element(By::Id("button-alert")).await?;
-    let rect = elem.rectangle().await?;
+    let rect = elem.rect().await?;
     // Rather than try to verify the exact position and size of the element,
     // let's just verify that the returned values deserialized ok and
     // are within the expected range.
-    assert!(rect.0 > 0.0);
-    assert!(rect.0 < 100.0);
-    assert!(rect.1 > 0.0);
-    assert!(rect.1 < 1000.0);
-    assert!(rect.2 > 0.0);
-    assert!(rect.2 < 200.0);
-    assert!(rect.3 > 0.0);
-    assert!(rect.3 < 200.0);
+    assert!(rect.x > 0.0);
+    assert!(rect.x < 100.0);
+    assert!(rect.y > 0.0);
+    assert!(rect.y < 1000.0);
+    assert!(rect.width > 0.0);
+    assert!(rect.width < 200.0);
+    assert!(rect.height > 0.0);
+    assert!(rect.height < 200.0);
     Ok(())
 }
 
@@ -81,9 +81,9 @@ async fn element_send_keys(c: WebDriver, port: u16) -> Result<(), WebDriverError
     let sample_url = sample_page_url(port);
     c.get(&sample_url).await?;
     let elem = c.find_element(By::Id("text-input")).await?;
-    assert_eq!(elem.prop("value").await?.unwrap(), "");
+    assert_eq!(elem.get_property("value").await?.unwrap(), "");
     elem.send_keys("fantoccini").await?;
-    assert_eq!(elem.prop("value").await?.unwrap(), "fantoccini");
+    assert_eq!(elem.get_property("value").await?.unwrap(), "fantoccini");
     let select_all = if cfg!(target_os = "macos") {
         Key::Command + "a"
     } else {
@@ -92,7 +92,7 @@ async fn element_send_keys(c: WebDriver, port: u16) -> Result<(), WebDriverError
     let backspace = Key::Backspace.to_string();
     elem.send_keys(&select_all).await?;
     elem.send_keys(&backspace).await?;
-    assert_eq!(elem.prop("value").await?.unwrap(), "");
+    assert_eq!(elem.get_property("value").await?.unwrap(), "");
 
     Ok(())
 }

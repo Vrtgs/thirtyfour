@@ -32,7 +32,7 @@ async fn get_active_element(c: WebDriver, port: u16) -> Result<(), WebDriverErro
     c.find_element(By::Css("#select1")).await?.click().await?;
 
     let active = c.switch_to().active_element().await?;
-    assert_eq!(active.attr("id").await?, Some(String::from("select1")));
+    assert_eq!(active.get_attribute("id").await?, Some(String::from("select1")));
 
     c.close().await
 }
@@ -68,7 +68,7 @@ async fn iframe_switch(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
 
     // find and switch into the iframe
     let iframe_element = c.find_element(By::Id("iframe")).await?;
-    iframe_element.enter_frame().await?;
+    c.switch_to().frame_element(&iframe_element).await?;
 
     // search for something in the iframe
     let button_in_iframe = c.find_element(By::Id("iframe_button")).await?;
@@ -204,27 +204,29 @@ async fn select_by_index(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
     let url = sample_page_url(port);
     c.get(&url).await?;
 
-    let select_element = c.find_element(By::Css("#select1")).await?;
+    let elem = c.find_element(By::Css("#select1")).await?;
+    let select_element = SelectElement::new(&elem).await?;
 
     // Get first display text
-    let initial_text = select_element.prop("value").await?;
+    let initial_text = elem.get_property("value").await?;
     assert_eq!(Some("Select1-Option1".into()), initial_text);
 
-    // Select second option
-    select_element.clone().select_by_index(1).await?;
+    // Select 2nd option by index.
+    select_element.select_by_index(1).await?;
 
     // Get display text after selection
-    let text_after_selecting = select_element.prop("value").await?;
+    let text_after_selecting = elem.get_property("value").await?;
     assert_eq!(Some("Select1-Option2".into()), text_after_selecting);
 
     // Check that the second select is not changed
-    let select2_text = c.find_element(By::Css("#select2")).await?.prop("value").await?;
+    let select2_text = c.find_element(By::Css("#select2")).await?.get_property("value").await?;
     assert_eq!(Some("Select2-Option1".into()), select2_text);
 
     // Show off that it selects only options and skip any other elements
-    let select_element = c.find_element(By::Css("#select2")).await?;
-    select_element.clone().select_by_index(1).await?;
-    let text = select_element.prop("value").await?;
+    let elem = c.find_element(By::Css("#select2")).await?;
+    let select_element = SelectElement::new(&elem).await?;
+    select_element.select_by_index(1).await?;
+    let text = elem.get_property("value").await?;
     assert_eq!(Some("Select2-Option2".into()), text);
 
     Ok(())
@@ -234,21 +236,22 @@ async fn select_by_label(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
     let url = sample_page_url(port);
     c.get(&url).await?;
 
-    let select_element = c.find_element(By::Css("#select1")).await?;
+    let elem = c.find_element(By::Css("#select1")).await?;
+    let select_element = SelectElement::new(&elem).await?;
 
     // Get first display text
-    let initial_text = select_element.prop("value").await?;
+    let initial_text = elem.get_property("value").await?;
     assert_eq!(Some("Select1-Option1".into()), initial_text);
 
     // Select second option
-    select_element.clone().select_by_label("Select1-Option2").await?;
+    select_element.select_by_exact_text("Select1-Option2").await?;
 
     // Get display text after selection
-    let text_after_selecting = select_element.prop("value").await?;
+    let text_after_selecting = elem.get_property("value").await?;
     assert_eq!(Some("Select1-Option2".into()), text_after_selecting);
 
     // Check that the second select is not changed
-    let select2_text = c.find_element(By::Css("#select2")).await?.prop("value").await?;
+    let select2_text = c.find_element(By::Css("#select2")).await?.get_property("value").await?;
     assert_eq!(Some("Select2-Option1".into()), select2_text);
 
     Ok(())
@@ -518,7 +521,7 @@ mod chrome {
     }
 
     #[test]
-    fn select_by_index_label() {
+    fn select_by_index_test() {
         local_tester!(select_by_index, "chrome");
     }
 

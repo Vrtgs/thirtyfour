@@ -4,7 +4,6 @@ use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
-use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -65,20 +64,6 @@ use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHe
 pub struct WebElement {
     pub element: Element,
     pub handle: SessionHandle,
-}
-
-impl Deref for WebElement {
-    type Target = Element;
-
-    fn deref(&self) -> &Self::Target {
-        &self.element
-    }
-}
-
-impl DerefMut for WebElement {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.element
-    }
 }
 
 impl Debug for WebElement {

@@ -1,6 +1,5 @@
 //! Alert tests
 use crate::common::sample_page_url;
-use fantoccini::error::CmdError;
 use serial_test::serial;
 use thirtyfour::prelude::*;
 
