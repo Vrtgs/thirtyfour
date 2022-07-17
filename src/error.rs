@@ -13,6 +13,8 @@ pub enum WebDriverError {
     NoSuchElement(String),
     #[error("no such window: {0}")]
     NoSuchWindow(String),
+    #[error("no such alert: {0}")]
+    NoSuchAlert(String),
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
     #[error("io error: {0}")]
@@ -31,6 +33,7 @@ impl From<CmdError> for WebDriverError {
         match ce {
             CmdError::NoSuchElement(..) => WebDriverError::NoSuchElement(ce_string),
             CmdError::NoSuchWindow(..) => WebDriverError::NoSuchWindow(ce_string),
+            CmdError::NoSuchAlert(..) => WebDriverError::NoSuchAlert(ce_string),
             CmdError::Json(x) => WebDriverError::Json(x),
             x => WebDriverError::CmdError(x),
         }

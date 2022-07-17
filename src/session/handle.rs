@@ -22,7 +22,7 @@ use crate::{By, Rect, SessionId, SwitchTo, WebElement};
 /// as the [`fantoccini::Client`] to allow sending commands to the underlying WebDriver.
 #[derive(Clone)]
 pub struct SessionHandle {
-    pub(crate) client: fantoccini::Client,
+    pub client: fantoccini::Client,
     pub config: WebDriverConfig,
 }
 
@@ -1165,21 +1165,14 @@ impl SessionHandle {
         Fut: Future<Output = WebDriverResult<T>> + Send,
         T: Send,
     {
-        let existing_handles = self.window_handles().await?;
         let handle = self.current_window_handle().await?;
 
         // Open new tab.
-        self.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
-        let mut new_handles = self.window_handles().await?;
-        new_handles.retain(|h| !existing_handles.contains(h));
-        if new_handles.len() != 1 {
-            return Err(WebDriverError::CustomError("couldn't find new tab".to_string()));
-        }
-        self.switch_to().window(new_handles[0].clone()).await?;
+        self.switch_to().new_tab().await?;
         let result = f().await;
 
         // Close tab.
-        self.execute_script(r#"window.close();"#, Vec::new()).await?;
+        self.close().await?;
         self.switch_to().window(handle).await?;
 
         result

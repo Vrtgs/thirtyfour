@@ -44,7 +44,12 @@ urlparse = "0.7"
 [dev-dependencies]
 assert_matches = "1.5.0"
 color-eyre = "0.6"
+hyper = { version = "0.14", features = ["server", "tcp"] }
 regex = "1"
+serial_test = "0.8"
+time = "0.3"
+
+
 
 [[example]]
 name = "tokio_async"

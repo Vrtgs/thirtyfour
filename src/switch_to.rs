@@ -184,6 +184,58 @@ impl SwitchTo {
         Ok(())
     }
 
+    /// Switch to a new window.
+    ///
+    /// # Example:
+    /// ```no_run
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         assert_eq!(driver.title().await?, "Demo Web App");
+    /// // Open a new window.
+    /// let handle = driver.switch_to().new_window().await?;
+    /// #         driver.quit().await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn new_window(self) -> WebDriverResult<WindowHandle> {
+        let response = self.handle.client.new_window(false).await?;
+        Ok(response.handle)
+    }
+
+    /// Switch to a new tab.
+    ///
+    /// # Example:
+    /// ```no_run
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// #         driver.get("http://webappdemo").await?;
+    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         assert_eq!(driver.title().await?, "Demo Web App");
+    /// // Open a new window.
+    /// let handle = driver.switch_to().new_tab().await?;
+    /// #         driver.quit().await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn new_tab(self) -> WebDriverResult<WindowHandle> {
+        let response = self.handle.client.new_window(true).await?;
+        Ok(response.handle)
+    }
+
     /// Switch to the specified window.
     ///
     /// # Example:
@@ -199,7 +251,7 @@ impl SwitchTo {
     /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
     /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
+    /// driver.switch_to().new_tab().await?;
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.window_handles().await?;
     /// driver.switch_to().window(handles[1].clone()).await?;
@@ -235,7 +287,7 @@ impl SwitchTo {
     /// // Set main window name so we can switch back easily.
     /// driver.set_window_name("mywindow").await?;
     /// // Open a new tab.
-    /// driver.execute_script(r#"window.open("about:blank", target="_blank");"#, Vec::new()).await?;
+    /// driver.switch_to().new_tab().await?;
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.window_handles().await?;
     /// driver.switch_to().window(handles[1].clone()).await?;

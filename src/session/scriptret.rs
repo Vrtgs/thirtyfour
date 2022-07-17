@@ -7,6 +7,7 @@ use serde_json::Value;
 /// Helper struct for getting return values from scripts.
 /// See the examples for [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
 /// and [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script).
+#[derive(Debug)]
 pub struct ScriptRet {
     handle: SessionHandle,
     value: serde_json::Value,

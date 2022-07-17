@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sample Page</title>
+    <style>
+        .vertical  {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <div class="vertical">
+        <nav id="navigation">
+            <a href="other_page.html" id="other_page_id">Other Page</a>
+            <a href="iframe_outer.html" id="iframe_page_id">Other Page</a>
+        </nav>
+        <div id="content">
+
+            <p>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                Integer quis sapien eget quam hendrerit porttitor.
+                Vivamus bibendum maximus tortor sed vehicula.
+                Vivamus sollicitudin arcu feugiat felis auctor, at tincidunt velit aliquam.
+                Mauris ac orci tellus.
+                In sagittis, turpis eu pulvinar semper, lacus lorem aliquam nibh, quis rutrum turpis nisi et risus.
+                Nullam consequat turpis at turpis egestas, ac volutpat libero malesuada. Maecenas pretium luctus dui eu ornare.
+                Duis cursus leo eget placerat placerat.
+                Aenean mauris tortor, tempus vel sagittis in, pretium eget mauris.
+                Cras quam lorem, aliquet a lectus eu, malesuada faucibus ex.
+                Sed porttitor nunc enim, at interdum nunc ultrices et.
+                Nulla mollis viverra arcu at pretium.
+                Mauris et sem accumsan, auctor libero et, gravida nisi.
+                Aliquam erat volutpat.
+                Nunc eget bibendum ipsum.
+                Etiam convallis congue felis id elementum.
+            </p>
+            <p>
+                Suspendisse vitae ultricies magna.
+                Curabitur sit amet tempus quam, et pulvinar enim.
+                Cras aliquet malesuada felis vitae semper.
+                Integer id est fermentum turpis pulvinar suscipit eget ut diam.
+                Etiam nulla sapien, pulvinar nec purus fringilla, tincidunt sagittis nunc.
+                Suspendisse potenti.
+                Integer sem ex, mattis in mollis vel, posuere in justo.
+                Etiam laoreet consectetur libero, sed sagittis ex finibus eget.
+                Maecenas vitae odio in eros eleifend pharetra quis ac sapien.
+            </p>
+            <p>
+                Proin sagittis elit leo, non bibendum eros scelerisque non.
+                Praesent ultricies pulvinar iaculis.
+                Mauris in urna eget nisl dapibus faucibus aliquam fringilla sapien.
+                Sed lacinia, magna bibendum vulputate malesuada, est justo porttitor augue, a iaculis sapien lorem ut turpis.
+                Nulla a ante fringilla mi blandit tincidunt.
+                Nam venenatis sodales sagittis.
+                Ut ac mauris vel risus laoreet euismod.
+                Mauris venenatis purus non nunc maximus congue.
+                Vivamus a augue vel lorem ornare ultricies.
+            </p>
+
+
+            <form>
+                <textarea name="some_textarea"></textarea>
+            </form>
+        </div>
+        <div id="footer">
+
+        </div>
+    </div>
+    <div>
+        <select id="select1">
+            <option selected>Select1-Option1</option>
+            <option>Select1-Option2</option>
+            <option>Select1-Option3</option>
+        </select>
+        <select id="select2">
+            <option selected>Select2-Option1</option>
+            <tr></tr>
+            <option>Select2-Option2</option>
+            <option>Select2-Option3</option>
+        </select>
+    </div>
+    <div>
+        <select id="select3">
+            <option id="select3-option-1" selected>Select3-Option1</option>
+            <option id="select3-option-2">Select3-Option2</option>
+            <option id="select3-option-3">Select3-Option3</option>
+        </select>
+    </div>
+    <div>
+        <script>
+            function showAlert() {
+                alert("This is an alert");
+            }
+
+            function showConfirm() {
+                const elem = document.getElementById("alert-answer");
+                if (confirm("Press OK or Cancel")) {
+                    elem.innerHTML = "OK";
+                } else {
+                    elem.innerHTML = "Cancel";
+                }
+            }
+
+            function showPrompt() {
+                document.getElementById("alert-answer").innerHTML = prompt("What is your name?");
+            }
+        </script>
+        <br /><br />
+        <button id="button-alert" onclick="showAlert()">Show alert</button>
+        <button id="button-confirm" onclick="showConfirm()">Show confirm</button>
+        <button id="button-prompt" onclick="showPrompt()">Show prompt</button>
+        <div id="alert-answer"></div>
+    </div>
+    <div>
+        <label>
+            <input type="checkbox" id="checkbox-option-1" />
+            Option 1
+        </label>
+
+        <label>
+            <input type="checkbox" id="checkbox-disabled" disabled />
+            Option 2
+        </label>
+
+        <label>
+            <input type="checkbox" id="checkbox-hidden" style="display: none;" />
+            Option 3
+        </label>
+    </div>
+    <div>
+        <label for="text-input">Text:</label>
+        <input type="text" id="text-input" style="width: 200px; font-size:14px;"/>
+    </div>
+</body>
+</html>
