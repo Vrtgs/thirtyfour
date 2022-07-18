@@ -1,5 +1,6 @@
 //! Tests that don't make use of external websites.
 use crate::common::sample_page_url;
+use cookie::SameSite;
 use serial_test::serial;
 use std::time::Duration;
 use thirtyfour::prelude::*;
@@ -68,6 +69,71 @@ async fn timeouts(c: WebDriver, _: u16) -> Result<(), WebDriverError> {
         )
     );
 
+    c.set_implicit_wait_timeout(Duration::from_secs(10)).await?;
+
+    let got_timeouts = c.get_timeouts().await?;
+    assert_eq!(
+        got_timeouts,
+        TimeoutConfiguration::new(
+            new_timeouts.script(),
+            new_timeouts.page_load(),
+            Some(Duration::from_secs(10))
+        )
+    );
+
+    c.set_page_load_timeout(Duration::from_secs(10)).await?;
+
+    let got_timeouts = c.get_timeouts().await?;
+    assert_eq!(
+        got_timeouts,
+        TimeoutConfiguration::new(
+            new_timeouts.script(),
+            Some(Duration::from_secs(10)),
+            Some(Duration::from_secs(10))
+        )
+    );
+
+    c.set_script_timeout(Duration::from_secs(10)).await?;
+
+    let got_timeouts = c.get_timeouts().await?;
+    assert_eq!(
+        got_timeouts,
+        TimeoutConfiguration::new(
+            Some(Duration::from_secs(10)),
+            Some(Duration::from_secs(10)),
+            Some(Duration::from_secs(10))
+        )
+    );
+
+    Ok(())
+}
+
+// Verifies that basic cookie handling works
+async fn handle_cookies_test(c: WebDriver) -> Result<(), WebDriverError> {
+    c.goto("https://www.wikipedia.org/").await?;
+
+    let cookies = c.get_all_cookies().await?;
+    assert!(!cookies.is_empty());
+
+    // Add a new cookie.
+    use thirtyfour::cookie::Cookie;
+    let mut cookie = Cookie::new("cookietest", "fantoccini");
+    cookie.set_domain(".wikipedia.org");
+    cookie.set_path("/");
+    cookie.set_same_site(Some(SameSite::Lax));
+    c.add_cookie(cookie.clone()).await?;
+
+    // Verify that the cookie exists.
+    assert_eq!(c.get_named_cookie(cookie.name()).await?.value(), cookie.value());
+
+    // Delete the cookie and make sure it's gone
+    c.delete_cookie(cookie.name()).await?;
+    assert!(c.get_named_cookie(cookie.name()).await.is_err());
+
+    c.delete_all_cookies().await?;
+    let cookies = c.get_all_cookies().await?;
+    assert!(dbg!(cookies).is_empty());
+
     Ok(())
 }
 
@@ -91,10 +157,21 @@ mod firefox {
     fn timeouts_test() {
         local_tester!(timeouts, "firefox");
     }
+
+    #[test]
+    #[serial]
+    fn cookies_test() {
+        tester!(handle_cookies_test, "firefox");
+    }
 }
 
 mod chrome {
     use super::*;
+
+    #[test]
+    fn resolve_execute_async_value_test() {
+        local_tester!(resolve_execute_async_value, "chrome");
+    }
 
     #[test]
     fn status_test() {
@@ -104,5 +181,10 @@ mod chrome {
     #[test]
     fn timeouts_test() {
         local_tester!(timeouts, "chrome");
+    }
+
+    #[test]
+    fn cookies_test() {
+        tester!(handle_cookies_test, "chrome");
     }
 }

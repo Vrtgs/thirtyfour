@@ -1,4 +1,7 @@
+use std::path::Path;
+
 use crate::common::sample_page_url;
+use common::other_page_url;
 use serial_test::serial;
 use thirtyfour::prelude::*;
 
@@ -128,6 +131,53 @@ async fn close_window_twice_errors(c: WebDriver) -> Result<(), WebDriverError> {
     Ok(())
 }
 
+async fn window_name(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+
+    let main_title = c.title().await?;
+    let handle = c.window().await?;
+    c.set_window_name("main").await?;
+
+    // Open a new tab.
+    let new_handle = c.new_tab().await?;
+    c.switch_to_window(new_handle).await?;
+
+    // We are now controlling the new tab.
+    let other_page_url = other_page_url(port);
+    c.goto(&other_page_url).await?;
+    assert_ne!(c.window().await?, handle);
+
+    let other_title = c.title().await?;
+    assert_ne!(other_title, main_title);
+
+    // Switch back to original tab using window name.
+    c.switch_to_named_window("main").await?;
+    assert_eq!(c.window().await?, handle);
+
+    Ok(())
+}
+
+async fn in_new_tab(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+
+    let main_title = c.title().await?;
+    assert_eq!(main_title, "Sample Page");
+
+    let other_page_url = other_page_url(port);
+    let other_title = c
+        .in_new_tab(|| async {
+            c.goto(&other_page_url).await?;
+            c.title().await
+        })
+        .await?;
+    assert_eq!(other_title, "Other Page");
+    assert_eq!(c.title().await?, main_title);
+
+    Ok(())
+}
+
 async fn window_rect(c: WebDriver) -> Result<(), WebDriverError> {
     c.set_window_rect(0, 0, 1920, 1080).await?;
     let r = c.get_window_rect().await?;
@@ -135,6 +185,23 @@ async fn window_rect(c: WebDriver) -> Result<(), WebDriverError> {
     assert_eq!(r.y, 0);
     assert_eq!(r.width, 1920);
     assert_eq!(r.height, 1080);
+    Ok(())
+}
+
+async fn screenshot(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+
+    let screenshot_data = c.screenshot_as_png().await?;
+    assert!(!screenshot_data.is_empty(), "screenshot data is empty");
+
+    let path = Path::new("/tmp/screenshot.png");
+    c.screenshot(&path).await?;
+    assert!(path.exists(), "screenshot file doesn't exist");
+    let contents = std::fs::read(path)?;
+    assert!(!contents.is_empty(), "screenshot file is empty");
+    assert_eq!(contents, screenshot_data);
+
     Ok(())
 }
 
@@ -182,6 +249,24 @@ mod firefox {
     fn window_rect_test() {
         tester!(window_rect, "firefox");
     }
+
+    #[test]
+    #[serial]
+    fn window_name_test() {
+        local_tester!(window_name, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn in_new_tab_test() {
+        local_tester!(in_new_tab, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn screenshot_test() {
+        local_tester!(screenshot, "firefox");
+    }
 }
 
 mod chrome {
@@ -220,5 +305,20 @@ mod chrome {
     #[test]
     fn window_rect_test() {
         tester!(window_rect, "chrome");
+    }
+
+    #[test]
+    fn window_name_test() {
+        local_tester!(window_name, "chrome");
+    }
+
+    #[test]
+    fn in_new_tab_test() {
+        local_tester!(in_new_tab, "chrome");
+    }
+
+    #[test]
+    fn screenshot_test() {
+        local_tester!(screenshot, "chrome");
     }
 }

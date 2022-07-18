@@ -1149,10 +1149,9 @@ impl SessionHandle {
     /// let handle = driver.window().await?;
     /// driver.set_window_name("main").await?;
     /// // Open a new tab.
-    /// driver.new_tab().await?;
+    /// let new_handle = driver.new_tab().await?;
     /// // Get window handles and switch to the new tab.
-    /// let handles = driver.windows().await?;
-    /// driver.switch_to_window(handles[1].clone()).await?;
+    /// driver.switch_to_window(new_handle).await?;
     /// // We are now controlling the new tab.
     /// driver.goto("http://localhost:8000").await?;
     /// assert_ne!(driver.window().await?, handle);
@@ -1207,7 +1206,9 @@ impl SessionHandle {
         let handle = self.window().await?;
 
         // Open new tab.
-        self.new_tab().await?;
+        let tab_handle = self.new_tab().await?;
+        self.switch_to_window(tab_handle).await?;
+
         let result = f().await;
 
         // Close tab.

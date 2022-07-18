@@ -1,6 +1,6 @@
 use crate::common::{other_page_url, sample_page_url};
 use serial_test::serial;
-use thirtyfour::prelude::*;
+use thirtyfour::{components::SelectElement, prelude::*};
 
 mod common;
 
@@ -30,6 +30,36 @@ async fn back_and_forward(c: WebDriver, port: u16) -> Result<(), WebDriverError>
 
     c.forward().await?;
     assert_eq!(c.current_url().await?.as_str(), other_url);
+
+    Ok(())
+}
+
+async fn refresh(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+
+    let elem = c.find(By::Css("#select1")).await?;
+    let select_element = SelectElement::new(&elem).await?;
+
+    // Get first display text
+    let initial_text = elem.prop("value").await?;
+    assert_eq!(Some("Select1-Option1".into()), initial_text);
+
+    // Select 2nd option by index.
+    select_element.select_by_index(1).await?;
+
+    // Get display text after selection
+    let text_after_selecting = elem.prop("value").await?;
+    assert_eq!(Some("Select1-Option2".into()), text_after_selecting);
+
+    // Refresh the page.
+    c.refresh().await?;
+
+    let elem = c.find(By::Css("#select1")).await?;
+
+    // Get display text after refresh.
+    let text_after_refresh = elem.prop("value").await?;
+    assert_eq!(Some("Select1-Option1".into()), text_after_refresh);
 
     Ok(())
 }
@@ -69,6 +99,12 @@ mod firefox {
 
     #[test]
     #[serial]
+    fn refresh_test() {
+        local_tester!(refresh, "firefox");
+    }
+
+    #[test]
+    #[serial]
     fn find_and_click_link_test() {
         local_tester!(find_and_click_link, "firefox");
     }
@@ -91,6 +127,11 @@ mod chrome {
     #[test]
     fn back_and_forward_test() {
         local_tester!(back_and_forward, "chrome");
+    }
+
+    #[test]
+    fn refresh_test() {
+        local_tester!(refresh, "chrome");
     }
 
     #[test]
