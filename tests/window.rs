@@ -195,7 +195,7 @@ async fn screenshot(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let screenshot_data = c.screenshot_as_png().await?;
     assert!(!screenshot_data.is_empty(), "screenshot data is empty");
 
-    let path = Path::new("/tmp/screenshot.png");
+    let path = Path::new("screenshot.png");
     c.screenshot(&path).await?;
     assert!(path.exists(), "screenshot file doesn't exist");
     let contents = std::fs::read(path)?;
