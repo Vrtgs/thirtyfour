@@ -179,12 +179,12 @@ async fn in_new_tab(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
 }
 
 async fn window_rect(c: WebDriver) -> Result<(), WebDriverError> {
-    c.set_window_rect(0, 0, 1920, 1080).await?;
+    c.set_window_rect(10, 10, 1900, 1000).await?;
     let r = c.get_window_rect().await?;
-    assert_eq!(r.x, 0);
-    assert_eq!(r.y, 0);
-    assert_eq!(r.width, 1920);
-    assert_eq!(r.height, 1080);
+    assert_eq!(r.x, 10);
+    assert_eq!(r.y, 10);
+    assert_eq!(r.width, 1900);
+    assert_eq!(r.height, 1000);
     Ok(())
 }
 
