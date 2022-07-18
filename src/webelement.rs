@@ -235,9 +235,9 @@ impl WebElement {
         Ok(self.element.text().await?)
     }
 
-    /// Convenience method for getting the (optional) value attribute of this element.
+    /// Convenience method for getting the (optional) value property of this element.
     pub async fn value(&self) -> WebDriverResult<Option<String>> {
-        self.attr("value").await
+        self.prop("value").await
     }
 
     /// Click the WebElement.

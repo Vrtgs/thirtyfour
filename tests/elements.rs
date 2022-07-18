@@ -1,4 +1,6 @@
 //! Element tests
+use std::path::Path;
+
 use crate::common::sample_page_url;
 use serial_test::serial;
 use thirtyfour::prelude::*;
@@ -12,6 +14,8 @@ async fn element_is(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     assert!(elem.is_enabled().await?);
     assert!(elem.is_displayed().await?);
     assert!(!elem.is_selected().await?);
+    assert!(elem.is_present().await?);
+    assert!(elem.is_clickable().await?);
     elem.click().await?;
     let elem = c.find(By::Id("checkbox-option-1")).await?;
     assert!(elem.is_selected().await?);
@@ -26,6 +30,7 @@ async fn element_attr(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     c.goto(&sample_url).await?;
     let elem = c.find(By::Id("checkbox-option-1")).await?;
     assert_eq!(elem.attr("id").await?.unwrap(), "checkbox-option-1");
+    assert_eq!(elem.id().await?.unwrap(), "checkbox-option-1");
     assert!(elem.attr("invalid-attribute").await?.is_none());
     Ok(())
 }
@@ -58,6 +63,23 @@ async fn element_tag_name(c: WebDriver, port: u16) -> Result<(), WebDriverError>
     Ok(())
 }
 
+async fn element_class_name(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let sample_url = sample_page_url(port);
+    c.goto(&sample_url).await?;
+    let elem = c.find(By::ClassName("vertical")).await?;
+    let class_name = elem.class_name().await?.unwrap();
+    assert!(class_name.eq_ignore_ascii_case("vertical"), "{} != vertical", class_name);
+    Ok(())
+}
+
+async fn element_text(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let sample_url = sample_page_url(port);
+    c.goto(&sample_url).await?;
+    let elem = c.find(By::Id("button-copy")).await?;
+    assert_eq!(elem.text().await?, "Copy");
+    Ok(())
+}
+
 async fn element_rect(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let sample_url = sample_page_url(port);
     c.goto(&sample_url).await?;
@@ -82,8 +104,10 @@ async fn element_send_keys(c: WebDriver, port: u16) -> Result<(), WebDriverError
     c.goto(&sample_url).await?;
     let elem = c.find(By::Id("text-input")).await?;
     assert_eq!(elem.prop("value").await?.unwrap(), "");
-    elem.send_keys("fantoccini").await?;
-    assert_eq!(elem.prop("value").await?.unwrap(), "fantoccini");
+    assert_eq!(elem.value().await?.unwrap(), "");
+    elem.send_keys("thirtyfour").await?;
+    assert_eq!(elem.prop("value").await?.unwrap(), "thirtyfour");
+    assert_eq!(elem.value().await?.unwrap(), "thirtyfour");
     let select_all = if cfg!(target_os = "macos") {
         Key::Command + "a"
     } else {
@@ -93,7 +117,20 @@ async fn element_send_keys(c: WebDriver, port: u16) -> Result<(), WebDriverError
     elem.send_keys(&select_all).await?;
     elem.send_keys(&backspace).await?;
     assert_eq!(elem.prop("value").await?.unwrap(), "");
+    assert_eq!(elem.value().await?.unwrap(), "");
 
+    Ok(())
+}
+
+async fn element_clear(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let sample_url = sample_page_url(port);
+    c.goto(&sample_url).await?;
+    let elem = c.find(By::Id("text-input")).await?;
+    assert_eq!(elem.value().await?.unwrap(), "");
+    elem.send_keys("thirtyfour").await?;
+    assert_eq!(elem.value().await?.unwrap(), "thirtyfour");
+    elem.clear().await?;
+    assert_eq!(elem.value().await?.unwrap(), "");
     Ok(())
 }
 
@@ -103,15 +140,64 @@ async fn serialize_element(c: WebDriver, port: u16) -> Result<(), WebDriverError
     let elem = c.find(By::Css("#other_page_id")).await?;
 
     // Check that webdriver understands it
-    c.execute("arguments[0].scrollIntoView(true);", vec![serde_json::to_value(elem)?]).await?;
+    c.execute("arguments[0].scrollIntoView(true);", vec![elem.to_json()?]).await?;
+
+    // This does the same thing.
+    elem.scroll_into_view().await?;
 
     // Check that it fails with an invalid serialization (from a previous run of the test)
     let json = r#"{"element-6066-11e4-a52e-4f735466cecf":"fbe5004d-ec8b-4c7b-ad08-642c55d84505"}"#;
+
     c.execute("arguments[0].scrollIntoView(true);", vec![serde_json::from_str(json)?])
         .await
         .expect_err("Failure expected with an invalid ID");
 
+    // You can easily deserialize elements too.
+    let ret = c.execute(r#"return document.getElementById("select1");"#, vec![]).await?;
+    let elem = ret.element()?;
+    assert_eq!(elem.tag_name().await?, "select");
+
     c.close_window().await
+}
+
+async fn element_screenshot(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+
+    let elem = c.find(By::Id("select1")).await?;
+
+    let screenshot_data = elem.screenshot_as_png().await?;
+    assert!(!screenshot_data.is_empty(), "screenshot data is empty");
+
+    let path = Path::new("/tmp/elem_screenshot.png");
+    elem.screenshot(&path).await?;
+    assert!(path.exists(), "screenshot file doesn't exist");
+    let contents = std::fs::read(path)?;
+    assert!(!contents.is_empty(), "screenshot file is empty");
+    assert_eq!(contents, screenshot_data);
+
+    Ok(())
+}
+
+async fn element_focus(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+    let elem = c.find(By::Id("text-input")).await?;
+    elem.focus().await?;
+    let active_elem = c.active_element().await?;
+    assert_eq!(active_elem.id().await?.unwrap(), "text-input");
+    Ok(())
+}
+
+async fn element_html(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+    let elem = c.find(By::Id("button-copy")).await?;
+    assert_eq!(elem.inner_html().await?, "Copy");
+
+    let elem = c.find(By::Id("text-output")).await?;
+    assert_eq!(elem.outer_html().await?, r#"<div id="text-output"></div>"#);
+    Ok(())
 }
 
 mod firefox {
@@ -149,6 +235,18 @@ mod firefox {
 
     #[test]
     #[serial]
+    fn element_class_name_test() {
+        local_tester!(element_class_name, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn element_text_test() {
+        local_tester!(element_text, "firefox");
+    }
+
+    #[test]
+    #[serial]
     fn element_rect_test() {
         local_tester!(element_rect, "firefox");
     }
@@ -161,8 +259,32 @@ mod firefox {
 
     #[test]
     #[serial]
+    fn element_clear_test() {
+        local_tester!(element_clear, "firefox");
+    }
+
+    #[test]
+    #[serial]
     fn serialize_element_test() {
         local_tester!(serialize_element, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn element_screenshot_test() {
+        local_tester!(element_screenshot, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn element_focus_test() {
+        local_tester!(element_focus, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn element_html_test() {
+        local_tester!(element_html, "firefox");
     }
 }
 
@@ -195,6 +317,16 @@ mod chrome {
     }
 
     #[test]
+    fn element_class_name_test() {
+        local_tester!(element_class_name, "chrome");
+    }
+
+    #[test]
+    fn element_text_test() {
+        local_tester!(element_text, "chrome");
+    }
+
+    #[test]
     fn element_rect_test() {
         local_tester!(element_rect, "chrome");
     }
@@ -205,7 +337,27 @@ mod chrome {
     }
 
     #[test]
+    fn element_clear_test() {
+        local_tester!(element_clear, "chrome");
+    }
+
+    #[test]
     fn serialize_element_test() {
         local_tester!(serialize_element, "chrome");
+    }
+
+    #[test]
+    fn element_screenshot_test() {
+        local_tester!(element_screenshot, "chrome");
+    }
+
+    #[test]
+    fn element_focus_test() {
+        local_tester!(element_focus, "chrome");
+    }
+
+    #[test]
+    fn element_html_test() {
+        local_tester!(element_html, "chrome");
     }
 }

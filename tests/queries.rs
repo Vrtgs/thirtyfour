@@ -99,6 +99,24 @@ async fn select_by_label(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
     Ok(())
 }
 
+async fn find_element_from_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+
+    // Find.
+    let form = c.find(By::Id("textarea-form")).await?;
+    let textarea = form.find(By::Tag("textarea")).await?;
+    assert_eq!(textarea.attr("name").await?.unwrap(), "some_textarea");
+
+    // Find all.
+    let nav = c.find(By::Id("navigation")).await?;
+    let links = nav.find_all(By::Tag("a")).await?;
+    assert_eq!(links.len(), 2);
+    assert_eq!(links[0].text().await?, "Other Page");
+    assert_eq!(links[1].text().await?, "Other Page");
+    Ok(())
+}
+
 mod firefox {
     use super::*;
 
@@ -131,6 +149,12 @@ mod firefox {
     fn select_by_label_test() {
         local_tester!(select_by_label, "firefox");
     }
+
+    #[test]
+    #[serial]
+    fn find_element_from_element_test() {
+        local_tester!(find_element_from_element, "firefox");
+    }
 }
 
 mod chrome {
@@ -155,5 +179,10 @@ mod chrome {
     #[test]
     fn select_by_index_test() {
         local_tester!(select_by_index, "chrome");
+    }
+
+    #[test]
+    fn find_element_from_element_test() {
+        local_tester!(find_element_from_element, "chrome");
     }
 }
