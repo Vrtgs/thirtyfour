@@ -19,15 +19,20 @@
 //! #     block_on(async {
 //! #         let caps = DesiredCapabilities::chrome();
 //! #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
-//! # driver.get("http://webappdemo").await?;
 //! // This will only poll once and then return a bool immediately.
-//! let is_found = driver.query(By::Id("button1")).nowait().exists().await?;
-//! # assert_eq!(is_found, true);
+//! let is_found = driver
+//!     .query(By::Id("button1"))
+//!     .nowait()
+//!     .exists()
+//!     .await?;
 //!
 //! // This will poll until either branch matches at least one element.
 //! // Only the first matched element will be returned.
-//! let elem = driver.query(By::Css("thiswont.match")).or(By::Id("button1")).first().await?;
-//! #         assert_eq!(elem.tag_name().await?, "button");
+//! let elem = driver
+//!     .query(By::Css("thiswont.match"))
+//!     .or(By::Id("button1"))
+//!     .first()
+//!     .await?;
 //! #         driver.quit().await?;
 //! #         Ok(())
 //! #     })
@@ -48,11 +53,14 @@
 //! #     block_on(async {
 //! #         let caps = DesiredCapabilities::chrome();
 //! #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
-//! # driver.get("http://webappdemo").await?;
-//! let elem = driver.query(By::Css("thiswont.match")).with_text("testing")
-//!     .or(By::Id("button1")).with_class(StringMatch::new("pure-button").word()).and_enabled()
-//!     .first().await?;
-//! #         assert_eq!(elem.tag_name().await?, "button");
+//! let elem = driver
+//!     .query(By::Css("thiswont.match"))
+//!     .with_text("testing")
+//!     .or(By::Id("button1"))
+//!     .with_class(StringMatch::new("pure-button").word())
+//!     .and_enabled()
+//!     .first()
+//!     .await?;
 //! #         driver.quit().await?;
 //! #         Ok(())
 //! #     })
@@ -76,7 +84,9 @@
 //! it's probably best to execute multiple queries.
 //!
 //! All timeout, interval and ElementPoller details can be overridden on a per-call basis if
-//! desired. See the [ElementQuery](struct.ElementQuery.html) documentation for more details.
+//! desired. See the [`ElementQuery`] documentation for more details.
+//!
+//! [`ElementQuery`]: crate::extensions::query::ElementQuery
 //!
 //! ### ElementWaiter
 //!
@@ -90,14 +100,16 @@
 //! elem.wait_until().clickable().await?;
 //! ```
 //!
-//! And so on. See the [ElementWaiter](struct.ElementWaiter.html) docs for the full
+//! And so on. See the [`ElementWaiter`] docs for the full
 //! list of predicates available.
+//!
+//! [`ElementWaiter`]: crate::extensions::query::ElementWaiter
 //!
 //! `ElementWaiter` also allows the user of custom predicates that take a `&WebElement` argument
 //! and return a `WebDriverResult<bool>`.
 //!
 //! A range of pre-defined predicates are also supplied for convenience in the
-//! `thirtyfour::query::conditions` module.
+//! `thirtyfour::extensions::query::conditions` module.
 //!
 //! ```ignore
 //! use thirtyfour_query::conditions;
@@ -117,8 +129,8 @@
 //! You can optionally change the default polling behaviour. The same poller will apply to
 //! both `ElementQuery` and `ElementWaiter`.
 //!
-//! See [ElementPoller::default()](enum.ElementPoller.html#impl-Default) for more details
-//! about the default polling behaviour.
+//! See [`ElementPoller`] for more details about the default polling behaviour.
+//!
 //! ```no_run
 //! # use thirtyfour::prelude::*;
 //! # use thirtyfour::support::block_on;
@@ -136,10 +148,11 @@
 //! # }
 //! ```
 //!
-//! Other [ElementPoller](enum.ElementPoller.html) options are also available, such as
+//! Other [`ElementPoller`] options are also available, such as
 //! `NoWait` and `NumTriesWithInterval`.
 //! These can also be overridden on a per-query basis if needed.
 //!
+//! [`ElementPoller`]: crate::extensions::query::ElementPoller
 
 pub mod conditions;
 mod element_query;

@@ -85,8 +85,11 @@
 //! using a variety of built-in predicates. You can also provide your own custom predicate if
 //! desired.
 //!
+//! See the [`query`] documentation for more details and examples.
+//!
 //! [`WebDriver::query`]: crate::extensions::query::ElementQueryable::query
 //! [`WebElement::wait_until`]: crate::extensions::query::ElementWaitable::wait_until
+//! [`query`]: crate::extensions::query
 //!
 //! ### See Also
 //!
