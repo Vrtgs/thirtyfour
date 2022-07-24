@@ -293,6 +293,7 @@ mod chrome {
     }
 
     #[test]
+    #[ignore] // Ignored due to https://github.com/jonhoo/fantoccini/issues/26
     fn window_rect_test() {
         tester!(window_rect, "chrome");
     }
