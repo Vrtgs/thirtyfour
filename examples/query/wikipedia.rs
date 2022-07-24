@@ -1,6 +1,6 @@
-//! Requires chromedriver running on port 4444:
+//! Requires chromedriver running on port 9515:
 //!
-//!     chromedriver --port=4444
+//!     chromedriver --port=9515
 //!
 //! Run as follows:
 //!
