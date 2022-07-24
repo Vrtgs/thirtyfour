@@ -21,7 +21,6 @@
 //! - Capture / Save screenshot of browser or individual element as PNG
 //! - Some Chrome DevTools Protocol (CDP) support
 //! - Advanced query interface including explicit waits and various predicates
-//! - Extendable via traits
 //!
 //! ## Feature Flags
 //!

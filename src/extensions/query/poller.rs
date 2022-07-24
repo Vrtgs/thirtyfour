@@ -1,109 +1,117 @@
 use crate::support::sleep;
-use crate::WebDriver;
-use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::time::{Duration, Instant};
 
-/// Parameters used to determine the polling / timeout behaviour.
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ElementPoller {
-    /// No polling, single attempt.
-    NoWait,
-    /// Poll up to the specified timeout, with the specified interval being the
-    /// minimum time elapsed between the start of each poll attempt.
-    /// If the previous poll attempt took longer than the interval, the next will
-    /// start immediately. Once the timeout is reached, a Timeout error will be
-    /// returned regardless of the actual number of polling attempts completed.
-    TimeoutWithInterval(Duration, Duration),
-    /// Poll once every interval, up to the maximum number of polling attempts.
-    /// If the previous poll attempt took longer than the interval, the next will
-    /// start immediately. However, in the case that the desired element is not
-    /// found, you will be guaranteed the specified number of polling attempts,
-    /// regardless of how long it takes.
-    NumTriesWithInterval(u32, Duration),
-    /// Poll once every interval, up to the specified timeout, or the specified
-    /// minimum number of polling attempts, whichever comes last.
-    /// If the previous poll attempt took longer than the interval, the next will
-    /// start immediately. If the timeout was reached before the minimum number
-    /// of polling attempts has been executed, then the query will continue
-    /// polling until the number of polling attempts equals the specified minimum.
-    /// If the minimum number of polling attempts is reached prior to the
-    /// specified timeout, then the polling attempts will continue until the
-    /// timeout is reached instead.
-    TimeoutWithIntervalAndMinTries(Duration, Duration, u32),
+/// Trait for implementing the element polling strategy.
+///
+/// Each time the element condition is not met, the `tick()` method will be
+/// called. Upon returning `false` the polling loop will terminate.
+#[async_trait::async_trait]
+pub trait ElementPoller: Debug {
+    async fn tick(&mut self) -> bool;
 }
 
-impl Default for ElementPoller {
-    fn default() -> Self {
-        ElementPoller::TimeoutWithInterval(Duration::from_secs(20), Duration::from_millis(500))
-    }
+/// Trait for returning a struct that implements ElementPoller.
+///
+/// The start() method will be called at the beginning of the polling loop.
+pub trait IntoElementPoller: Debug {
+    fn start(&self) -> Box<dyn ElementPoller + Send + Sync>;
 }
 
-pub struct ElementPollerTicker {
-    timeout: Option<Duration>,
-    interval: Option<Duration>,
-    min_tries: u32,
+/// Poll up to the specified timeout, with the specified interval being the
+/// minimum time elapsed between the start of each poll attempt.
+/// If the previous poll attempt took longer than the interval, the next will
+/// start immediately. Once the timeout is reached, a Timeout error will be
+/// returned regardless of the actual number of polling attempts completed.
+#[derive(Debug)]
+pub struct ElementPollerWithTimeout {
+    timeout: Duration,
+    interval: Duration,
     start: Instant,
     cur_tries: u32,
 }
 
-impl ElementPollerTicker {
-    pub fn new(poller: ElementPoller) -> Self {
-        let mut ticker = Self {
-            timeout: None,
-            interval: None,
-            min_tries: 0,
+impl ElementPollerWithTimeout {
+    pub fn new(timeout: Duration, interval: Duration) -> Self {
+        Self {
+            timeout,
+            interval,
             start: Instant::now(),
             cur_tries: 0,
-        };
-
-        match poller {
-            ElementPoller::NoWait => {}
-            ElementPoller::TimeoutWithInterval(timeout, interval) => {
-                ticker.timeout = Some(timeout);
-                ticker.interval = Some(interval);
-            }
-            ElementPoller::NumTriesWithInterval(num_tries, interval) => {
-                ticker.interval = Some(interval);
-                ticker.min_tries = num_tries;
-            }
-            ElementPoller::TimeoutWithIntervalAndMinTries(timeout, interval, num_tries) => {
-                ticker.timeout = Some(timeout);
-                ticker.interval = Some(interval);
-                ticker.min_tries = num_tries
-            }
         }
-
-        ticker
     }
+}
 
-    pub async fn tick(&mut self) -> bool {
+impl Default for ElementPollerWithTimeout {
+    fn default() -> Self {
+        Self::new(Duration::from_secs(20), Duration::from_millis(500))
+    }
+}
+
+#[async_trait::async_trait]
+impl ElementPoller for ElementPollerWithTimeout {
+    async fn tick(&mut self) -> bool {
         self.cur_tries += 1;
 
-        if self.timeout.filter(|t| &self.start.elapsed() < t).is_none()
-            && self.cur_tries >= self.min_tries
-        {
+        if self.start.elapsed() >= self.timeout {
             return false;
         }
 
-        if let Some(i) = self.interval {
-            // Next poll is due no earlier than this long after the first poll started.
-            let minimum_elapsed = i * self.cur_tries;
+        // Next poll is due no earlier than this long after the first poll started.
+        let minimum_elapsed = self.interval * self.cur_tries;
 
-            // But this much time has elapsed since the first poll started.
-            let actual_elapsed = self.start.elapsed();
+        // But this much time has elapsed since the first poll started.
+        let actual_elapsed = self.start.elapsed();
 
-            if actual_elapsed < minimum_elapsed {
-                // So we need to wait this much longer.
-                sleep(minimum_elapsed - actual_elapsed).await;
-            }
+        if actual_elapsed < minimum_elapsed {
+            // So we need to wait this much longer.
+            sleep(minimum_elapsed - actual_elapsed).await;
         }
-
         true
     }
 }
 
-impl WebDriver {
-    pub fn set_query_poller(&self, poller: ElementPoller) {
-        self.handle.config.set_query_poller(poller);
+impl IntoElementPoller for ElementPollerWithTimeout {
+    fn start(&self) -> Box<dyn ElementPoller + Send + Sync> {
+        Box::new(Self::new(self.timeout, self.interval))
+    }
+}
+
+/// No polling, single attempt.
+#[derive(Debug)]
+pub struct ElementPollerNoWait;
+
+#[async_trait::async_trait]
+impl ElementPoller for ElementPollerNoWait {
+    async fn tick(&mut self) -> bool {
+        false
+    }
+}
+
+impl IntoElementPoller for ElementPollerNoWait {
+    fn start(&self) -> Box<dyn ElementPoller + Send + Sync> {
+        Box::new(Self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_poller_with_timeout() {
+        let mut poller =
+            ElementPollerWithTimeout::new(Duration::from_secs(1), Duration::from_millis(500));
+        assert!(poller.tick().await);
+        // This should have waited 500ms already.
+        // Waiting an additional 500ms should exceed the timeout.
+        sleep(Duration::from_millis(500)).await;
+        assert!(!poller.tick().await);
+    }
+
+    #[tokio::test]
+    async fn test_poller_nowait() {
+        let mut poller = ElementPollerNoWait;
+        assert!(!poller.tick().await); // Should instantly return false.
     }
 }

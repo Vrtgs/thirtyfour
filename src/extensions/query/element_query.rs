@@ -1,5 +1,7 @@
 use super::conditions::{handle_errors, negate};
-use super::{conditions, ElementPoller, ElementPollerTicker, ElementPredicate};
+use super::{
+    conditions, ElementPollerNoWait, ElementPollerWithTimeout, ElementPredicate, IntoElementPoller,
+};
 use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
@@ -104,14 +106,18 @@ pub enum ElementQuerySource {
 /// ```
 pub struct ElementQuery {
     source: ElementQuerySource,
-    poller: ElementPoller,
+    poller: Box<dyn IntoElementPoller + Send + Sync>,
     selectors: Vec<ElementSelector>,
     ignore_errors: bool,
     description: String,
 }
 
 impl ElementQuery {
-    fn new(source: ElementQuerySource, poller: ElementPoller, by: By) -> Self {
+    fn new(
+        source: ElementQuerySource,
+        poller: Box<dyn IntoElementPoller + Send + Sync>,
+        by: By,
+    ) -> Self {
         let selector = ElementSelector::new(by);
         Self {
             source,
@@ -143,7 +149,7 @@ impl ElementQuery {
 
     /// Use the specified ElementPoller for this ElementQuery.
     /// This will not affect the default ElementPoller used for other queries.
-    pub fn with_poller(mut self, poller: ElementPoller) -> Self {
+    pub fn with_poller(mut self, poller: Box<dyn IntoElementPoller + Send + Sync>) -> Self {
         self.poller = poller;
         self
     }
@@ -152,13 +158,13 @@ impl ElementQuery {
     /// after each interval. This will override the poller for this
     /// ElementQuery only.
     pub fn wait(self, timeout: Duration, interval: Duration) -> Self {
-        self.with_poller(ElementPoller::TimeoutWithInterval(timeout, interval))
+        self.with_poller(Box::new(ElementPollerWithTimeout::new(timeout, interval)))
     }
 
     /// Force this ElementQuery to not wait for the specified condition(s).
     /// This will override the poller for this ElementQuery only.
     pub fn nowait(self) -> Self {
-        self.with_poller(ElementPoller::NoWait)
+        self.with_poller(Box::new(ElementPollerNoWait))
     }
 
     //
@@ -264,7 +270,6 @@ impl ElementQuery {
         if self.selectors.is_empty() {
             return Err(no_such_element_error);
         }
-        let mut ticker = ElementPollerTicker::new(self.poller.clone());
 
         let check = |value: bool| {
             if inverted {
@@ -273,6 +278,8 @@ impl ElementQuery {
                 value
             }
         };
+
+        let mut poller = self.poller.start();
 
         loop {
             for selector in &self.selectors {
@@ -292,7 +299,7 @@ impl ElementQuery {
                 }
             }
 
-            if !ticker.tick().await {
+            if !poller.tick().await {
                 return Ok(Vec::new());
             }
         }
@@ -664,7 +671,7 @@ impl ElementQueryable for WebElement {
     ///
     /// See [`ElementQuery`] for more documentation.
     fn query(&self, by: By) -> ElementQuery {
-        let poller: ElementPoller = self.handle.config.get_query_poller();
+        let poller = Box::new(ElementPollerWithTimeout::default());
         ElementQuery::new(ElementQuerySource::Element(self.clone()), poller, by)
     }
 }
@@ -677,7 +684,7 @@ impl ElementQueryable for SessionHandle {
     ///
     /// See [`ElementQuery`] for more documentation.
     fn query(&self, by: By) -> ElementQuery {
-        let poller: ElementPoller = self.config.get_query_poller();
+        let poller = Box::new(ElementPollerWithTimeout::default());
         ElementQuery::new(ElementQuerySource::Driver(self.clone()), poller, by)
     }
 }

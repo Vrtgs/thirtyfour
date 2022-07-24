@@ -1,5 +1,5 @@
 use super::conditions::handle_errors;
-use super::{conditions, ElementPoller, ElementPollerTicker, ElementPredicate};
+use super::{conditions, ElementPollerWithTimeout, ElementPredicate, IntoElementPoller};
 use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
 use crate::WebElement;
@@ -17,26 +17,24 @@ use stringmatch::Needle;
 /// #     block_on(async {
 /// #         let caps = DesiredCapabilities::chrome();
 /// #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
-/// #         driver.goto("http://localhost:8000").await?;
-/// #         let elem = driver.query(By::Id("button1")).first().await?;
+/// let elem = driver.query(By::Id("button1")).first().await?;
 /// // Wait until the element is displayed.
 /// elem.wait_until().displayed().await?;
-/// #         assert!(elem.is_displayed().await?);
 /// #         driver.quit().await?;
 /// #         Ok(())
 /// #     })
 /// # }
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ElementWaiter {
     element: WebElement,
-    poller: ElementPoller,
+    poller: Box<dyn IntoElementPoller + Send + Sync>,
     message: String,
     ignore_errors: bool,
 }
 
 impl ElementWaiter {
-    fn new(element: WebElement, poller: ElementPoller) -> Self {
+    fn new(element: WebElement, poller: Box<dyn IntoElementPoller + Send + Sync>) -> Self {
         Self {
             element,
             poller,
@@ -47,7 +45,7 @@ impl ElementWaiter {
 
     /// Use the specified ElementPoller for this ElementWaiter.
     /// This will not affect the default ElementPoller used for other waits.
-    pub fn with_poller(mut self, poller: ElementPoller) -> Self {
+    pub fn with_poller(mut self, poller: Box<dyn IntoElementPoller + Send + Sync>) -> Self {
         self.poller = poller;
         self
     }
@@ -70,11 +68,11 @@ impl ElementWaiter {
     /// after each interval. This will override the poller for this
     /// ElementWaiter only.
     pub fn wait(self, timeout: Duration, interval: Duration) -> Self {
-        self.with_poller(ElementPoller::TimeoutWithInterval(timeout, interval))
+        self.with_poller(Box::new(ElementPollerWithTimeout::new(timeout, interval)))
     }
 
     async fn run_poller(&self, conditions: Vec<ElementPredicate>) -> WebDriverResult<bool> {
-        let mut ticker = ElementPollerTicker::new(self.poller.clone());
+        let mut poller = self.poller.start();
         loop {
             let mut conditions_met = true;
             for f in &conditions {
@@ -88,7 +86,7 @@ impl ElementWaiter {
                 return Ok(true);
             }
 
-            if !ticker.tick().await {
+            if !poller.tick().await {
                 return Ok(false);
             }
         }
@@ -365,7 +363,7 @@ impl ElementWaitable for WebElement {
     ///
     /// See [`ElementWaiter`] for more documentation.
     fn wait_until(&self) -> ElementWaiter {
-        let poller: ElementPoller = self.handle.config.get_query_poller();
+        let poller = Box::new(ElementPollerWithTimeout::default());
         ElementWaiter::new(self.clone(), poller)
     }
 }
