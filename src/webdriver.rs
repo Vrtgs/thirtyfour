@@ -26,7 +26,6 @@ use fantoccini::wd::Capabilities;
 /// #     })
 /// # }
 /// ```
-#[derive(Debug)]
 pub struct WebDriver {
     pub handle: SessionHandle,
 }
@@ -80,7 +79,7 @@ impl WebDriver {
             client.update_timeouts(timeouts).await?;
 
             Ok(Self {
-                handle: SessionHandle::new(client, caps).await?,
+                handle: SessionHandle::new(client).await?,
             })
         }
     }

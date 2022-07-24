@@ -1,6 +1,4 @@
 use serde_json::Value;
-use std::fmt;
-use std::fmt::{Debug, Formatter};
 use std::future::Future;
 use std::path::Path;
 use std::time::Duration;
@@ -10,10 +8,9 @@ use tokio::io::AsyncWriteExt;
 use fantoccini::cookies::Cookie;
 use fantoccini::elements::Element;
 use fantoccini::error::CmdError;
-use fantoccini::wd::{Capabilities, TimeoutConfiguration, WebDriverStatus, WindowHandle};
+use fantoccini::wd::{TimeoutConfiguration, WebDriverStatus, WindowHandle};
 
 use crate::action_chain::ActionChain;
-use crate::common::config::WebDriverConfig;
 use crate::error::{WebDriverError, WebDriverResult};
 use crate::session::scriptret::ScriptRet;
 use crate::{By, Rect, SessionId, SwitchTo, WebElement};
@@ -23,26 +20,23 @@ use crate::{By, Rect, SessionId, SwitchTo, WebElement};
 #[derive(Clone)]
 pub struct SessionHandle {
     pub client: fantoccini::Client,
-    pub config: WebDriverConfig,
+    pub session_id: String,
 }
 
-impl Debug for SessionHandle {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.config.get_session_id())
+impl std::fmt::Debug for SessionHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SessionHandle").field("session_id", &self.session_id).finish()
     }
 }
 
 impl SessionHandle {
     /// Create new SessionHandle from a fantoccini Client.
     #[allow(dead_code)]
-    pub(crate) async fn new(
-        client: fantoccini::Client,
-        capabilities: Capabilities,
-    ) -> WebDriverResult<Self> {
+    pub(crate) async fn new(client: fantoccini::Client) -> WebDriverResult<Self> {
         let session_id = client.session_id().await?.expect("session id to be valid");
         Ok(Self {
             client,
-            config: WebDriverConfig::new(SessionId::from(session_id), capabilities),
+            session_id,
         })
     }
 
@@ -51,22 +45,10 @@ impl SessionHandle {
         WebElement::new(element, self.clone())
     }
 
-    /// Return a clone of the capabilities as originally requested.
-    pub fn capabilities(&mut self) -> Capabilities {
-        self.config.get_capabilities()
-    }
-
     /// Get the session ID.
     pub async fn session_id(&self) -> WebDriverResult<SessionId> {
         let id = self.client.session_id().await?;
         Ok(SessionId::from(id.unwrap_or_default()))
-    }
-
-    /// Get a clone of the `WebDriverConfig`.
-    ///
-    /// You can update the config by modifying it directly.
-    pub fn config(&self) -> WebDriverConfig {
-        self.config.clone()
     }
 
     /// Get the WebDriver status.
