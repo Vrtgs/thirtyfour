@@ -63,12 +63,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find(By::Id("alertbutton1")).await?.click().await?;
     /// let text = driver.get_alert_text().await?;
-    /// #         assert_eq!(text, "Alert 1 showing");
-    /// #         driver.dismiss_alert().await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -89,12 +84,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find(By::Id("alertbutton2")).await?.click().await?;
     /// driver.dismiss_alert().await?;
-    /// #         let elem = driver.find(By::Id("alert-result")).await?;
-    /// #         assert_eq!(elem.text().await?, "Alert 2 clicked false");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -116,12 +106,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find(By::Id("alertbutton2")).await?.click().await?;
     /// driver.accept_alert().await?;
-    /// #         let elem = driver.find(By::Id("alert-result")).await?;
-    /// #         assert_eq!(elem.text().await?, "Alert 2 clicked true");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -145,13 +130,8 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find(By::Id("alertbutton3")).await?.click().await?;
     /// driver.send_alert_text("selenium").await?;
     /// driver.accept_alert().await?;
-    /// #         let elem = driver.find(By::Id("alert-result")).await?;
-    /// #         assert_eq!(elem.text().await?, "selenium");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -167,15 +147,8 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pagealerts")).await?.click().await?;
-    /// #         driver.find(By::Id("alertbutton3")).await?.click().await?;
-    /// # driver.send_alert_text("selenium").await?;
     /// driver.send_alert_text(Key::Control + "a".to_string()).await?;
     /// driver.send_alert_text("thirtyfour").await?;
-    /// #         driver.accept_alert().await?;
-    /// #         let elem = driver.find(By::Id("alert-result")).await?;
-    /// #         assert_eq!(elem.text().await?, "thirtyfour");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })

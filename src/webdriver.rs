@@ -10,17 +10,21 @@ use fantoccini::wd::Capabilities;
 /// # Example:
 /// ```no_run
 /// use thirtyfour::prelude::*;
-/// use thirtyfour::support::block_on;
+/// # use thirtyfour::support::block_on;
 ///
-/// fn main() -> WebDriverResult<()> {
-///     block_on(async {
-///         let caps = DesiredCapabilities::chrome();
-///         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-///         driver.goto("http://localhost:8000").await?;
-///         driver.quit().await?;
-///         Ok(())
-///     })
-/// }
+/// # fn main() -> WebDriverResult<()> {
+/// #     block_on(async {
+/// let caps = DesiredCapabilities::firefox();
+/// // NOTE: this assumes you have a WebDriver compatible server running
+/// //       at http://localhost:4444
+/// //       e.g. `geckodriver -p 4444`
+/// let driver = WebDriver::new("http://localhost:4444", caps).await?;
+/// driver.goto("https://www.rust-lang.org/").await?;
+/// // Always remember to close the session.
+/// driver.quit().await?;
+/// #         Ok(())
+/// #     })
+/// # }
 /// ```
 #[derive(Debug)]
 pub struct WebDriver {
@@ -37,7 +41,10 @@ impl WebDriver {
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
-    /// let caps = DesiredCapabilities::chrome();
+    /// let caps = DesiredCapabilities::firefox();
+    /// // NOTE: this assumes you have a WebDriver compatible server running
+    /// //       at http://localhost:4444
+    /// //       e.g. `geckodriver -p 4444`
     /// let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())

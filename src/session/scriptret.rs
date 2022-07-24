@@ -5,8 +5,11 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 /// Helper struct for getting return values from scripts.
-/// See the examples for [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
-/// and [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script).
+///
+/// See the examples for [`WebDriver::execute`] and [`WebDriver::execute_async`].
+///
+/// [`WebDriver::execute`]: crate::session::handle::SessionHandle::execute_async
+/// [`WebDriver::execute_async`]: crate::session::handle::SessionHandle::execute_async
 #[derive(Debug)]
 pub struct ScriptRet {
     handle: SessionHandle,
@@ -14,9 +17,13 @@ pub struct ScriptRet {
 }
 
 impl ScriptRet {
-    /// Create a new ScriptRet. This is typically done automatically via
-    /// [WebDriver::execute_script()](struct.WebDriver.html#method.execute_script)
-    /// or [WebDriver::execute_async_script()](struct.WebDriver.html#method.execute_async_script)
+    /// Create a new ScriptRet.
+    ///
+    /// This is typically done automatically via [`WebDriver::execute`]
+    /// or [`WebDriver::execute_async`].
+    ///
+    /// [`WebDriver::execute`]: crate::session::handle::SessionHandle::execute_async
+    /// [`WebDriver::execute_async`]: crate::session::handle::SessionHandle::execute_async
     pub fn new(handle: SessionHandle, value: serde_json::Value) -> Self {
         Self {
             handle,
@@ -43,6 +50,7 @@ impl ScriptRet {
     }
 
     /// Get a single WebElement return value.
+    ///
     /// Your script must return only a single element for this to work.
     pub fn element(self) -> WebDriverResult<WebElement> {
         WebElement::from_json(self.value, self.handle)
@@ -54,6 +62,7 @@ impl ScriptRet {
     }
 
     /// Get a vec of WebElements from the return value.
+    ///
     /// Your script must return an array of elements for this to work.
     pub fn elements(self) -> WebDriverResult<Vec<WebElement>> {
         let values: Vec<Value> = serde_json::from_value(self.value)?;

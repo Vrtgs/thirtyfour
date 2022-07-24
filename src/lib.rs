@@ -21,7 +21,7 @@
 //! - Capture / Save screenshot of browser or individual element as PNG
 //! - Some Chrome DevTools Protocol (CDP) support
 //! - Advanced query interface including explicit waits and various predicates
-//! - Extendable via traits (you can store configuration in the WebDriver struct)
+//! - Extendable via traits
 //!
 //! ## Feature Flags
 //!
@@ -71,21 +71,31 @@
 //! Rust does not have [async destructors](https://boats.gitlab.io/blog/post/poll-drop/),
 //! which means there is no reliable way to execute an async HTTP request on Drop and wait for
 //! it to complete. This means you are in charge of closing the browser at the end of your code,
-//! via a call to `WebDriver::quit().await` as in the above example.
+//! via a call to [`WebDriver::quit`] as in the above example.
 //!
-//! If you do not call `WebDriver::quit().await` then the browser will stay open until it is
+//! If you do not call [`WebDriver::quit`] then the browser will stay open until it is
 //! either explicitly closed later outside your code, or the session times out.
 //!
 //! ### Advanced element queries and explicit waits
 //!
-//! You can use `WebDriver::query()` and `WebElement::query()` to perform more advanced queries
+//! You can use [`WebDriver::query`] to perform more advanced queries
 //! including polling and filtering. Custom filter functions are also supported.
 //!
-//! Also the `WebElement::wait_until()` method provides additional support for explicit waits
+//! Also the [`WebElement::wait_until`] method provides additional support for explicit waits
 //! using a variety of built-in predicates. You can also provide your own custom predicate if
 //! desired.
 //!
-//! See the [query](query/index.html) module documentation for more details.
+//! [`WebDriver::query`]: crate::extensions::query::ElementQueryable::query
+//! [`WebElement::wait_until`]: crate::extensions::query::ElementWaitable::wait_until
+//!
+//! ### See Also
+//!
+//! This crate uses [`fantoccini`] to communicate with the underlying `WebDriver`
+//! server, and provides high-level features to extend the capabilities of
+//! `fantoccini`. If you want a more lightweight solution and don't need the
+//! extra features that `thirtyfour` provides, consider using `fantoccini`
+//! directly.
+//!
 
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_doctest_main)]

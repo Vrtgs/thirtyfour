@@ -125,19 +125,17 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         // Wait for page load.
-    /// #         driver.find(By::Id("button1")).await?;
     /// // If no element has focus, active_element() will return the body tag.
-    /// let elem = driver.active_element().await?;
-    /// assert_eq!(elem.tag_name().await?, "body");
-    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
+    /// let active_elem = driver.active_element().await?;
+    /// assert_eq!(active_elem.tag_name().await?, "body");
+    ///
     /// // Now let's manually focus an element and try active_element() again.
-    /// driver.execute(r#"document.getElementsByName("input1")[0].focus();"#, Vec::new()).await?;
-    /// let elem = driver.active_element().await?;
-    /// elem.send_keys("selenium").await?;
-    /// #         let elem = driver.find(By::Name("input1")).await?;
-    /// #         assert_eq!(elem.value().await?, Some("selenium".to_string()));
+    /// let elem = driver.find(By::Id("my-element-id")).await?;
+    /// elem.focus().await?;
+    ///
+    /// // And fetch the active element again.
+    /// let active_elem = driver.active_element().await?;
+    /// assert_eq!(active_elem.element_id(), elem.element_id());
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -159,14 +157,12 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pageiframe")).await?.click().await?;
+    /// // Enter the first iframe.
     /// driver.enter_frame(0).await?;
     /// // We are now inside the iframe.
     /// driver.find(By::Id("button1")).await?;
     /// driver.enter_default_frame().await?;
     /// // We are now back in the original window.
-    /// #         driver.find(By::Id("iframeid1")).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -188,14 +184,11 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pageiframe")).await?.click().await?;
+    /// // Enter the first iframe.
     /// driver.enter_frame(0).await?;
     /// // We can now search for elements within the iframe.
     /// let elem = driver.find(By::Id("button1")).await?;
     /// elem.click().await?;
-    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
-    /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -217,19 +210,15 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pageiframe")).await?.click().await?;
+    /// // Find the iframe element and enter the iframe.
     /// let elem_iframe = driver.find(By::Id("iframeid1")).await?;
     /// elem_iframe.enter_frame().await?;
     /// // We can now search for elements within the iframe.
     /// let elem = driver.find(By::Id("button1")).await?;
     /// elem.click().await?;
-    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
-    /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
     /// // Now switch back to the parent frame.
     /// driver.enter_parent_frame().await?;
     /// // We are now back in the parent document.
-    /// #         driver.find(By::Id("iframeid1")).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -251,19 +240,15 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
-    /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// // Open a new tab.
     /// driver.new_tab().await?;
+    ///
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.windows().await?;
     /// driver.switch_to_window(handles[1].clone()).await?;
+    ///
     /// // We are now controlling the new tab.
-    /// driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("button1")).await?;
-    /// #         driver.switch_to_window(handles[0].clone()).await?;
-    /// #         driver.find(By::Name("input1")).await?;
+    /// driver.goto("https://www.rust-lang.org").await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -286,20 +271,21 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// // Set main window name so we can switch back easily.
     /// driver.set_window_name("mywindow").await?;
+    ///
     /// // Open a new tab.
     /// driver.new_tab().await?;
+    ///
     /// // Get window handles and switch to the new tab.
     /// let handles = driver.windows().await?;
     /// driver.switch_to_window(handles[1].clone()).await?;
+    ///
     /// // We are now controlling the new tab.
     /// assert_eq!(driver.title().await?, "");
     /// driver.switch_to_named_window("mywindow").await?;
+    ///
     /// // We are now back in the original tab.
-    /// assert_eq!(driver.title().await?, "Demo Web App");
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -332,9 +318,6 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
-    /// #         assert_eq!(driver.title().await?, "Demo Web App");
     /// // Open a new window.
     /// let handle = driver.new_window().await?;
     /// #         driver.quit().await?;
@@ -358,10 +341,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// #         driver.goto("http://localhost:8000").await?;
-    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
-    /// #         assert_eq!(driver.title().await?, "Demo Web App");
-    /// // Open a new window.
+    /// // Open a new tab in the current window.
     /// let handle = driver.new_tab().await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
