@@ -1,7 +1,7 @@
 use super::conditions::{handle_errors, negate};
 use super::{conditions, ElementPoller, ElementPollerTicker, ElementPredicate};
 use crate::error::WebDriverError;
-use crate::prelude::{WebDriver, WebDriverResult};
+use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
 use crate::{By, WebElement};
 use std::time::Duration;
