@@ -662,22 +662,10 @@ impl ElementQueryable for WebElement {
     /// This uses the builder pattern to construct queries that will return one or
     /// more elements, depending on the method specified at the end of the chain.
     ///
-    /// See [ElementQuery](query/struct.ElementQuery.html) for more documentation.
+    /// See [`ElementQuery`] for more documentation.
     fn query(&self, by: By) -> ElementQuery {
         let poller: ElementPoller = self.handle.config.get_query_poller();
         ElementQuery::new(ElementQuerySource::Element(self.clone()), poller, by)
-    }
-}
-
-impl ElementQueryable for WebDriver {
-    /// Return an ElementQuery instance for more executing powerful element queries.
-    ///
-    /// This uses the builder pattern to construct queries that will return one or
-    /// more elements, depending on the method specified at the end of the chain.
-    ///
-    /// See [ElementQuery](query/struct.ElementQuery.html) for more documentation.
-    fn query(&self, by: By) -> ElementQuery {
-        self.handle.query(by)
     }
 }
 
@@ -687,7 +675,7 @@ impl ElementQueryable for SessionHandle {
     /// This uses the builder pattern to construct queries that will return one or
     /// more elements, depending on the method specified at the end of the chain.
     ///
-    /// See [ElementQuery](query/struct.ElementQuery.html) for more documentation.
+    /// See [`ElementQuery`] for more documentation.
     fn query(&self, by: By) -> ElementQuery {
         let poller: ElementPoller = self.config.get_query_poller();
         ElementQuery::new(ElementQuerySource::Driver(self.clone()), poller, by)

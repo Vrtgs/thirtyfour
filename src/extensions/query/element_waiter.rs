@@ -363,7 +363,7 @@ impl ElementWaitable for WebElement {
     /// This uses the builder pattern to construct explicit waits using one of the
     /// provided predicates. Or you can provide your own custom predicate if desired.
     ///
-    /// See [ElementWaiter](query/struct.ElementWaiter.html) for more documentation.
+    /// See [`ElementWaiter`] for more documentation.
     fn wait_until(&self) -> ElementWaiter {
         let poller: ElementPoller = self.handle.config.get_query_poller();
         ElementWaiter::new(self.clone(), poller)
