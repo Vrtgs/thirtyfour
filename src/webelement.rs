@@ -330,6 +330,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// let elem = driver.find(By::Name("input2")).await?;
     /// let attribute: Option<String> = elem.attr("name").await?;
     /// assert_eq!(attribute.unwrap(), "input2");
     ///
@@ -360,6 +361,7 @@ impl WebElement {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// let elem = driver.find(By::Id("my-element-id")).await?;
     /// let css_color = elem.css_value("color").await?;
     /// assert_eq!(css_color, "rgba(0, 0, 0, 1)");
     ///
