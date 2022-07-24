@@ -12,7 +12,7 @@ A number of methods in the `thirtyfour` API have been renamed to more closely al
 with `fantoccini`, as part of the move towards greater compatibility.
 The existing method names remain but have been deprecated.
 
-There are no plans to remove the old methods in the short term, however you should 
+The deprecated methods will remain for the time being, however you should 
 aim to migrate code away from the deprecated methods as soon as is practical.
 
 ## UPDATE ANNOUNCEMENT - v0.29.0
