@@ -126,33 +126,14 @@
 //!
 //! ### ElementPoller
 //!
-//! You can optionally change the default polling behaviour. The same poller will apply to
-//! both `ElementQuery` and `ElementWaiter`.
+//! The polling strategy can be customized by implementing both [`ElementPoller`]
+//! and [`IntoElementPoller`].
 //!
-//! See [`ElementPoller`] for more details about the default polling behaviour.
-//!
-//! ```no_run
-//! # use thirtyfour::prelude::*;
-//! # use thirtyfour::support::block_on;
-//! # use std::time::Duration;
-//! #
-//! # fn main() -> WebDriverResult<()> {
-//! #     block_on(async {
-//! #         let caps = DesiredCapabilities::chrome();
-//! #         let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
-//! let poller = ElementPoller::TimeoutWithInterval(Duration::new(10, 0), Duration::from_millis(500));
-//! driver.set_query_poller(poller);
-//! #         driver.quit().await?;
-//! #         Ok(())
-//! #     })
-//! # }
-//! ```
-//!
-//! Other [`ElementPoller`] options are also available, such as
-//! `NoWait` and `NumTriesWithInterval`.
-//! These can also be overridden on a per-query basis if needed.
+//! See [`ElementPollerWithTimeout`] for more details about the default polling behaviour.
 //!
 //! [`ElementPoller`]: crate::extensions::query::ElementPoller
+//! [`IntoElementPoller`]: crate::extensions::query::IntoElementPoller
+//! [`ElementPollerWithTimeout`]: crate::extensions::query::ElementPollerWithTimeout
 
 pub mod conditions;
 mod element_query;
