@@ -167,13 +167,6 @@ async fn element_screenshot(c: WebDriver, port: u16) -> Result<(), WebDriverErro
     let screenshot_data = elem.screenshot_as_png().await?;
     assert!(!screenshot_data.is_empty(), "screenshot data is empty");
 
-    let path = std::env::temp_dir().join("elem_screenshot.png");
-    elem.screenshot(&path).await?;
-    assert!(path.exists(), "screenshot file doesn't exist");
-    let contents = std::fs::read(path)?;
-    assert!(!contents.is_empty(), "screenshot file is empty");
-    assert_eq!(contents, screenshot_data);
-
     Ok(())
 }
 
