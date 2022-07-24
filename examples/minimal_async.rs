@@ -1,6 +1,6 @@
-//! Requires chromedriver running on port 4444:
+//! Requires chromedriver running on port 9515:
 //!
-//!     chromedriver --port=4444
+//!     chromedriver --port=9515
 //!
 //! Run as follows:
 //!
@@ -12,7 +12,7 @@ use tokio;
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
     let caps = DesiredCapabilities::chrome();
-    let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    let driver = WebDriver::new("http://localhost:9515", caps).await?;
     // Navigate to https://wikipedia.org.
     driver.goto("https://wikipedia.org").await?;
 
