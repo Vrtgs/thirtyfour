@@ -5,9 +5,21 @@
 
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 
-It supports the full W3C WebDriver spec. Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
+It supports the full [W3C WebDriver spec](https://www.w3.org/TR/webdriver1/). Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
 
-## UPDATE ANNOUNCEMENT - v0.30.0
+## Why "thirtyfour" ?
+
+34 is the atomic number for the Selenium chemical element (Se).
+
+## Built on top of fantoccini
+
+The thirtyfour crate uses [fantoccini](https://docs.rs/fantoccini/latest/fantoccini/) as the backend
+for interacting with the underlying WebDriver (chromedriver, geckodriver, etc). `Fantoccini` aims 
+to stick fairly close to the WebDriver specification, whereas `thirtyfour` builds on top of that
+foundation and adds several high-level features as well as exploring ways to improve the 
+ergonomics of browser automation in Rust.
+
+## Important changes in v0.30.0
 
 A number of methods in the `thirtyfour` API have been renamed to more closely align 
 with `fantoccini`, as part of the move towards greater compatibility.
@@ -15,15 +27,6 @@ The existing method names remain but have been deprecated.
 
 The deprecated methods will remain for the time being, however you should 
 aim to migrate code away from the deprecated methods as soon as is practical.
-
-## UPDATE ANNOUNCEMENT - v0.29.0
-
-The `thirtyfour` crate has switched to `fantoccini` as the `WebDriver` client backend 
-from Version 0.29 and onwards, with the goal of reducing duplication of effort and 
-creating a more stable ecosystem around Web Browser automation in Rust.
-
-The update aims to maintain broad API compatibility with previous versions, however there 
-are some breaking changes (see the section on breaking changes for v0.29.x below).
 
 ## Features
 
@@ -39,12 +42,8 @@ are some breaking changes (see the section on breaking changes for v0.29.x below
 - Shadow DOM support
 - Alert support
 - Capture / Save screenshot of browser or individual element as PNG
-- Chrome DevTools Protocol (CDP) support
+- Chrome DevTools Protocol (CDP) support (limited)
 - Advanced query interface including explicit waits and various predicates
-
-## Why 'thirtyfour' ?
-
-It is named after the atomic number for the Selenium chemical element (Se).
 
 ## Feature Flags
 
@@ -176,33 +175,6 @@ elem.wait_until().conditions(vec![
 ```
 
 These predicates (or your own) can also be supplied as filters to `ElementQuery`.
-
-## Breaking changes in v0.29 
-
-- Tokio is now the only supported async runtime (via `fantoccini`)
-- `WebDriver` and all `WebElement` instances no longer contain a reference to the underlying `WebDriverSession`.
-  This makes some things easier since you no longer need to worry about element lifetimes.
-  However it also introduces the potential for your code to issue `WebElement::*` commands after the browser has
-  been closed, which would lead to runtime errors.
-- `WebDriver::new()` now takes ownership of `DesiredCapabilities` rather than taking a reference to it.
-- WebDriver timeouts are currently not supported. `WebDriver::new_with_timeout()` will still create a `WebDriver`
-  instance, however the timeouts will not take effect.
-- The `WebDriverError` enum now mostly wraps `fantoccini::CmdError` with some variants split out into top-level
-  variants for ease-of-use
-- `TypingData` has been removed. You can now just use `&str` and/or the `Key` enum directly
-- Cookie support is now provided by `cookie-rs`, for compatibility with `fantoccini`
-- `ScriptArgs` has been removed. You can provide arguments to scripts as `Vec<serde_json::Value>`. 
-  Use `WebElement::to_json()?` to convert a `WebElement` to a `serde_json::Value`.
-- Likewise, `WebDriver::execute_script_with_args()` has been removed. `WebDriver::execute_script()` now requires
-  a `Vec<serde_json::Value>`, for which you can specify `Vec::new()` or `vec![]` if your script does not require args.
-- `WebDriver::execute_async_script*()` has been renamed to `WebDriver::execute_script_async()` and requires a
-  `Vec<serde_json::Value>` similar to `WebDriver::execute_script()`.
-- `WebElement::screenshot_as_base64()` has been removed. Use `WebElement::screenshot_as_png()` to get the PNG data.
-- `WebDriver::extension_command()` has been removed. Extension commands can be executed by implementing 
-  `WebDriverCompatibleCommand` and passing it to `WebDriver::handle.client.issue_cmd()`
-  (see `ChromeCommand` and `FirefoxCommand` for example of how to do this)
-
-If there are other changes I've missed that should be on this list, please let me know and I'll add them.
 
 ## Running against selenium
 
