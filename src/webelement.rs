@@ -65,6 +65,14 @@ impl fmt::Debug for WebElement {
     }
 }
 
+impl PartialEq for WebElement {
+    fn eq(&self, other: &Self) -> bool {
+        self.element_id() == other.element_id()
+    }
+}
+
+impl Eq for WebElement {}
+
 impl WebElement {
     /// Create a new WebElement struct.
     ///

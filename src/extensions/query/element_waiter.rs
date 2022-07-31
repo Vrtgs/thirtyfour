@@ -1,8 +1,8 @@
 use super::conditions::handle_errors;
-use super::{conditions, ElementPollerWithTimeout, ElementPredicate, IntoElementPoller};
+use super::{conditions, ElementPollerWithTimeout, IntoElementPoller};
 use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
-use crate::WebElement;
+use crate::{ElementPredicate, WebElement};
 use std::time::Duration;
 use stringmatch::Needle;
 

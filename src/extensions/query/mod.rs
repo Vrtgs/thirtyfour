@@ -46,7 +46,7 @@
 //! ```no_run
 //! # use thirtyfour::prelude::*;
 //! # use thirtyfour::support::block_on;
-//! # use thirtyfour::extensions::query::StringMatch;
+//! use thirtyfour::stringmatch::StringMatch;
 //! # use std::time::Duration;
 //! #
 //! # fn main() -> WebDriverResult<()> {
@@ -142,16 +142,3 @@ mod poller;
 pub use element_query::*;
 pub use element_waiter::*;
 pub use poller::*;
-
-use crate::error::WebDriverResult;
-use futures::future::BoxFuture;
-/// Re-export stringmatch::StringMatch for convenience.
-pub use stringmatch::StringMatch;
-
-/// Function signature for element predicates.
-pub type ElementPredicate = Box<
-    dyn Fn(&crate::webelement::WebElement) -> BoxFuture<WebDriverResult<bool>>
-        + Send
-        + Sync
-        + 'static,
->;

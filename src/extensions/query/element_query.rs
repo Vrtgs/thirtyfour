@@ -1,11 +1,9 @@
 use super::conditions::{handle_errors, negate};
-use super::{
-    conditions, ElementPollerNoWait, ElementPollerWithTimeout, ElementPredicate, IntoElementPoller,
-};
+use super::{conditions, ElementPollerNoWait, ElementPollerWithTimeout, IntoElementPoller};
 use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
-use crate::{By, WebElement};
+use crate::{By, ElementPredicate, WebElement};
 use std::time::Duration;
 use stringmatch::Needle;
 
@@ -81,6 +79,58 @@ pub enum ElementQuerySource {
     Element(WebElement),
 }
 
+/// Options for wait characteristics for an element query.
+#[derive(Debug, Clone)]
+pub enum ElementQueryWaitOptions {
+    /// Use the default poller.
+    WaitDefault,
+    /// Use a poller with the specified timeout and interval.
+    Wait {
+        timeout: Duration,
+        interval: Duration,
+    },
+    /// Do not wait. This uses a poller that quits immediately.
+    NoWait,
+}
+
+impl Default for ElementQueryWaitOptions {
+    fn default() -> Self {
+        Self::WaitDefault
+    }
+}
+
+/// All options applicable to an ElementQuery.
+///
+/// These are stored in a separate struct so that they can be constructed
+/// separately and applied to an ElementQuery in bulk if required.
+#[derive(Debug, Default, Clone)]
+#[non_exhaustive]
+pub struct ElementQueryOptions {
+    ignore_errors: bool,
+    description: String,
+    wait: ElementQueryWaitOptions,
+}
+
+impl ElementQueryOptions {
+    /// Set whether to ignore errors when querying elements.
+    pub fn ignore_errors(mut self, ignore_errors: bool) -> Self {
+        self.ignore_errors = ignore_errors;
+        self
+    }
+
+    /// Set the description to be used in error messages for this element query.
+    pub fn description(mut self, description: impl Into<String>) -> Self {
+        self.description = description.into();
+        self
+    }
+
+    /// Set the wait options for this element query.
+    pub fn wait(mut self, wait_option: ElementQueryWaitOptions) -> Self {
+        self.wait = wait_option;
+        self
+    }
+}
+
 /// High-level interface for performing powerful element queries using a
 /// builder pattern.
 ///
@@ -106,32 +156,41 @@ pub enum ElementQuerySource {
 /// ```
 pub struct ElementQuery {
     source: ElementQuerySource,
-    poller: Box<dyn IntoElementPoller + Send + Sync>,
+    poller: Option<Box<dyn IntoElementPoller + Send + Sync>>,
     selectors: Vec<ElementSelector>,
-    ignore_errors: bool,
-    description: String,
+    options: ElementQueryOptions,
 }
 
 impl ElementQuery {
-    fn new(
-        source: ElementQuerySource,
-        poller: Box<dyn IntoElementPoller + Send + Sync>,
-        by: By,
-    ) -> Self {
+    fn new(source: ElementQuerySource, by: By) -> Self {
         let selector = ElementSelector::new(by);
         Self {
             source,
-            poller,
+            poller: None,
             selectors: vec![selector],
-            ignore_errors: true,
-            description: String::new(),
+            options: ElementQueryOptions::default(),
+        }
+    }
+
+    /// Provide the options to use with this query.
+    pub fn options(mut self, options: ElementQueryOptions) -> Self {
+        self.options = options;
+
+        // Apply wait options.
+        match self.options.wait {
+            ElementQueryWaitOptions::WaitDefault => self,
+            ElementQueryWaitOptions::Wait {
+                timeout,
+                interval,
+            } => self.wait(timeout, interval),
+            ElementQueryWaitOptions::NoWait => self.nowait(),
         }
     }
 
     /// Provide a name that will be included in the error message if the query was not successful.
     /// This is useful for providing more context about this particular query.
     pub fn desc(mut self, description: &str) -> Self {
-        self.description = description.to_string();
+        self.options = self.options.description(description);
         self
     }
 
@@ -139,7 +198,7 @@ impl ElementQuery {
     /// element(s). However, this behaviour can be modified so that the waiter will return
     /// early if an error is returned from thirtyfour.
     pub fn ignore_errors(mut self, ignore: bool) -> Self {
-        self.ignore_errors = ignore;
+        self.options = self.options.ignore_errors(ignore);
         self
     }
 
@@ -150,7 +209,7 @@ impl ElementQuery {
     /// Use the specified ElementPoller for this ElementQuery.
     /// This will not affect the default ElementPoller used for other queries.
     pub fn with_poller(mut self, poller: Box<dyn IntoElementPoller + Send + Sync>) -> Self {
-        self.poller = poller;
+        self.poller = Some(poller);
         self
     }
 
@@ -216,7 +275,7 @@ impl ElementQuery {
         let mut elements = self.run_poller(false).await?;
 
         if elements.is_empty() {
-            let err = no_such_element(&self.selectors, &self.description);
+            let err = no_such_element(&self.selectors, &self.options.description);
             Err(err)
         } else {
             Ok(elements.remove(0))
@@ -234,7 +293,7 @@ impl ElementQuery {
         if elements.len() == 1 {
             Ok(elements.remove(0))
         } else {
-            let err = no_such_element(&self.selectors, &self.description);
+            let err = no_such_element(&self.selectors, &self.options.description);
             Err(err)
         }
     }
@@ -253,7 +312,7 @@ impl ElementQuery {
         let elements = self.run_poller(false).await?;
 
         if elements.is_empty() {
-            Err(no_such_element(&self.selectors, &self.description))
+            Err(no_such_element(&self.selectors, &self.options.description))
         } else {
             Ok(elements)
         }
@@ -266,7 +325,7 @@ impl ElementQuery {
     /// Run the poller for this ElementQuery and return the Vec of WebElements matched.
     /// NOTE: This function doesn't return a no_such_element error and the caller must handle it.
     async fn run_poller(&self, inverted: bool) -> WebDriverResult<Vec<WebElement>> {
-        let no_such_element_error = no_such_element(&self.selectors, &self.description);
+        let no_such_element_error = no_such_element(&self.selectors, &self.options.description);
         if self.selectors.is_empty() {
             return Err(no_such_element_error);
         }
@@ -279,7 +338,11 @@ impl ElementQuery {
             }
         };
 
-        let mut poller = self.poller.start();
+        // Start the poller.
+        let mut poller = match &self.poller {
+            Some(p) => p.start(),
+            None => Box::new(ElementPollerWithTimeout::default()).start(),
+        };
 
         loop {
             for selector in &self.selectors {
@@ -331,49 +394,49 @@ impl ElementQuery {
 
     /// Only match elements that are enabled.
     pub fn and_enabled(self) -> Self {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_is_enabled(ignore_errors))
     }
 
     /// Only match elements that are NOT enabled.
     pub fn and_not_enabled(self) -> Self {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_is_not_enabled(ignore_errors))
     }
 
     /// Only match elements that are selected.
     pub fn and_selected(self) -> Self {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_is_selected(ignore_errors))
     }
 
     /// Only match elements that are NOT selected.
     pub fn and_not_selected(self) -> Self {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_is_not_selected(ignore_errors))
     }
 
     /// Only match elements that are displayed.
     pub fn and_displayed(self) -> Self {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_is_displayed(ignore_errors))
     }
 
     /// Only match elements that are NOT displayed.
     pub fn and_not_displayed(self) -> Self {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_is_not_displayed(ignore_errors))
     }
 
     /// Only match elements that are clickable.
     pub fn and_clickable(self) -> Self {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_is_clickable(ignore_errors))
     }
 
     /// Only match elements that are NOT clickable.
     pub fn and_not_clickable(self) -> Self {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_is_not_clickable(ignore_errors))
     }
 
@@ -387,7 +450,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_has_text(text, ignore_errors))
     }
 
@@ -397,7 +460,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_lacks_text(text, ignore_errors))
     }
 
@@ -407,7 +470,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(Box::new(move |elem| {
             let id = id.clone();
             Box::pin(async move {
@@ -426,7 +489,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(Box::new(move |elem| {
             let id = id.clone();
             Box::pin(async move {
@@ -445,7 +508,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_has_class(class_name, ignore_errors))
     }
 
@@ -455,7 +518,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_lacks_class(class_name, ignore_errors))
     }
 
@@ -465,7 +528,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(Box::new(move |elem| {
             let tag_name = tag_name.clone();
             Box::pin(async move {
@@ -480,7 +543,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(Box::new(move |elem| {
             let tag_name = tag_name.clone();
             Box::pin(async move {
@@ -495,7 +558,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_has_value(value, ignore_errors))
     }
 
@@ -505,7 +568,7 @@ impl ElementQuery {
     where
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_lacks_value(value, ignore_errors))
     }
 
@@ -516,7 +579,7 @@ impl ElementQuery {
         S: Into<String>,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_has_attribute(attribute_name, value, ignore_errors))
     }
 
@@ -527,7 +590,7 @@ impl ElementQuery {
         S: Into<String>,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_lacks_attribute(attribute_name, value, ignore_errors))
     }
 
@@ -538,7 +601,7 @@ impl ElementQuery {
         S: Into<String> + Clone,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_has_attributes(desired_attributes, ignore_errors))
     }
 
@@ -549,7 +612,7 @@ impl ElementQuery {
         S: Into<String> + Clone,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_lacks_attributes(desired_attributes, ignore_errors))
     }
 
@@ -560,7 +623,7 @@ impl ElementQuery {
         S: Into<String>,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_has_property(property_name, value, ignore_errors))
     }
 
@@ -571,7 +634,7 @@ impl ElementQuery {
         S: Into<String>,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_lacks_property(property_name, value, ignore_errors))
     }
 
@@ -582,7 +645,7 @@ impl ElementQuery {
         S: Into<String> + Clone,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_has_properties(desired_properties, ignore_errors))
     }
 
@@ -593,7 +656,7 @@ impl ElementQuery {
         S: Into<String> + Clone,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_lacks_properties(desired_properties, ignore_errors))
     }
 
@@ -604,7 +667,7 @@ impl ElementQuery {
         S: Into<String>,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_has_css_property(
             css_property_name,
             value,
@@ -619,7 +682,7 @@ impl ElementQuery {
         S: Into<String>,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_lacks_css_property(
             css_property_name,
             value,
@@ -635,7 +698,7 @@ impl ElementQuery {
         S: Into<String> + Clone,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_has_css_properties(
             desired_css_properties,
             ignore_errors,
@@ -650,7 +713,7 @@ impl ElementQuery {
         S: Into<String> + Clone,
         N: Needle + Clone + Send + Sync + 'static,
     {
-        let ignore_errors = self.ignore_errors;
+        let ignore_errors = self.options.ignore_errors;
         self.with_filter(conditions::element_lacks_css_properties(
             desired_css_properties,
             ignore_errors,
@@ -671,8 +734,7 @@ impl ElementQueryable for WebElement {
     ///
     /// See [`ElementQuery`] for more documentation.
     fn query(&self, by: By) -> ElementQuery {
-        let poller = Box::new(ElementPollerWithTimeout::default());
-        ElementQuery::new(ElementQuerySource::Element(self.clone()), poller, by)
+        ElementQuery::new(ElementQuerySource::Element(self.clone()), by)
     }
 }
 
@@ -684,8 +746,7 @@ impl ElementQueryable for SessionHandle {
     ///
     /// See [`ElementQuery`] for more documentation.
     fn query(&self, by: By) -> ElementQuery {
-        let poller = Box::new(ElementPollerWithTimeout::default());
-        ElementQuery::new(ElementQuerySource::Driver(self.clone()), poller, by)
+        ElementQuery::new(ElementQuerySource::Driver(self.clone()), by)
     }
 }
 

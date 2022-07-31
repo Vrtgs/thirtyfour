@@ -1,6 +1,8 @@
-use crate::ElementRef;
+use crate::{ElementRef, WebElement};
+use futures::future::BoxFuture;
 use std::{fmt, ops::Deref};
 
+use crate::error::WebDriverResult;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -137,3 +139,10 @@ impl Rect {
         }
     }
 }
+
+/// Generic element query function that returns some type T.
+pub type ElementQueryFn<T> =
+    Box<dyn Fn(&WebElement) -> BoxFuture<WebDriverResult<T>> + Send + Sync + 'static>;
+
+/// Function signature for element predicates.
+pub type ElementPredicate = ElementQueryFn<bool>;

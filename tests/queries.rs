@@ -1,5 +1,7 @@
 use crate::common::sample_page_url;
+use assert_matches::assert_matches;
 use serial_test::serial;
+use thirtyfour::components::{ElementResolverMulti, ElementResolverSingle};
 use thirtyfour::{components::SelectElement, prelude::*};
 
 mod common;
@@ -20,6 +22,58 @@ async fn find_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     c.goto(&url).await?;
     let elems = c.find_all(By::Css("nav a")).await?;
     assert_eq!(elems.len(), 2);
+    Ok(())
+}
+
+async fn query(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+    let elem = c.query(By::Css("nav a")).first().await?;
+    assert_eq!(elem.id().await?.unwrap(), "other_page_id");
+    let elem_result = c.query(By::Css("nav a")).single().await;
+    assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
+    Ok(())
+}
+
+async fn query_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+    let elems = c.query(By::Css("nav a")).all_required().await?;
+    assert_eq!(elems.len(), 2);
+    let elems = c.query(By::Id("doesnotexist")).all().await?;
+    assert!(elems.is_empty());
+    let elem_result = c.query(By::Id("doesnotexist")).all_required().await;
+    assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
+    Ok(())
+}
+
+async fn resolve(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+    let base_element = c.find(By::ClassName("vertical")).await?;
+    let mut resolver = ElementResolverSingle::new_first(base_element.clone(), By::Css("nav a"));
+    let elem = resolver.query().await?.clone();
+    assert_eq!(elem.id().await?.unwrap(), "other_page_id");
+    let elem2 = resolver.query_checked().await?.clone();
+    assert_eq!(elem2.id().await?.unwrap(), "other_page_id");
+    assert_eq!(elem, elem2);
+    let mut resolver = ElementResolverSingle::new_single(base_element, By::Css("nav a"));
+    let elem_result = resolver.query().await;
+    assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
+
+    Ok(())
+}
+
+async fn resolve_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+    let base_element = c.find(By::ClassName("vertical")).await?;
+    let mut resolver = ElementResolverMulti::new_not_empty(base_element, By::Css("nav a"));
+    let elems = resolver.query().await?.clone();
+    assert_eq!(elems.len(), 2);
+    let elems2 = resolver.query_checked().await?.clone();
+    assert_eq!(elems.len(), 2);
+    assert_eq!(elems, elems2);
     Ok(())
 }
 
@@ -134,6 +188,30 @@ mod firefox {
 
     #[test]
     #[serial]
+    fn query_test() {
+        local_tester!(query, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn query_all_test() {
+        local_tester!(query_all, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn resolve_test() {
+        local_tester!(resolve, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn resolve_all_test() {
+        local_tester!(resolve_all, "firefox");
+    }
+
+    #[test]
+    #[serial]
     fn stale_element_test() {
         local_tester!(stale_element, "firefox");
     }
@@ -169,6 +247,26 @@ mod chrome {
     #[test]
     fn find_all_test() {
         local_tester!(find_all, "chrome");
+    }
+
+    #[test]
+    fn query_test() {
+        local_tester!(query, "chrome");
+    }
+
+    #[test]
+    fn query_all_test() {
+        local_tester!(query_all, "chrome");
+    }
+
+    #[test]
+    fn resolve_test() {
+        local_tester!(resolve, "chrome");
+    }
+
+    #[test]
+    fn resolve_all_test() {
+        local_tester!(resolve_all, "chrome");
     }
 
     #[test]

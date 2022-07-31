@@ -1,5 +1,5 @@
-use super::ElementPredicate;
 use crate::error::WebDriverResult;
+use crate::ElementPredicate;
 use stringmatch::Needle;
 
 pub(crate) fn handle_errors(
