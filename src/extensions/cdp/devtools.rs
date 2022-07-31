@@ -1,9 +1,8 @@
-use serde_json::{json, Value};
-
+use super::ChromeCommand;
+use super::NetworkConditions;
 use crate::error::WebDriverResult;
-use crate::extensions::chrome::networkconditions::NetworkConditions;
-use crate::extensions::chrome::ChromeCommand;
 use crate::session::handle::SessionHandle;
+use serde_json::{json, Value};
 
 /// The ChromeDevTools struct allows you to interact with Chromium-based browsers via
 /// the Chrome Devtools Protocol (CDP).
@@ -15,7 +14,7 @@ use crate::session::handle::SessionHandle;
 /// ```no_run
 /// # use thirtyfour::prelude::*;
 /// # use thirtyfour::support::block_on;
-/// # use thirtyfour::extensions::chrome::ChromeDevTools;
+/// # use thirtyfour::extensions::cdp::ChromeDevTools;
 /// #
 /// # fn main() -> WebDriverResult<()> {
 /// #     block_on(async {
@@ -42,10 +41,10 @@ impl ChromeDevTools {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::extensions::chrome::ChromeDevTools;
+    /// use thirtyfour::extensions::cdp::ChromeDevTools;
     /// #
     /// # fn main() -> WebDriverResult<()> {
-    /// #     block_on(async {
+    /// block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// let dev_tools = ChromeDevTools::new(driver.handle.clone());
@@ -72,7 +71,7 @@ impl ChromeDevTools {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::extensions::chrome::{ChromeDevTools, NetworkConditions};
+    /// use thirtyfour::extensions::cdp::{ChromeDevTools, NetworkConditions};
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -106,7 +105,7 @@ impl ChromeDevTools {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::extensions::chrome::{ChromeDevTools, NetworkConditions};
+    /// use thirtyfour::extensions::cdp::{ChromeDevTools, NetworkConditions};
     ///
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -154,7 +153,7 @@ impl ChromeDevTools {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::extensions::chrome::ChromeDevTools;
+    /// use thirtyfour::extensions::cdp::ChromeDevTools;
     ///
     /// #
     /// # fn main() -> WebDriverResult<()> {
@@ -185,7 +184,7 @@ impl ChromeDevTools {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::extensions::chrome::ChromeDevTools;
+    /// use thirtyfour::extensions::cdp::ChromeDevTools;
     /// use serde_json::json;
     /// #
     /// # fn main() -> WebDriverResult<()> {

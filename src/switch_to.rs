@@ -1,10 +1,9 @@
 use crate::session::handle::SessionHandle;
+use crate::WindowHandle;
 use crate::{
     error::{WebDriverError, WebDriverResult},
     Alert, WebElement,
 };
-use fantoccini::elements::Element;
-use fantoccini::wd::WindowHandle;
 
 /// Struct for switching between frames/windows/alerts.
 pub struct SwitchTo {
@@ -57,7 +56,10 @@ impl SwitchTo {
         note = "This method has been moved to WebElement::enter_frame()"
     )]
     pub async fn frame_element(self, frame_element: &WebElement) -> WebDriverResult<()> {
-        let frame = Element::from_element_id(self.handle.client, frame_element.element_id());
+        let frame = fantoccini::elements::Element::from_element_id(
+            self.handle.client,
+            frame_element.element_id(),
+        );
         frame.enter_frame().await?;
         Ok(())
     }

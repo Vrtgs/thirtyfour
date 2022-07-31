@@ -57,7 +57,7 @@
 //!     // Look for header to implicitly wait for the page to load.
 //!     driver.find(By::ClassName("firstHeading")).await?;
 //!     assert_eq!(driver.title().await?, "Selenium - Wikipedia");
-//!    
+//!
 //!     // Always explicitly close the browser.
 //!     driver.quit().await?;
 //!
@@ -102,6 +102,7 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_doctest_main)]
 
+// Export types at root level.
 pub use alert::Alert;
 pub use common::{
     capabilities::{
@@ -112,8 +113,6 @@ pub use common::{
     command::By,
     types::*,
 };
-pub use cookie;
-pub use fantoccini::wd::{TimeoutConfiguration, WindowHandle};
 pub use switch_to::SwitchTo;
 pub use webdriver::WebDriver;
 pub use webelement::WebElement;
@@ -125,23 +124,21 @@ pub mod prelude {
     pub use crate::extensions::query::{ElementPoller, ElementQueryable, ElementWaitable};
     pub use crate::session::scriptret::ScriptRet;
     pub use crate::switch_to::SwitchTo;
-    pub use crate::webdriver::WebDriver;
-    pub use crate::webelement::WebElement;
+    pub use crate::WebDriver;
+    pub use crate::WebElement;
     pub use crate::{By, Capabilities, DesiredCapabilities};
-    pub use crate::{TimeoutConfiguration, WindowHandle};
-    pub use fantoccini::cookies::Cookie;
-    pub use fantoccini::key::Key;
+    pub use crate::{Cookie, Key, TimeoutConfiguration, WindowHandle};
 }
 
 /// Action chains allow for more complex user interactions with the keyboard and mouse.
 pub mod action_chain;
 /// Alert handling.
 pub mod alert;
-/// Common types used by both async and sync implementations.
+/// Common wrappers used by both async and sync implementations.
 pub mod common;
-/// Wrappers for specific component types.
+/// Wrappers for specific component wrappers.
 pub mod components;
-/// Error types.
+/// Error wrappers.
 pub mod error;
 /// Extensions for specific browsers.
 pub mod extensions;
@@ -149,12 +146,17 @@ pub mod extensions;
 pub mod session;
 /// Miscellaneous support functions for `thirtyfour` tests.
 pub mod support;
+
 mod switch_to;
+mod upstream;
 mod webdriver;
 mod webelement;
 
 // Re-export StringMatch if needed.
-pub use stringmatch;
+pub extern crate stringmatch;
 
-// Re-export fantoccini types.
-pub use fantoccini::key::Key;
+// Re-export fantoccini wrappers.
+pub use crate::upstream::*;
+
+// Re-export cookie crate.
+pub use cookie;

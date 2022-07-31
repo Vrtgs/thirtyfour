@@ -1,4 +1,3 @@
-pub use fantoccini::wd::Capabilities;
 use serde::Serialize;
 use serde_json::{json, to_value, Value};
 
@@ -9,6 +8,7 @@ use crate::common::capabilities::ie::InternetExplorerCapabilities;
 use crate::common::capabilities::opera::OperaCapabilities;
 use crate::common::capabilities::safari::SafariCapabilities;
 use crate::error::WebDriverResult;
+use crate::Capabilities;
 
 const W3C_CAPABILITY_NAMES: &[&str] = &[
     "acceptInsecureCerts",
@@ -29,8 +29,8 @@ const OSS_W3C_CONVERSION: &[(&str, &str)] = &[
     ("platform", "platformName"),
 ];
 
-pub fn make_w3c_caps(caps: &serde_json::Value) -> serde_json::Value {
-    let mut always_match = serde_json::json!({});
+pub fn make_w3c_caps(caps: &Value) -> Value {
+    let mut always_match = json!({});
 
     if let Some(caps_map) = caps.as_object() {
         for (k, v) in caps_map.iter() {
@@ -124,23 +124,6 @@ impl DesiredCapabilities {
     }
 }
 
-/// Add generic Capabilities implementation. This can be used as a convenient way to
-/// interact with the returned capabilities from a WebDriver instance, or as a way
-/// to construct a custom capabilities JSON struct.
-impl CapabilitiesHelper for DesiredCapabilities {
-    fn get(&self, key: &str) -> Option<&Value> {
-        self.capabilities.get(key)
-    }
-
-    fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
-        self.capabilities.get_mut(key)
-    }
-
-    fn set(&mut self, key: String, value: Value) {
-        self.capabilities.insert(key, value);
-    }
-}
-
 impl From<DesiredCapabilities> for Capabilities {
     fn from(caps: DesiredCapabilities) -> Capabilities {
         caps.capabilities
@@ -149,19 +132,19 @@ impl From<DesiredCapabilities> for Capabilities {
 
 pub trait CapabilitiesHelper {
     /// Get an immutable reference to the underlying serde_json::Value.
-    fn get(&self, key: &str) -> Option<&Value>;
+    fn _get(&self, key: &str) -> Option<&Value>;
 
     /// Get a mutable reference to the underlying serde_json::Value.
-    fn get_mut(&mut self, key: &str) -> Option<&mut Value>;
+    fn _get_mut(&mut self, key: &str) -> Option<&mut Value>;
 
-    fn set(&mut self, key: String, value: Value);
+    fn _set(&mut self, key: String, value: Value);
 
     /// Add any Serialize-able object to the capabilities under the specified key.
     fn add<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
     where
         T: Serialize,
     {
-        self.set(key.to_string(), to_value(value)?);
+        self._set(key.to_string(), to_value(value)?);
         Ok(())
     }
 
@@ -170,18 +153,18 @@ pub trait CapabilitiesHelper {
     where
         T: Serialize,
     {
-        match self.get_mut(key) {
+        match self._get_mut(key) {
             Some(v) => {
                 v[subkey] = to_value(value)?;
             }
-            None => self.set(key.to_string(), json!({ subkey: value })),
+            None => self._set(key.to_string(), json!({ subkey: value })),
         }
         Ok(())
     }
 
     /// Remove a subkey from the specified key, if it exists.
     fn remove_subkey(&mut self, key: &str, subkey: &str) -> WebDriverResult<()> {
-        if let Some(Value::Object(v)) = self.get_mut(key) {
+        if let Some(Value::Object(v)) = &mut self._get_mut(key) {
             v.remove(subkey);
         }
         Ok(())
@@ -191,14 +174,14 @@ pub trait CapabilitiesHelper {
     /// matching keys that already exist.
     fn update(&mut self, key: &str, value: Value) {
         assert!(value.is_object());
-        let merged = match self.get_mut(key) {
+        let merged = match self._get_mut(key) {
             Some(x) => {
                 merge(x, value);
                 x.clone()
             }
             None => value,
         };
-        self.set(key.to_string(), merged);
+        self._set(key.to_string(), merged);
     }
 
     /// Set the desired browser version.
@@ -275,12 +258,26 @@ pub trait CapabilitiesHelper {
 
     /// Get whether the session can interact with modal popups such as `window.alert`.
     fn handles_alerts(&self) -> Option<bool> {
-        self.get("handlesAlerts").and_then(|x| x.as_bool())
+        self._get("handlesAlerts").and_then(|x| x.as_bool())
     }
 
     /// Get whether the session supports CSS selectors when searching for elements.
     fn css_selectors_enabled(&self) -> Option<bool> {
-        self.get("cssSelectorsEnabled").and_then(|x| x.as_bool())
+        self._get("cssSelectorsEnabled").and_then(|x| x.as_bool())
+    }
+}
+
+impl CapabilitiesHelper for Capabilities {
+    fn _get(&self, key: &str) -> Option<&Value> {
+        self.get(key)
+    }
+
+    fn _get_mut(&mut self, key: &str) -> Option<&mut Value> {
+        self.get_mut(key)
+    }
+
+    fn _set(&mut self, key: String, value: Value) {
+        self.insert(key, value);
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::extensions::chrome::NetworkConditions;
+use super::NetworkConditions;
 use fantoccini::wd::WebDriverCompatibleCommand;
 use http::Method;
 use serde_json::{json, Value};

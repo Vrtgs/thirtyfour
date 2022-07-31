@@ -1,4 +1,4 @@
-use fantoccini::Locator;
+use crate::Locator;
 use std::fmt;
 use std::fmt::Debug;
 

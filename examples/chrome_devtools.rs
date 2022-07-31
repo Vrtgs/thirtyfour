@@ -6,7 +6,7 @@
 //!
 //!     cargo run --example chrome_devtools
 
-use thirtyfour::extensions::chrome::{ChromeDevTools, NetworkConditions};
+use thirtyfour::extensions::cdp::{ChromeDevTools, NetworkConditions};
 use thirtyfour::prelude::*;
 
 #[tokio::main]

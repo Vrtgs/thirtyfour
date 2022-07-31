@@ -1,10 +1,10 @@
-use serde::Serialize;
-use serde_json::{from_value, json, to_value, Value};
-
 use crate::error::WebDriverResult;
+use crate::Capabilities;
 use crate::CapabilitiesHelper;
-use fantoccini::wd::Capabilities;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
+use serde_json::{from_value, json, to_value};
+use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
 #[derive(Debug, Clone, Serialize)]
@@ -195,22 +195,22 @@ impl ChromeCapabilities {
     }
 }
 
-impl CapabilitiesHelper for ChromeCapabilities {
-    fn get(&self, key: &str) -> Option<&Value> {
-        self.capabilities.get(key)
-    }
-
-    fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
-        self.capabilities.get_mut(key)
-    }
-
-    fn set(&mut self, key: String, value: Value) {
-        self.capabilities.insert(key, value);
-    }
-}
-
 impl From<ChromeCapabilities> for Capabilities {
     fn from(caps: ChromeCapabilities) -> Capabilities {
         caps.capabilities
+    }
+}
+
+impl Deref for ChromeCapabilities {
+    type Target = Capabilities;
+
+    fn deref(&self) -> &Self::Target {
+        &self.capabilities
+    }
+}
+
+impl DerefMut for ChromeCapabilities {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.capabilities
     }
 }

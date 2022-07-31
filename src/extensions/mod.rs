@@ -1,6 +1,6 @@
+/// Extensions for working with Firefox Addons.
+pub mod addons;
+/// Extensions for Chrome Devtools Protocol
+pub mod cdp;
 // ElementQuery and ElementWaiter interfaces.
-pub mod chrome;
-/// Extensions for working with Firefox.
-pub mod firefox;
-/// Extensions for working with Chromium-based browsers.
 pub mod query;

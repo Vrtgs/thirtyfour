@@ -1,3 +1,11 @@
+use crate::action_chain::ActionChain;
+use crate::error::{WebDriverError, WebDriverResult};
+use crate::session::scriptret::ScriptRet;
+use crate::Cookie;
+use crate::{By, Rect, SessionId, SwitchTo, WebElement};
+use crate::{TimeoutConfiguration, WebDriverStatus, WindowHandle};
+use fantoccini::elements::Element;
+use fantoccini::error::CmdError;
 use serde_json::Value;
 use std::future::Future;
 use std::path::Path;
@@ -5,21 +13,11 @@ use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
-use fantoccini::cookies::Cookie;
-use fantoccini::elements::Element;
-use fantoccini::error::CmdError;
-use fantoccini::wd::{TimeoutConfiguration, WebDriverStatus, WindowHandle};
-
-use crate::action_chain::ActionChain;
-use crate::error::{WebDriverError, WebDriverResult};
-use crate::session::scriptret::ScriptRet;
-use crate::{By, Rect, SessionId, SwitchTo, WebElement};
-
 /// The SessionHandle contains a shared reference to the [`WebDriverConfig`] as well
 /// as the [`fantoccini::Client`] to allow sending commands to the underlying WebDriver.
 #[derive(Clone)]
 pub struct SessionHandle {
-    pub client: fantoccini::Client,
+    pub(crate) client: fantoccini::Client,
     pub session_id: String,
 }
 
@@ -880,7 +878,7 @@ impl SessionHandle {
     /// [`Actions`]: fantoccini::actions::Actions
     pub async fn perform_actions(
         &self,
-        actions: impl Into<fantoccini::actions::Actions>,
+        actions: impl Into<crate::actions::Actions>,
     ) -> WebDriverResult<()> {
         self.client.perform_actions(actions).await?;
         Ok(())

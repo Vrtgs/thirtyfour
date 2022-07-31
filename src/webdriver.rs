@@ -1,8 +1,7 @@
 use crate::error::WebDriverResult;
 use crate::session::handle::SessionHandle;
+use crate::Capabilities;
 use std::ops::{Deref, DerefMut};
-
-use fantoccini::wd::Capabilities;
 
 /// The `WebDriver` struct encapsulates an async Selenium WebDriver browser
 /// session.
@@ -26,6 +25,7 @@ use fantoccini::wd::Capabilities;
 /// #     })
 /// # }
 /// ```
+#[derive(Clone)]
 pub struct WebDriver {
     pub handle: SessionHandle,
 }

@@ -1,10 +1,9 @@
-use crate::session::handle::SessionHandle;
-use crate::{error::WebDriverResult, WebElement};
-use fantoccini::actions::{
+use crate::actions::{
     ActionSequence, InputSource, KeyAction, KeyActions, MouseActions, PointerAction,
     MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT,
 };
-
+use crate::session::handle::SessionHandle;
+use crate::{error::WebDriverResult, WebElement};
 use std::time::Duration;
 
 /// The ActionChain struct allows you to perform multiple input actions in

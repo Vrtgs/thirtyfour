@@ -1,12 +1,10 @@
+use super::FirefoxCommand;
+use crate::error::{WebDriverError, WebDriverResult};
+use crate::session::handle::SessionHandle;
+use fantoccini::error::CmdError;
 use std::path::Path;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-
-use fantoccini::error::CmdError;
-
-use crate::error::{WebDriverError, WebDriverResult};
-use crate::extensions::firefox::FirefoxCommand;
-use crate::session::handle::SessionHandle;
 
 #[derive(Clone)]
 pub struct FirefoxTools {
@@ -20,7 +18,7 @@ impl FirefoxTools {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::extensions::firefox::FirefoxTools;
+    /// use thirtyfour::extensions::addons::firefox::FirefoxTools;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {

@@ -1,4 +1,4 @@
-use fantoccini::elements::ElementRef;
+use crate::ElementRef;
 use std::{fmt, ops::Deref};
 
 use serde::{Deserialize, Serialize};

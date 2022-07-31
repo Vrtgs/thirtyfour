@@ -86,10 +86,10 @@ macro_rules! tester_inner {
             let c = rt.block_on(c).expect("failed to construct test WebDriver");
             *sid.lock().unwrap() = rt.block_on(c.session_id()).ok();
             // make sure we close, even if an assertion fails
-            let handle = c.handle.clone();
+            let client = c.clone();
             let x = rt.block_on(async move {
                 let r = tokio::spawn($f(c)).await;
-                let _ = handle.client.close().await;
+                let _ = client.quit().await;
                 r
             });
             drop(rt);

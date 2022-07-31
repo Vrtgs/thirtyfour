@@ -1,7 +1,7 @@
-use crate::CapabilitiesHelper;
-use fantoccini::wd::Capabilities;
+use crate::Capabilities;
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::json;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
@@ -25,22 +25,22 @@ impl SafariCapabilities {
     }
 }
 
-impl CapabilitiesHelper for SafariCapabilities {
-    fn get(&self, key: &str) -> Option<&Value> {
-        self.capabilities.get(key)
-    }
-
-    fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
-        self.capabilities.get_mut(key)
-    }
-
-    fn set(&mut self, key: String, value: Value) {
-        self.capabilities.insert(key, value);
-    }
-}
-
 impl From<SafariCapabilities> for Capabilities {
     fn from(caps: SafariCapabilities) -> Capabilities {
         caps.capabilities
+    }
+}
+
+impl Deref for SafariCapabilities {
+    type Target = Capabilities;
+
+    fn deref(&self) -> &Self::Target {
+        &self.capabilities
+    }
+}
+
+impl DerefMut for SafariCapabilities {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.capabilities
     }
 }

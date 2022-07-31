@@ -1,15 +1,15 @@
-use fantoccini::elements::{Element, ElementRef};
+use fantoccini::elements::Element;
 use fantoccini::error::CmdError;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 use std::fmt;
-use std::fmt::{Debug, Formatter};
 use std::path::Path;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 use crate::error::WebDriverError;
 use crate::session::handle::SessionHandle;
+use crate::upstream::ElementRef;
 use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHelper};
 
 /// The WebElement struct encapsulates a single element on a page.
@@ -55,12 +55,12 @@ use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHe
 ///
 #[derive(Clone)]
 pub struct WebElement {
-    pub element: Element,
+    pub(crate) element: Element,
     pub handle: SessionHandle,
 }
 
-impl Debug for WebElement {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Debug for WebElement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("WebElement").field("element", &self.element).finish()
     }
 }
@@ -597,7 +597,7 @@ impl WebElement {
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
-    /// #     block_on(async {
+    /// block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// let elem = driver.find(By::Name("input1")).await?;
