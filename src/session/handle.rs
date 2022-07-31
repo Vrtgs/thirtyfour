@@ -2,9 +2,9 @@ use crate::action_chain::ActionChain;
 use crate::error::{WebDriverError, WebDriverResult};
 use crate::session::scriptret::ScriptRet;
 use crate::Cookie;
+use crate::Form;
 use crate::{By, Rect, SessionId, SwitchTo, WebElement};
 use crate::{TimeoutConfiguration, WebDriverStatus, WindowHandle};
-use fantoccini::elements::Element;
 use fantoccini::error::CmdError;
 use serde_json::Value;
 use std::future::Future;
@@ -39,7 +39,7 @@ impl SessionHandle {
     }
 
     /// Convert a fantoccini `Element` into a thirtyfour `WebElement`.
-    fn wrap_element(&self, element: Element) -> WebElement {
+    fn wrap_element(&self, element: fantoccini::elements::Element) -> WebElement {
         WebElement::new(element, self.clone())
     }
 
@@ -259,6 +259,19 @@ impl SessionHandle {
     #[deprecated(since = "0.30.0", note = "This method has been renamed to find_all()")]
     pub async fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         self.find_all(by).await
+    }
+
+    /// Locate a form on the page.
+    ///
+    /// Through the returned `Form`, HTML forms can be filled out and submitted.
+    pub async fn form(&self, by: impl Into<By>) -> WebDriverResult<Form> {
+        let by = by.into();
+        let form = self.client.form(by.locator()).await.map_err(|e| match e {
+            // It's generally only useful to know the element query that failed.
+            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
+            x => WebDriverError::CmdError(x),
+        })?;
+        Ok(form)
     }
 
     /// Execute the specified Javascript synchronously and return the result.

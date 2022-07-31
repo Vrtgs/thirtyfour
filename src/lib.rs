@@ -155,7 +155,7 @@ mod webelement;
 // Re-export StringMatch if needed.
 pub extern crate stringmatch;
 
-// Re-export fantoccini wrappers.
+// Re-export common fantoccini types at the root level.
 pub use crate::upstream::*;
 
 // Re-export cookie crate.
