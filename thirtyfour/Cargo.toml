@@ -21,7 +21,7 @@ categories = ["api-bindings", "development-tools::testing", "web-programming::ht
 default = ["rusttls-tls", "component"]
 rusttls-tls = ["fantoccini/rustls-tls"]
 native-tls = ["fantoccini/native-tls"]
-component = ["thirtyfour_macros"]
+component = ["thirtyfour-macros"]
 
 [dependencies]
 async-trait = "0.1.56"
