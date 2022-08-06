@@ -1,3 +1,8 @@
+//! Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
+//!
+//! This crate provides proc macros for use with [thirtyfour](https://docs.rs/thirtyfour).
+//!
+
 extern crate proc_macro;
 use itertools::izip;
 use proc_macro::TokenStream;
