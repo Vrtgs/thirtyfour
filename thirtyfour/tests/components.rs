@@ -9,7 +9,7 @@ use thirtyfour::{prelude::*, resolve, resolve_present};
 mod common;
 
 /// This component shows how to nest components inside others.
-#[derive(Debug, Component, Clone)]
+#[derive(Debug, Clone, Component)]
 pub struct CheckboxSectionComponent {
     base: WebElement,
     #[by(tag = "label")]
@@ -19,7 +19,7 @@ pub struct CheckboxSectionComponent {
 }
 
 /// This component shows how to wrap a simple web component.
-#[derive(Debug, Component, Clone)]
+#[derive(Debug, Clone, Component)]
 pub struct CheckboxComponent {
     #[base]
     base: WebElement,

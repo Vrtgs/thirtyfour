@@ -213,7 +213,7 @@ Given the following HTML structure:
 
 ```rust
 /// This component shows how to wrap a simple web component.
-#[derive(Debug, Component, Clone)]
+#[derive(Debug, Clone, Component)]
 pub struct CheckboxLabelComponent {
     #[base]
     base: WebElement, // This is the <label> element
@@ -246,7 +246,7 @@ impl CheckboxLabelComponent {
 }
 
 /// This component shows how to nest components inside others.
-#[derive(Debug, Component, Clone)]
+#[derive(Debug, Clone, Component)]
 pub struct CheckboxSectionComponent {
     base: WebElement, // This is the outer <div>
     #[by(tag = "label")]
