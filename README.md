@@ -181,6 +181,8 @@ These predicates (or your own) can also be supplied as filters to `ElementQuery`
 
 Version 0.31.0 introduces `Component`, a derive macro and mechanisms for wrapping web components.
 
+**NOTE:** You need to enable the `component` feature to use the `Component` derive macro.
+
 This approach may seem familiar to anyone who has used a 
 [Page Object Model](https://www.selenium.dev/documentation/test_practices/encouraged/page_object_models/) before. 
 However a `Component` can wrap any node in the DOM, not just "pages".

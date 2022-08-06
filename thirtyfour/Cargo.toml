@@ -18,9 +18,10 @@ keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"
 categories = ["api-bindings", "development-tools::testing", "web-programming::http-client"]
 
 [features]
-default = ["rusttls-tls"]
+default = ["rusttls-tls", "component"]
 rusttls-tls = ["fantoccini/rustls-tls"]
 native-tls = ["fantoccini/native-tls"]
+component = ["thirtyfour_macros"]
 
 [dependencies]
 async-trait = "0.1.56"
@@ -36,7 +37,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_repr = "0.1.8"
 stringmatch = "0.4.0"
-thirtyfour_macros = { path = "../thirtyfour_macros" }
+thirtyfour_macros = { path = "../thirtyfour_macros", version = "0.1.0", optional = true }
 thiserror = "1.0.31"
 tokio = { version = "1.20", features = ["fs", "macros", "rt-multi-thread", "io-util", "sync"] }
 url = "2.2.2"
