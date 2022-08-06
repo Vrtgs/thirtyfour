@@ -353,7 +353,7 @@ impl TryFrom<Meta> for ByToken {
                 k if k.is_ident("first") => Ok(ByToken::First),
                 k if k.is_ident("ignore_errors") => Ok(ByToken::IgnoreErrors),
                 k if k.is_ident("nowait") => Ok(ByToken::NoWait),
-                e => abort! { e, format!("unknown attribute {e:?}") },
+                e => abort! { e, format!("unknown attribute {:?}", e) },
             },
             Meta::List(l) => match l.path {
                 // wait(timeout_ms = u32, interval_ms = u32)
@@ -376,11 +376,11 @@ impl TryFrom<Meta> for ByToken {
                                     interval = Some(v.token());
                                 }
                                 e => {
-                                    abort! { p , format!("unknown attribute {e:?} (must be timeout_ms or interval_ms)") }
+                                    abort! { p , format!("unknown attribute {:?} (must be timeout_ms or interval_ms)", e) }
                                 }
                             },
                             e => {
-                                abort! { p, format!("unknown attribute {e:?} (format should be `wait(timeout_ms=30000, interval_ms=500)`)") }
+                                abort! { p, format!("unknown attribute {:?} (format should be `wait(timeout_ms=30000, interval_ms=500)`)", e) }
                             }
                         }
                     }
@@ -395,7 +395,7 @@ impl TryFrom<Meta> for ByToken {
                         }
                     }
                 }
-                e => abort! { e, format!("unknown attribute: {e:?}") },
+                e => abort! { e, format!("unknown attribute: {:?}", e) },
             },
             Meta::NameValue(MetaNameValue {
                 path,
@@ -413,7 +413,7 @@ impl TryFrom<Meta> for ByToken {
                     Ok(ByToken::Description(v.token()))
                 }
                 (k, Lit::Str(v)) if k.is_ident("custom") => Ok(ByToken::CustomFn(v.value())),
-                (k, ..) => abort! { k, format!("unknown attribute: {k:?}") },
+                (k, ..) => abort! { k, format!("unknown attribute: {:?}", k) },
             },
         }
     }
@@ -433,7 +433,7 @@ impl ByTokens {
         for token in self.tokens.iter() {
             let t = token.get_unique_type();
             if unique_tokens.contains(t) {
-                return Err(format!("duplicate token '{t}' (cannot specify multiple)"));
+                return Err(format!("duplicate token '{}' (cannot specify multiple)", t));
             }
             unique_tokens.insert(t);
         }
@@ -442,7 +442,7 @@ impl ByTokens {
             for t in disallowed {
                 if unique_tokens.contains(t) {
                     let unique = token.get_unique_type();
-                    return Err(format!("cannot specify '{unique}' with '{t}'"));
+                    return Err(format!("cannot specify '{}' with '{}'", unique, t));
                 }
             }
         }
@@ -585,12 +585,12 @@ impl TryFrom<&Attribute> for ByTokens {
                     let token = match arg {
                         NestedMeta::Meta(meta) => ByToken::try_from(meta.clone())?,
                         t => {
-                            abort! { t, format!("unrecognised token: {t:?}") }
+                            abort! { t, format!("unrecognised token: {:?}", t) }
                         }
                     };
                     by_tokens.tokens.push(token);
                     by_tokens.validate().unwrap_or_else(|e| {
-                        abort! { arg , format!("{e}")}
+                        abort! { arg , format!("{}", e)}
                     });
                 }
             }
