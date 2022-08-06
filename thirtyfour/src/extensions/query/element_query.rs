@@ -131,8 +131,8 @@ impl ElementQueryOptions {
     }
 
     /// Set the description to be used in error messages for this element query.
-    pub fn set_description(mut self, description: impl Into<Option<String>>) -> Self {
-        self.description = description.into();
+    pub fn set_description<T: Into<String>>(mut self, description: Option<T>) -> Self {
+        self.description = description.map(|x| x.into());
         self
     }
 

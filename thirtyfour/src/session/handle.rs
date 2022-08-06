@@ -13,8 +13,8 @@ use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
-/// The SessionHandle contains a shared reference to the [`WebDriverConfig`] as well
-/// as the [`fantoccini::Client`] to allow sending commands to the underlying WebDriver.
+/// The SessionHandle contains a shared reference to the [`fantoccini::Client`]
+/// to allow sending commands to the underlying WebDriver.
 #[derive(Clone)]
 pub struct SessionHandle {
     pub(crate) client: fantoccini::Client,

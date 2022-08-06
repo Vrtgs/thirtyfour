@@ -10,6 +10,93 @@ use syn::{
     Path, PathArguments, PathSegment, Type,
 };
 
+/// Derive macro for a wrapped `Component`.
+///
+/// A `Component` contains a base [`WebElement`] from which all element queries will be performed.
+///
+/// All elements in the component are descendents of the base element (or at least the
+/// starting point for an element query, since XPath queries can access parent nodes).
+///
+/// Components perform element lookups via [`ElementResolver`]s, which lazily perform an
+/// element query to resolve a [`WebElement`], and then cache the result for later access.
+///
+/// See the [`ElementResolver`] documentation for more details.
+///
+/// ## Attributes
+///
+/// ### `#[base]`
+/// By default the base element should be named `base` and be of type `WebElement`.
+/// You can optionally use the `#[base]` attribute if you wish to name the base element
+/// something other than `base`. If you use this attribute you cannot also have another
+/// element named `base`.
+///
+/// ### `#[by(..)]`
+/// Components use the `#[by(..)]` attribute to specify all of the details of the query.
+///
+/// The only required attribute is the selector attribute, which can be one of the following:
+/// - `id = "..."`: Select element by id.
+/// - `tag = "..."`: Select element by tag name.
+/// - `link = "..."`: Select element by link text.
+/// - `css = "..."`: Select element by CSS.
+/// - `xpath = "..."`: Select element by XPath.
+/// - `name = "..."`: Select element by name.
+/// - `class = "..."`: Select element by class name.
+///
+/// Optional attributes available within `#[by(..)]` include:
+/// - `first`: (single element only) Select the first element that matches the query.
+///            By default a query will return `NoSuchElement` if multiple elements match.
+///            This default is designed to catch instances where a query is not specific enough.
+/// - `allow_empty`: (multi elements only) Return an empty Vec if no elements were found.
+///                  By default a multi-element query will return `NoSuchElement` if no
+///                  elements were found.
+/// - `description = "..."`: Set the element description to be displayed in `NoSuchElement` errors.
+/// - `allow_errors`: Ignore errors such as stale elements while polling.
+/// - `wait(timeout_ms = 10000, interval_ms=500)`: Override the default polling options.
+/// - `nowait`: Turn off polling for this element query.
+/// - `custom = "func"`: Use the specified [`ElementQueryFn<T>`] function.
+///                      The type `T` for your `ElementQueryFn<T>` function corresponds to
+///                      the type `T` in `ElementResolver<T>`. Supported types are
+///                      `WebElement`, `Vec<WebElement`, `T: Component` and `Vec<T: Component>`.
+///                      **NOTE**: The `custom` attribute cannot be specified with any other
+///                      attribute.
+///
+/// See [`ElementQueryOptions`] for more details on how each option is used.
+///
+/// ## Example:
+/// ```ignore
+/// /// This component shows how to nest components inside others.
+/// #[derive(Debug, Clone, Component)]
+/// pub struct CheckboxSectionComponent {
+///     base: WebElement,
+///     #[by(tag = "label", allow_empty)]
+///     boxes: ElementResolver<Vec<CheckboxComponent>>,
+///     // Other fields will be initialised using `Default::default()`.
+///     my_field: bool,
+/// }
+///
+/// /// This component shows how to wrap a simple web component.
+/// #[derive(Debug, Clone, Component)]
+/// pub struct CheckboxComponent {
+///     base: WebElement,
+///     #[by(css = "input[type='checkbox']", first)]
+///     input: ElementResolver<WebElement>,
+///     #[by(name = "text-label", description = "text label")]
+///     label: ElementResolver<WebElement>
+/// }
+///
+/// impl CheckboxComponent {
+///     /// Return true if the checkbox is ticked.
+///     pub async fn is_ticked(&self) -> WebDriverResult<bool> {
+///         // Equivalent to: let elem = self.input.resolve_present().await?;
+///         let elem = resolve_present!(self.input);
+///         let prop = elem.prop("checked").await?;
+///         Ok(prop.unwrap_or_default() == "true")
+///     }
+/// }
+/// ```
+/// [`WebElement`]: thirtyfour::WebElement
+/// [`ElementResolver`]: thirtyfour::components::ElementResolver
+/// [`ElementQueryOptions`]: thirtyfour::extensions::query::ElementQueryOptions
 #[proc_macro_derive(Component, attributes(base, by))]
 #[proc_macro_error::proc_macro_error]
 pub fn derive_component_fn(input: TokenStream) -> TokenStream {
@@ -18,17 +105,30 @@ pub fn derive_component_fn(input: TokenStream) -> TokenStream {
 
     let (base, prefields, fields) = match ast.data {
         Data::Struct(s) => {
-            // TODO:
             match s.fields {
                 Fields::Named(nf) => {
-                    // TODO:
-                    let field_names =
-                        nf.named.iter().map(|x| x.ident.as_ref().expect("unknown field name"));
+                    // First we parse the field names and any field attributes.
+                    let field_names = nf.named.iter().map(|x| {
+                        x.ident.as_ref().unwrap_or_else(|| abort!(x, "unknown field name"))
+                    });
                     let field_types = nf.named.iter().map(|x| &x.ty);
                     let field_attrs = nf.named.iter().map(|x| &x.attrs);
+
+                    // We split into fields and "prefields" so that in the `new()` method
+                    // we can do:
+                    // ```ignore
+                    // let field = ElementResolver::new(); // <- this is the `prefields` line.
+                    //
+                    // Self {
+                    //     base: base,
+                    //     field, // <- This is the `fields` line.
+                    // }
+                    // ```
                     let mut fields = Vec::new();
                     let mut prefields = Vec::new();
                     let mut base_field = None;
+
+                    // Now we construct the field initialisers.
                     for (field_name, field_type, attrs) in
                         izip!(field_names, field_types, field_attrs)
                     {
@@ -47,7 +147,7 @@ pub fn derive_component_fn(input: TokenStream) -> TokenStream {
                             continue;
                         }
 
-                        // Get attributes
+                        // Get "by" attribute for field, if any.
                         let mut by_ident = None;
                         for attr in attrs {
                             if attr.path.is_ident("by") {
@@ -64,6 +164,7 @@ pub fn derive_component_fn(input: TokenStream) -> TokenStream {
                                     Some(by) => {
                                         // Has a #[by()] attribute.
                                         if by.is_multi() || is_multi_resolver(&p.path) {
+                                            // Multi-element resolver.
                                             let multi_args: MultiResolverArgs = by.into();
                                             let multi_constructor: proc_macro2::TokenStream =
                                                 multi_args.into();
@@ -78,6 +179,7 @@ pub fn derive_component_fn(input: TokenStream) -> TokenStream {
                                             };
                                             (Some(predef), def)
                                         } else {
+                                            // Single-element resolver.
                                             let single_args: SingleResolverArgs = by.into();
                                             let single_constructor: proc_macro2::TokenStream =
                                                 single_args.into();
@@ -103,6 +205,7 @@ pub fn derive_component_fn(input: TokenStream) -> TokenStream {
                                 }
                             }
                             _ => {
+                                // Some other field type.
                                 let def = quote! {
                                     #field_name: Default::default()
                                 };
@@ -132,6 +235,7 @@ pub fn derive_component_fn(input: TokenStream) -> TokenStream {
         )
     });
 
+    // Now generate the code.
     let gen = quote! {
         impl #ident {
             pub fn new(base: thirtyfour::WebElement) -> Self {
@@ -162,10 +266,11 @@ pub fn derive_component_fn(input: TokenStream) -> TokenStream {
 
 #[derive(Debug, Clone)]
 struct WaitOptions {
-    timeout_ms: u32,
-    interval_ms: u32,
+    timeout_ms: Literal,
+    interval_ms: Literal,
 }
 
+/// These are all of the supported tokens in a `#[by(..)]` attribute.
 #[derive(Debug)]
 enum ByToken {
     Id(Literal),
@@ -174,17 +279,21 @@ enum ByToken {
     Css(Literal),
     XPath(Literal),
     Name(Literal),
+    ClassName(Literal),
     Multi,
     AllowEmpty,
     First,
     IgnoreErrors,
-    Description(String),
+    Description(Literal),
     Wait(WaitOptions),
+    NoWait,
     CustomFn(String),
 }
 
 impl ByToken {
     /// Helper for making sure the right things are mutually exclusive.
+    ///
+    /// This is how we catch repeated options.
     fn get_unique_type(&self) -> &str {
         match &self {
             ByToken::Id(_)
@@ -192,32 +301,47 @@ impl ByToken {
             | ByToken::LinkText(_)
             | ByToken::Css(_)
             | ByToken::XPath(_)
-            | ByToken::Name(_) => "selector",
+            | ByToken::Name(_)
+            | ByToken::ClassName(_) => "selector",
             ByToken::Multi => "multi",
             ByToken::AllowEmpty => "allow_empty",
             ByToken::First => "first",
             ByToken::IgnoreErrors => "ignore_errors",
             ByToken::Description(_) => "description",
             ByToken::Wait(_) => "wait",
+            ByToken::NoWait => "nowait",
             ByToken::CustomFn(_) => "custom",
         }
     }
 
+    /// Get the above unique names that are not supported with each token.
+    ///
+    /// This is how mutually exclusive options are determined.
     fn get_disallowed_types(&self) -> Vec<&str> {
         match &self {
-            ByToken::AllowEmpty => vec!["custom"],
             ByToken::First => vec!["multi", "custom"],
-            ByToken::IgnoreErrors => vec!["custom"],
-            ByToken::Description(_) => vec!["custom"],
-            ByToken::Wait(_) => vec!["custom"],
+            ByToken::AllowEmpty | ByToken::IgnoreErrors | ByToken::Description(_) => vec!["custom"],
+            ByToken::Wait(_) => vec!["custom", "nowait"],
+            ByToken::NoWait => vec!["custom", "wait"],
             ByToken::CustomFn(_) => {
-                vec!["multi", "first", "ignore_errors", "description", "wait", "allow_empty"]
+                vec![
+                    "multi",
+                    "first",
+                    "ignore_errors",
+                    "description",
+                    "wait",
+                    "nowait",
+                    "allow_empty",
+                ]
             }
             _ => vec![],
         }
     }
 }
 
+/// Convert `Meta` into `ByToken`.
+///
+/// This is where all tokens are parsed into `ByToken` variants.
 impl TryFrom<Meta> for ByToken {
     type Error = TokenStream;
 
@@ -228,13 +352,14 @@ impl TryFrom<Meta> for ByToken {
                 k if k.is_ident("allow_empty") => Ok(ByToken::AllowEmpty),
                 k if k.is_ident("first") => Ok(ByToken::First),
                 k if k.is_ident("ignore_errors") => Ok(ByToken::IgnoreErrors),
+                k if k.is_ident("nowait") => Ok(ByToken::NoWait),
                 e => abort! { e, format!("unknown attribute {e:?}") },
             },
             Meta::List(l) => match l.path {
                 // wait(timeout_ms = u32, interval_ms = u32)
                 p if p.is_ident("wait") => {
-                    let mut timeout: Option<u32> = None;
-                    let mut interval: Option<u32> = None;
+                    let mut timeout: Option<Literal> = None;
+                    let mut interval: Option<Literal> = None;
                     for n in l.nested.into_iter() {
                         match n {
                             NestedMeta::Meta(Meta::NameValue(MetaNameValue {
@@ -244,17 +369,11 @@ impl TryFrom<Meta> for ByToken {
                             })) => match (path, lit) {
                                 (k, Lit::Int(v)) if k.is_ident("timeout_ms") => {
                                     assert!(timeout.is_none(), "cannot specify timeout twice");
-                                    timeout = Some(
-                                        v.base10_parse()
-                                            .expect("invalid timeout_ms value (must be u32)"),
-                                    );
+                                    timeout = Some(v.token());
                                 }
                                 (k, Lit::Int(v)) if k.is_ident("interval_ms") => {
                                     assert!(interval.is_none(), "cannot specify interval twice");
-                                    interval = Some(
-                                        v.base10_parse()
-                                            .expect("invalid interval_ms value (must be u32)"),
-                                    );
+                                    interval = Some(v.token());
                                 }
                                 e => {
                                     abort! { p , format!("unknown attribute {e:?} (must be timeout_ms or interval_ms)") }
@@ -289,8 +408,9 @@ impl TryFrom<Meta> for ByToken {
                 (k, Lit::Str(v)) if k.is_ident("css") => Ok(ByToken::Css(v.token())),
                 (k, Lit::Str(v)) if k.is_ident("xpath") => Ok(ByToken::XPath(v.token())),
                 (k, Lit::Str(v)) if k.is_ident("name") => Ok(ByToken::Name(v.token())),
+                (k, Lit::Str(v)) if k.is_ident("class") => Ok(ByToken::ClassName(v.token())),
                 (k, Lit::Str(v)) if k.is_ident("description") => {
-                    Ok(ByToken::Description(v.value()))
+                    Ok(ByToken::Description(v.token()))
                 }
                 (k, Lit::Str(v)) if k.is_ident("custom") => Ok(ByToken::CustomFn(v.value())),
                 (k, ..) => abort! { k, format!("unknown attribute: {k:?}") },
@@ -299,11 +419,15 @@ impl TryFrom<Meta> for ByToken {
     }
 }
 
+/// Wrapper for a list of tokens so we can add methods to it.
 struct ByTokens {
     tokens: Vec<ByToken>,
 }
 
 impl ByTokens {
+    /// Apply validation rules to the list of tokens.
+    ///
+    /// This is where we determine whether these tokens are compatible with each other.
     pub fn validate(&self) -> Result<(), String> {
         let mut unique_tokens = HashSet::new();
         for token in self.tokens.iter() {
@@ -330,7 +454,7 @@ impl ByTokens {
     ///
     /// For example, `name = "element-name"`.
     ///
-    /// This removes the token from the vec.
+    /// This removes the token from the vec so that we can check for leftover tokens afterwards.
     ///
     /// This will also panic if more than one such token exists.
     pub fn take_quote(&mut self) -> proc_macro2::TokenStream {
@@ -344,6 +468,7 @@ impl ByTokens {
                 ByToken::Css(css) => ret.push(quote! { By::Css(#css) }),
                 ByToken::XPath(xpath) => ret.push(quote! { By::XPath(#xpath) }),
                 ByToken::Name(name) => ret.push(quote! { By::Name(#name) }),
+                ByToken::ClassName(class_name) => ret.push(quote! { By::ClassName(#class_name) }),
                 t => self.tokens.push(t),
             }
         }
@@ -410,7 +535,7 @@ impl ByTokens {
         })
     }
 
-    pub fn take_description(&mut self) -> Option<String> {
+    pub fn take_description(&mut self) -> Option<Literal> {
         self.take_one(|x| match x {
             ByToken::Description(d) => Some(d.clone()),
             _ => None,
@@ -424,6 +549,13 @@ impl ByTokens {
         })
     }
 
+    pub fn take_nowait(&mut self) -> Option<bool> {
+        self.take_one(|x| match x {
+            ByToken::NoWait => Some(true),
+            _ => None,
+        })
+    }
+
     pub fn take_custom(&mut self) -> Option<String> {
         self.take_one(|x| match x {
             ByToken::CustomFn(f) => Some(f.clone()),
@@ -433,6 +565,8 @@ impl ByTokens {
 }
 
 /// Parse an attribute into tokens.
+///
+/// This uses the above `TryFrom` impl to parse each `Meta` into `ByToken` variants.
 impl TryFrom<&Attribute> for ByTokens {
     type Error = TokenStream;
 
@@ -467,7 +601,14 @@ impl TryFrom<&Attribute> for ByTokens {
     }
 }
 
-/// Return true if this path should be treated as a multi element resolver.
+/// Return true if this path should be treated as a multi-element resolver.
+///
+/// Basically any `ElementResolver<Vec<T>>` should be treated as multi.
+///
+/// We also catch `ElementResolverMulti` as a special case.
+///
+/// NOTE: If you use your own type alias for a multi-element resolver, you will need
+///       to specify the `multi` attribute to force it to be treated as multi-element.
 fn is_multi_resolver(path: &Path) -> bool {
     // First check for the type alias.
     if path.is_ident("ElementResolverMulti") {
@@ -499,17 +640,20 @@ fn is_multi_resolver(path: &Path) -> bool {
     }
 }
 
+/// All args for a single element resolver.
 enum SingleResolverArgs {
     CustomFn(String),
     Opts {
         by: proc_macro2::TokenStream,
         first: Option<bool>,
         ignore_errors: Option<bool>,
-        description: Option<String>,
+        description: Option<Literal>,
         wait: Option<WaitOptions>,
+        nowait: Option<bool>,
     },
 }
 
+/// First we convert `ByTokens` to `SingleResolverArgs`.
 impl From<ByTokens> for SingleResolverArgs {
     fn from(mut t: ByTokens) -> Self {
         let s = match t.take_custom() {
@@ -520,6 +664,7 @@ impl From<ByTokens> for SingleResolverArgs {
                 ignore_errors: t.take_ignore_errors(),
                 description: t.take_description(),
                 wait: t.take_wait_options(),
+                nowait: t.take_nowait(),
             },
         };
 
@@ -528,6 +673,7 @@ impl From<ByTokens> for SingleResolverArgs {
     }
 }
 
+/// Then we convert `SingleResolverArgs` to `TokenStream`.
 impl Into<proc_macro2::TokenStream> for SingleResolverArgs {
     fn into(self) -> proc_macro2::TokenStream {
         match self {
@@ -543,44 +689,51 @@ impl Into<proc_macro2::TokenStream> for SingleResolverArgs {
                 ignore_errors,
                 description,
                 wait,
+                nowait,
             } => {
                 let ignore_errors_ident = match ignore_errors {
                     Some(true) => {
-                        format_ident!("Some(true)")
+                        quote! { Some(true) }
                     }
-                    _ => format_ident!("None"),
+                    _ => quote! { None },
                 };
                 let description_ident = match description {
-                    Some(desc) => format_ident!("Some({desc})"),
-                    None => format_ident!("None"),
+                    Some(desc) => {
+                        quote! { Some(#desc.to_string()) }
+                    }
+                    None => quote! { None },
                 };
                 let wait_ident = match wait {
                     Some(WaitOptions {
                         timeout_ms,
                         interval_ms,
                     }) => {
-                        let timeout_ident = format_ident!("{timeout_ms}");
-                        let interval_ident = format_ident!("{interval_ms}");
                         quote! {
-                            thirtyfour::extensions::query::ElementQueryWaitOptions::Wait {
-                                timeout: #timeout_ident,
-                                interval: #interval_ident
-                            }
+                            Some(thirtyfour::extensions::query::ElementQueryWaitOptions::Wait {
+                                timeout: std::time::Duration::from_millis(#timeout_ms),
+                                interval: std::time::Duration::from_millis(#interval_ms)
+                            })
                         }
                     }
-                    None => quote! { None },
+                    None => match nowait {
+                        Some(true) => {
+                            quote! {
+                                Some(thirtyfour::extensions::query::ElementQueryWaitOptions::NoWait)
+                            }
+                        }
+                        _ => quote! { None },
+                    },
                 };
                 let opts_ident = quote! {
                     thirtyfour::extensions::query::ElementQueryOptions::default()
                         .set_ignore_errors(#ignore_errors_ident)
-                        .set_description(#description_ident)
+                        .set_description::<String>(#description_ident)
                         .set_wait(#wait_ident)
                 };
 
                 match first {
                     Some(true) => {
                         quote! {
-
                             new_first_opts(base.clone(), #by, #opts_ident);
                         }
                     }
@@ -595,17 +748,20 @@ impl Into<proc_macro2::TokenStream> for SingleResolverArgs {
     }
 }
 
+/// All args for a multi-element resolver.
 enum MultiResolverArgs {
     CustomFn(String),
     Opts {
         by: proc_macro2::TokenStream,
         allow_empty: Option<bool>,
         ignore_errors: Option<bool>,
-        description: Option<String>,
+        description: Option<Literal>,
         wait: Option<WaitOptions>,
+        nowait: Option<bool>,
     },
 }
 
+/// First we convert `ByTokens` into `MultiResolverArgs`.
 impl From<ByTokens> for MultiResolverArgs {
     fn from(mut t: ByTokens) -> Self {
         t.take_multi(); // Not used here.
@@ -617,6 +773,7 @@ impl From<ByTokens> for MultiResolverArgs {
                 ignore_errors: t.take_ignore_errors(),
                 description: t.take_description(),
                 wait: t.take_wait_options(),
+                nowait: t.take_nowait(),
             },
         };
 
@@ -625,6 +782,7 @@ impl From<ByTokens> for MultiResolverArgs {
     }
 }
 
+/// Then we convert `MultiResolverArgs` into `TokenStream`.
 impl Into<proc_macro2::TokenStream> for MultiResolverArgs {
     fn into(self) -> proc_macro2::TokenStream {
         match self {
@@ -640,37 +798,45 @@ impl Into<proc_macro2::TokenStream> for MultiResolverArgs {
                 ignore_errors,
                 description,
                 wait,
+                nowait,
             } => {
                 let ignore_errors_ident = match ignore_errors {
                     Some(true) => {
-                        format_ident!("Some(true)")
+                        quote! { Some(true) }
                     }
-                    _ => format_ident!("None"),
+                    _ => quote! { None },
                 };
                 let description_ident = match description {
-                    Some(desc) => format_ident!("Some({desc})"),
-                    None => format_ident!("None"),
+                    Some(desc) => quote! { Some(#desc.to_string()) },
+                    None => quote! {
+                        None,
+                    },
                 };
                 let wait_ident = match wait {
                     Some(WaitOptions {
                         timeout_ms,
                         interval_ms,
                     }) => {
-                        let timeout_ident = format_ident!("{timeout_ms}");
-                        let interval_ident = format_ident!("{interval_ms}");
                         quote! {
-                            thirtyfour::extensions::query::ElementQueryWaitOptions::Wait {
-                                timeout: #timeout_ident,
-                                interval: #interval_ident
-                            }
+                            Some(thirtyfour::extensions::query::ElementQueryWaitOptions::Wait {
+                                timeout: std::time::Duration::from_millis(#timeout_ms),
+                                interval: std::time::Duration::from_millis(#interval_ms)
+                            })
                         }
                     }
-                    None => quote! { None },
+                    None => match nowait {
+                        Some(true) => {
+                            quote! {
+                                Some(thirtyfour::extensions::query::ElementQueryWaitOptions::NoWait)
+                            }
+                        }
+                        _ => quote! { None },
+                    },
                 };
                 let opts_ident = quote! {
                     thirtyfour::extensions::query::ElementQueryOptions::default()
                         .set_ignore_errors(#ignore_errors_ident)
-                        .set_description(#description_ident)
+                        .set_description::<String>(#description_ident)
                         .set_wait(#wait_ident)
                 };
 

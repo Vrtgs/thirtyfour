@@ -2,13 +2,14 @@ use crate::error::WebDriverResult;
 use crate::extensions::query::ElementQueryOptions;
 use crate::prelude::ElementQueryable;
 use crate::{By, ElementQueryFn, WebElement};
-use parking_lot::RwLock;
+use parking_lot::Mutex;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 pub type ElementResolverSingle = ElementResolver<WebElement>;
 pub type ElementResolverMulti = ElementResolver<Vec<WebElement>>;
 
+/// `resolve!(x)` expands to `x.resolve().await?`
 #[macro_export]
 macro_rules! resolve {
     ($a:expr) => {
@@ -16,6 +17,7 @@ macro_rules! resolve {
     };
 }
 
+/// `resolve_present!(x)` expands to `x.resolve_present().await?`
 #[macro_export]
 macro_rules! resolve_present {
     ($a:expr) => {
@@ -29,12 +31,12 @@ macro_rules! resolve_present {
 pub struct ElementResolver<T: Clone> {
     base_element: WebElement,
     query_fn: Arc<ElementQueryFn<T>>,
-    element: Arc<RwLock<Option<T>>>,
+    element: Arc<Mutex<Option<T>>>,
 }
 
 impl<T: Debug + Clone> Debug for ElementResolver<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let element = self.element.read();
+        let element = self.element.lock();
         f.debug_struct("ElementResolver")
             .field("base_element", &self.base_element)
             .field("element", &element)
@@ -54,18 +56,18 @@ impl<T: Clone> Clone for ElementResolver<T> {
 
 impl<T: Clone> ElementResolver<T> {
     fn peek(&self) -> Option<T> {
-        self.element.read().clone()
+        self.element.lock().clone()
     }
 
     fn replace(&self, new: T) {
-        let mut element = self.element.write();
+        let mut element = self.element.lock();
         element.replace(new);
     }
 
     /// Return the cached element(s) if any, otherwise run the query and return the result.
     pub async fn resolve(&self) -> WebDriverResult<T> {
         {
-            let element = self.element.read();
+            let element = self.element.lock();
             if let Some(elem) = element.as_ref() {
                 return Ok(elem.clone());
             }
@@ -79,7 +81,7 @@ impl<T: Clone> ElementResolver<T> {
 
     /// Invalidate any cached element(s).
     pub fn invalidate(&self) {
-        self.element.write().take();
+        self.element.lock().take();
     }
 
     /// Run the query, ignoring any cached element(s).
@@ -136,7 +138,7 @@ impl ElementResolver<WebElement> {
         Self {
             base_element,
             query_fn: Arc::new(custom_resolver_fn),
-            element: Arc::new(RwLock::new(None)),
+            element: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -234,7 +236,7 @@ impl ElementResolver<Vec<WebElement>> {
         Self {
             base_element,
             query_fn: Arc::new(custom_resolver_fn),
-            element: Arc::new(RwLock::new(None)),
+            element: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -331,7 +333,7 @@ impl<T: Component + Clone> ElementResolver<T> {
         Self {
             base_element,
             query_fn: Arc::new(custom_resolver_fn),
-            element: Arc::new(RwLock::new(None)),
+            element: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -400,7 +402,7 @@ impl<T: Component + Clone> ElementResolver<Vec<T>> {
 
     /// Create new element resolver that returns at least one component.
     ///
-    /// If no component were found, a NoSuchElement error will be returned by the resolver's
+    /// If no components were found, a NoSuchElement error will be returned by the resolver's
     /// `resolve()` method.
     pub fn new_not_empty(base_element: WebElement, by: By) -> Self {
         let resolver: ElementQueryFn<Vec<T>> = Box::new(move |elem| {
@@ -413,9 +415,9 @@ impl<T: Component + Clone> ElementResolver<Vec<T>> {
         Self::new_custom(base_element, resolver)
     }
 
-    /// Create new element resolver that returns at least one element, with extra options.
+    /// Create new element resolver that returns at least one component, with extra options.
     ///
-    /// If no elements were found, a NoSuchElement error will be returned by the resolver's
+    /// If no components were found, a NoSuchElement error will be returned by the resolver's
     /// `resolve()` method.
     pub fn new_not_empty_opts(
         base_element: WebElement,
@@ -441,7 +443,7 @@ impl<T: Component + Clone> ElementResolver<Vec<T>> {
         Self {
             base_element,
             query_fn: Arc::new(custom_resolver_fn),
-            element: Arc::new(RwLock::new(None)),
+            element: Arc::new(Mutex::new(None)),
         }
     }
 
