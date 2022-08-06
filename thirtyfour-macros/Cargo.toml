@@ -1,5 +1,5 @@
 [package]
-name = "thirtyfour_macros"
+name = "thirtyfour-macros"
 version = "0.1.0"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2021"
