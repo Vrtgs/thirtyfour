@@ -51,14 +51,14 @@ async fn resolve(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
     c.goto(&url).await?;
     let base_element = c.find(By::ClassName("vertical")).await?;
-    let mut resolver = ElementResolverSingle::new_first(base_element.clone(), By::Css("nav a"));
-    let elem = resolver.query().await?.clone();
+    let resolver = ElementResolverSingle::new_first(base_element.clone(), By::Css("nav a"));
+    let elem = resolver.resolve().await?;
     assert_eq!(elem.id().await?.unwrap(), "other_page_id");
-    let elem2 = resolver.query_checked().await?.clone();
+    let elem2 = resolver.resolve_present().await?;
     assert_eq!(elem2.id().await?.unwrap(), "other_page_id");
     assert_eq!(elem, elem2);
-    let mut resolver = ElementResolverSingle::new_single(base_element, By::Css("nav a"));
-    let elem_result = resolver.query().await;
+    let resolver = ElementResolverSingle::new_single(base_element, By::Css("nav a"));
+    let elem_result = resolver.resolve().await;
     assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
 
     Ok(())
@@ -68,10 +68,10 @@ async fn resolve_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
     c.goto(&url).await?;
     let base_element = c.find(By::ClassName("vertical")).await?;
-    let mut resolver = ElementResolverMulti::new_not_empty(base_element, By::Css("nav a"));
-    let elems = resolver.query().await?.clone();
+    let resolver = ElementResolverMulti::new_not_empty(base_element, By::Css("nav a"));
+    let elems = resolver.resolve().await?;
     assert_eq!(elems.len(), 2);
-    let elems2 = resolver.query_checked().await?.clone();
+    let elems2 = resolver.resolve_present().await?;
     assert_eq!(elems.len(), 2);
     assert_eq!(elems, elems2);
     Ok(())
