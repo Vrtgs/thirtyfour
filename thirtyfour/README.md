@@ -52,6 +52,7 @@ aim to migrate code away from the deprecated methods as soon as is practical.
 
 - `rusttls-tls`: (Default) Use rusttls to provide TLS support (via fantoccini/hyper).
 - `native-tls`: Use native TLS (via fantoccini/hyper).
+- `component`: (Default) Enable the `Component` derive macro (via thirtyfour_macros).
 
 ## Examples
 
@@ -182,8 +183,6 @@ These predicates (or your own) can also be supplied as filters to `ElementQuery`
 ### Components
 
 Version 0.31.0 introduces `Component`, a derive macro and mechanisms for wrapping web components.
-
-**NOTE:** You need to enable the `component` feature to use the `Component` derive macro.
 
 This approach may seem familiar to anyone who has used a 
 [Page Object Model](https://www.selenium.dev/documentation/test_practices/encouraged/page_object_models/) before. 

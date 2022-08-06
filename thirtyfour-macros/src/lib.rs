@@ -99,9 +99,10 @@ use syn::{
 ///     }
 /// }
 /// ```
-/// [`WebElement`]: thirtyfour::WebElement
-/// [`ElementResolver`]: thirtyfour::components::ElementResolver
-/// [`ElementQueryOptions`]: thirtyfour::extensions::query::ElementQueryOptions
+/// [`WebElement`]: https://docs.rs/thirtyfour/latest/thirtyfour/struct.WebElement.html
+/// [`ElementResolver`]: https://docs.rs/thirtyfour/0.31.0-alpha.1/thirtyfour/components/struct.ElementResolver.html
+/// [`ElementQueryOptions`]: https://docs.rs/thirtyfour/0.31.0-alpha.1/thirtyfour/extensions/query/struct.ElementQueryOptions.html
+/// [`ElementQueryFn<T>`]: https://docs.rs/thirtyfour/0.31.0-alpha.1/thirtyfour/common/types/type.ElementQueryFn.html
 #[proc_macro_derive(Component, attributes(base, by))]
 #[proc_macro_error::proc_macro_error]
 pub fn derive_component_fn(input: TokenStream) -> TokenStream {

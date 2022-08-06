@@ -6,7 +6,9 @@ use parking_lot::Mutex;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
+/// Type alias for `ElementResolver<WebElement>`, for convenience.
 pub type ElementResolverSingle = ElementResolver<WebElement>;
+/// Type alias for `ElementResolver<Vec<WebElement>>` for convenience.
 pub type ElementResolverMulti = ElementResolver<Vec<WebElement>>;
 
 /// `resolve!(x)` expands to `x.resolve().await?`
@@ -273,6 +275,12 @@ impl ElementResolver<Vec<WebElement>> {
     }
 }
 
+/// The `Component` trait is automatically implemented by the `Component` derive macro.
+///
+/// Anything that implements `Component + Clone + From<WebElement>` can be used with
+/// ElementResolver to take the resolved element as input, and return the specific type.
+///
+/// There is also an implementation of ElementResolver for a Vec containing such types.
 pub trait Component: Sized + From<WebElement> {
     fn base_element(&self) -> WebElement;
 }

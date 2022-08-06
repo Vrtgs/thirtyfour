@@ -21,11 +21,13 @@
 //! - Capture / Save screenshot of browser or individual element as PNG
 //! - Some Chrome DevTools Protocol (CDP) support
 //! - Advanced query interface including explicit waits and various predicates
+//! - Component Wrappers (similar to `Page Object Model`)
 //!
 //! ## Feature Flags
 //!
 //! * `rusttls-tls`: (Default) Use rusttls to provide TLS support (via fantoccini/hyper).
 //! * `native-tls`: Use native TLS (via fantoccini/hyper).
+//! * `component`: (Default) Enable the `Component` derive macro (via thirtyfour_macros).
 //!
 //! ## Example
 //!
@@ -90,6 +92,23 @@
 //! [`WebElement::wait_until`]: crate::extensions::query::ElementWaitable::wait_until
 //! [`query`]: crate::extensions::query
 //!
+//! ### Components
+//!
+//! Components allow you to wrap a web component using smart element resolvers that can
+//! automatically requery stale elements, and much more.
+//!
+//! ```ignore
+//! #[derive(Debug, Clone, Component)]
+//! pub struct CheckboxLabelComponent {
+//!     #[base]
+//!     base: WebElement,
+//!     #[by(css = "input[type='checkbox']")]
+//!     input: ElementResolver<WebElement>,
+//! }
+//! ```
+//!
+//! See the [`components`] documentation for more details.
+//!
 //! ### See Also
 //!
 //! This crate uses [`fantoccini`] to communicate with the underlying `WebDriver`
@@ -136,7 +155,7 @@ pub mod action_chain;
 pub mod alert;
 /// Common wrappers used by both async and sync implementations.
 pub mod common;
-/// Wrappers for specific component wrappers.
+/// Components and component wrappers.
 pub mod components;
 /// Error wrappers.
 pub mod error;
