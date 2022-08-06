@@ -678,7 +678,7 @@ impl From<SingleResolverArgs> for proc_macro2::TokenStream {
     fn from(args: SingleResolverArgs) -> Self {
         match args {
             SingleResolverArgs::CustomFn(f) => {
-                let f_ident = format_ident!("{f}");
+                let f_ident = format_ident!("{}", f);
                 quote! {
                     new_custom(base.clone(), #f_ident);
                 }
@@ -787,7 +787,7 @@ impl From<MultiResolverArgs> for proc_macro2::TokenStream {
     fn from(args: MultiResolverArgs) -> Self {
         match args {
             MultiResolverArgs::CustomFn(f) => {
-                let f_ident = format_ident!("{f}");
+                let f_ident = format_ident!("{}", f);
                 quote! {
                     new_custom(base.clone(), #f_ident);
                 }
