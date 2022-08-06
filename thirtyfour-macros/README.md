@@ -1,7 +1,7 @@
 # thirtyfour_macros
 
 [![Crates.io](https://img.shields.io/crates/v/thirtyfour-macros.svg)](https://crates.io/crates/thirtyfour-macros)
-[![docs.rs](https://img.shields.io/badge/docs.rs-thirtyfour-macros-blue)](https://docs.rs/thirtyfour-macros)
+[![docs.rs](https://docs.rs/thirtyfour-macros/badge.svg)](https://docs.rs/thirtyfour-macros)
 
 Macros for [`thirtyfour`](https://crates.io/crates/thirtyfour).
 

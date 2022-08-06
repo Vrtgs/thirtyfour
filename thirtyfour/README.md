@@ -1,7 +1,7 @@
 # thirtyfour
 
 [![Crates.io](https://img.shields.io/crates/v/thirtyfour.svg)](https://crates.io/crates/thirtyfour)
-[![docs.rs](https://img.shields.io/badge/docs.rs-thirtyfour-blue)](https://docs.rs/thirtyfour)
+[![docs.rs](https://docs.rs/thirtyfour/badge.svg)](https://docs.rs/thirtyfour)
 [![Build Status](https://img.shields.io/github/workflow/status/stevepryde/thirtyfour/build-check/main)](https://github.com/stevepryde/thirtyfour/actions)
 [![codecov](https://codecov.io/gh/stevepryde/thirtyfour/branch/main/graph/badge.svg?token=OVORQE9PZK)](https://codecov.io/gh/stevepryde/thirtyfour)
 
