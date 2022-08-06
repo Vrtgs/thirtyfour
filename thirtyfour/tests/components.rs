@@ -14,7 +14,8 @@ pub struct CheckboxSectionComponent {
     base: WebElement,
     #[by(tag = "label")]
     boxes: ElementResolver<Vec<CheckboxComponent>>,
-    _my_field: bool,
+    // Other fields will be initialised with Default::default().
+    my_field: bool,
 }
 
 /// This component shows how to wrap a simple web component.
@@ -29,15 +30,13 @@ pub struct CheckboxComponent {
 impl CheckboxComponent {
     /// Return true if the checkbox is ticked.
     pub async fn is_ticked(&self) -> WebDriverResult<bool> {
-        let prop = resolve_present!(self.input).prop("checked").await?;
+        let prop = resolve!(self.input).prop("checked").await?;
         Ok(prop.unwrap_or_default() == "true")
     }
 
-    /// Tick the checkbox if is clickable and isn't already ticked.
+    /// Tick the checkbox if it is clickable and isn't already ticked.
     pub async fn tick(&self) -> WebDriverResult<()> {
-        // NOTE: self.base is the `<label>` element.
-
-        let elem = resolve!(self.input);
+        let elem = resolve_present!(self.input);
         if elem.is_clickable().await? && !self.is_ticked().await? {
             elem.click().await?;
             assert!(self.is_ticked().await?);
@@ -55,9 +54,12 @@ async fn basic_component(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
     // NOTE: components using the `Component` derive automatically implement `From<WebElement>`.
     let section: CheckboxSectionComponent =
         c.query(By::Id("checkbox-section")).single().await?.into();
+    assert!(!section.my_field);
+    assert_eq!(section.base.id().await?.unwrap(), "checkbox-section");
 
     // Tick all the checkboxes, ignoring any that are disabled.
     for checkbox in resolve!(section.boxes) {
+        assert_eq!(checkbox.base.tag_name().await?, "label");
         checkbox.tick().await?;
     }
 
