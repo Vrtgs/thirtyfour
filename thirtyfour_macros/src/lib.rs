@@ -674,9 +674,9 @@ impl From<ByTokens> for SingleResolverArgs {
 }
 
 /// Then we convert `SingleResolverArgs` to `TokenStream`.
-impl Into<proc_macro2::TokenStream> for SingleResolverArgs {
-    fn into(self) -> proc_macro2::TokenStream {
-        match self {
+impl From<SingleResolverArgs> for proc_macro2::TokenStream {
+    fn from(args: SingleResolverArgs) -> Self {
+        match args {
             SingleResolverArgs::CustomFn(f) => {
                 let f_ident = format_ident!("{f}");
                 quote! {
@@ -783,9 +783,9 @@ impl From<ByTokens> for MultiResolverArgs {
 }
 
 /// Then we convert `MultiResolverArgs` into `TokenStream`.
-impl Into<proc_macro2::TokenStream> for MultiResolverArgs {
-    fn into(self) -> proc_macro2::TokenStream {
-        match self {
+impl From<MultiResolverArgs> for proc_macro2::TokenStream {
+    fn from(args: MultiResolverArgs) -> Self {
+        match args {
             MultiResolverArgs::CustomFn(f) => {
                 let f_ident = format_ident!("{f}");
                 quote! {
