@@ -48,7 +48,7 @@ assert_matches = "1.5.0"
 color-eyre = "0.6.2"
 hyper = { version = "0.14", features = ["server", "tcp"] }
 regex = "1"
-serial_test = "0.8"
+serial_test = "0.9"
 time = "0.3"
 
 
