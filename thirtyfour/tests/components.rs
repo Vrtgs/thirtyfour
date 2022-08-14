@@ -15,7 +15,7 @@ mod feature_component {
     #[derive(Debug, Clone, Component)]
     pub struct CheckboxSectionComponent {
         base: WebElement,
-        #[by(tag = "label")]
+        #[by(tag = "label", not_empty)]
         boxes: ElementResolver<Vec<CheckboxComponent>>,
         // Other fields will be initialised with Default::default().
         my_field: bool,
@@ -25,8 +25,8 @@ mod feature_component {
     #[derive(Debug, Clone, Component)]
     pub struct CheckboxComponent {
         #[base]
-        base: WebElement,
-        #[by(css = "input[type='checkbox']", first)]
+        source: WebElement,
+        #[by(css = "input[type='checkbox']", single)]
         input: ElementResolver<WebElement>,
     }
 
@@ -62,7 +62,7 @@ mod feature_component {
 
         // Tick all the checkboxes, ignoring any that are disabled.
         for checkbox in resolve!(section.boxes) {
-            assert_eq!(checkbox.base.tag_name().await?, "label");
+            assert_eq!(checkbox.base_element().tag_name().await?, "label");
             checkbox.tick().await?;
         }
 
@@ -74,6 +74,8 @@ mod feature_component {
         base: WebElement,
         #[by(tag = "label")]
         elem_single: ElementResolver<WebElement>,
+        #[by(tag = "label", single)]
+        elem_single_explicit: ElementResolver<WebElement>,
         #[by(tag = "label", first)]
         elem_first: ElementResolver<WebElement>,
         #[by(tag = "label", description = "my_test_description")]
@@ -86,6 +88,8 @@ mod feature_component {
         elems_allow_empty: ElementResolver<Vec<WebElement>>,
         #[by(tag = "notfound", nowait)]
         elems_not_empty: ElementResolver<Vec<WebElement>>,
+        #[by(tag = "notfound", nowait, not_empty)]
+        elems_not_empty_explicit: ElementResolver<Vec<WebElement>>,
     }
 
     async fn component_attributes(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
@@ -98,6 +102,9 @@ mod feature_component {
         let tc = TestComponent::new(elem);
 
         let result = tc.elem_single.resolve().await;
+        assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
+
+        let result = tc.elem_single_explicit.resolve().await;
         assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
 
         let elem = tc.elem_first.resolve().await?;
@@ -122,6 +129,59 @@ mod feature_component {
         let result = tc.elems_not_empty.resolve().await;
         assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
 
+        let result = tc.elems_not_empty_explicit.resolve().await;
+        assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
+
+        Ok(())
+    }
+
+    #[derive(Debug, Component, Clone)]
+    pub struct TestComponentCustomFn {
+        base: WebElement,
+        #[by(custom = "custom_resolve_fn")]
+        elem_custom: ElementResolver<WebElement>,
+        #[by(custom = "custom_resolve_fn_multi")]
+        elems_custom: ElementResolver<Vec<WebElement>>,
+        #[by(custom = "custom_resolve_fn_component")]
+        component_custom: ElementResolver<CheckboxComponent>,
+        #[by(custom = "custom_resolve_fn_components")]
+        components_custom: ElementResolver<Vec<CheckboxComponent>>,
+    }
+
+    async fn custom_resolve_fn(elem: &WebElement) -> WebDriverResult<WebElement> {
+        elem.query(By::Tag("label")).first().await
+    }
+
+    async fn custom_resolve_fn_multi(elem: &WebElement) -> WebDriverResult<Vec<WebElement>> {
+        elem.query(By::Tag("label")).all().await
+    }
+
+    async fn custom_resolve_fn_component(elem: &WebElement) -> WebDriverResult<CheckboxComponent> {
+        let cb = elem.query(By::Tag("label")).first().await?;
+        Ok(CheckboxComponent::new(cb))
+    }
+
+    async fn custom_resolve_fn_components(
+        elem: &WebElement,
+    ) -> WebDriverResult<Vec<CheckboxComponent>> {
+        let cbs = elem.query(By::Tag("label")).all().await?;
+        Ok(cbs.into_iter().map(CheckboxComponent::new).collect())
+    }
+
+    async fn component_attributes_custom_fn(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+        let url = sample_page_url(port);
+        c.goto(&url).await?;
+
+        ElementQueryOptions::default().set_description(Some("hello"));
+
+        let elem = c.query(By::Id("checkbox-section")).single().await?;
+        let tc = TestComponentCustomFn::new(elem);
+
+        tc.elem_custom.resolve().await.unwrap();
+        tc.elems_custom.resolve().await.unwrap();
+        tc.component_custom.resolve().await.unwrap();
+        tc.components_custom.resolve().await.unwrap();
+
         Ok(())
     }
 
@@ -140,6 +200,12 @@ mod feature_component {
         fn component_attributes_test() {
             local_tester!(component_attributes, "firefox");
         }
+
+        #[test]
+        #[serial]
+        fn component_attributes_custom_fn_test() {
+            local_tester!(component_attributes_custom_fn, "firefox");
+        }
     }
 
     mod chrome {
@@ -154,6 +220,11 @@ mod feature_component {
         #[test]
         fn component_attributes_test() {
             local_tester!(component_attributes, "chrome");
+        }
+
+        #[test]
+        fn component_attributes_custom_fn_test() {
+            local_tester!(component_attributes_custom_fn, "chrome");
         }
     }
 }

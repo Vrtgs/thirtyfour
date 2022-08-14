@@ -81,3 +81,7 @@ path = "examples/firefox_preferences.rs"
 
 [[example]]
 name = "shadowroot"
+
+[[example]]
+name = "playground"
+path = "examples/components/playground.rs"
