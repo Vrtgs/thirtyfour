@@ -56,7 +56,7 @@ mod component;
 /// - `allow_errors`: Ignore errors such as stale elements while polling.
 /// - `wait(timeout_ms = 10000, interval_ms=500)`: Override the default polling options.
 /// - `nowait`: Turn off polling for this element query.
-/// - `custom = "func"`: Use the specified function to resolve the element or component.
+/// - `custom = "my_resolve_fn"`: Use the specified function to resolve the element or component.
 ///                      **NOTE**: The `custom` attribute cannot be specified with any other
 ///                      attribute.
 ///
@@ -64,7 +64,7 @@ mod component;
 ///
 /// ### Custom resolver functions
 ///
-/// When using `custom = "func"`, your function signature should look something like this:
+/// When using `custom = "my_resolve_fn"`, your function signature should look something like this:
 ///
 /// ```ignore
 /// async fn my_resolve_fn(elem: &WebElement) -> WebDriverResult<T>

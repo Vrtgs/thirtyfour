@@ -5,6 +5,7 @@ use url::ParseError;
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
 
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum WebDriverError {
     #[error("error creating new session: {0}")]
     NewSessionError(#[from] NewSessionError),

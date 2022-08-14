@@ -27,7 +27,7 @@
 //!
 //! * `rusttls-tls`: (Default) Use rusttls to provide TLS support (via fantoccini/hyper).
 //! * `native-tls`: Use native TLS (via fantoccini/hyper).
-//! * `component`: (Default) Enable the `Component` derive macro (via thirtyfour_macros).
+//! * `component`: (Default) Enable the `Component` derive macro (via thirtyfour-macros).
 //!
 //! ## Example
 //!
@@ -95,15 +95,38 @@
 //! ### Components
 //!
 //! Components allow you to wrap a web component using smart element resolvers that can
-//! automatically requery stale elements, and much more.
+//! automatically re-query stale elements, and much more.
 //!
 //! ```ignore
 //! #[derive(Debug, Clone, Component)]
-//! pub struct CheckboxLabelComponent {
-//!     #[base]
+//! pub struct CheckboxComponent {
 //!     base: WebElement,
+//!     #[by(tag = "label", first)]
+//!     label: ElementResolver<WebElement>,
 //!     #[by(css = "input[type='checkbox']")]
 //!     input: ElementResolver<WebElement>,
+//! }
+//!
+//! impl CheckBoxComponent {
+//!     pub async fn label_text(&self) -> WebDriverResult<String> {
+//!         let elem = self.label.resolve().await?;
+//!         elem.text().await
+//!     }
+//!
+//!     pub async fn is_ticked(&self) -> WebDriverResult<bool> {
+//!         let elem = self.input.resolve().await?;
+//!         let prop = elem.prop("checked").await?;
+//!         Ok(prop.unwrap_or_default() == "true")
+//!     }
+//!
+//!     pub async fn tick(&self) -> WebDriverResult<()> {
+//!         if !self.is_ticked().await? {
+//!             let elem = self.input.resolve().await?;
+//!             elem.click().await?;
+//!             assert!(self.is_ticked().await?);
+//!         }
+//!         Ok(())
+//!     }
 //! }
 //! ```
 //!

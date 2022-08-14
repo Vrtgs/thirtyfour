@@ -217,27 +217,25 @@ Given the following HTML structure:
 ```rust
 /// This component shows how to wrap a simple web component.
 #[derive(Debug, Clone, Component)]
-pub struct CheckboxLabelComponent {
-    #[base]
+pub struct CheckboxComponent {
     base: WebElement, // This is the <label> element
-    #[by(css = "input[type='checkbox']")]
+    #[by(css = "input[type='checkbox']", first)]
     input: ElementResolver<WebElement>, // This is the <input /> element
 }
 
-impl CheckboxLabelComponent {
+impl CheckboxComponent {
     /// Return true if the checkbox is ticked.
     pub async fn is_ticked(&self) -> WebDriverResult<bool> {
-        // `resolve!(x)` expands to `x.resolve().await?`
-        let prop = resolve!(self.input).prop("checked").await?;
+        let elem = self.input.resolve().await?;
+        let prop = elem.prop("checked").await?;
         Ok(prop.unwrap_or_default() == "true")
     }
 
     /// Tick the checkbox if it is clickable and isn't already ticked.
     pub async fn tick(&self) -> WebDriverResult<()> {
-        // `resolve_present!(x)` expands to `x.resolve_present().await?`
         // This checks that the element is present before returning the element.
-        // If the element had become stale, this would implicitly requery the element.
-        let elem = resolve_present!(self.input);
+        // If the element had become stale, this would implicitly re-query the element.
+        let elem = self.input.resolve_present().await?;
         if elem.is_clickable().await? && !self.is_ticked().await? {
             elem.click().await?;
             // Now make sure it's ticked.
@@ -252,14 +250,16 @@ impl CheckboxLabelComponent {
 #[derive(Debug, Clone, Component)]
 pub struct CheckboxSectionComponent {
     base: WebElement, // This is the outer <div>
-    #[by(tag = "label")]
-    boxes: ElementResolver<Vec<CheckboxLabelComponent>>, // ElementResolver works with Components too.
+    #[by(tag = "label", allow_empty)]
+    boxes: ElementResolver<Vec<CheckboxComponent>>, // ElementResolver works with Components too.
     // Other fields will be initialised with Default::default().
     my_field: bool,
 }
 ```
 
-So how do you construct a Component? Simple. The `Component` derive automatically implements `From<WebElement>`.
+So how do you construct a Component?
+
+Simple. The `Component` derive automatically implements `From<WebElement>`.
 
 ```rust
 let elem = driver.query(By::Id("checkbox-section")).await?;
