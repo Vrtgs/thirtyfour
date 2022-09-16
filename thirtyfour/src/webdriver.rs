@@ -58,10 +58,10 @@ impl WebDriver {
     where
         C: Into<Capabilities>,
     {
-        #[cfg(not(any(feature = "rusttls-tls", feature = "native-tls")))]
-        panic!("please set either the rusttls-tls or native-tls feature");
+        #[cfg(not(any(feature = "rustls-tls", feature = "native-tls")))]
+        panic!("please set either the rustls-tls or native-tls feature");
 
-        #[cfg(any(feature = "rusttls-tls", feature = "native-tls"))]
+        #[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
         {
             use crate::TimeoutConfiguration;
             use fantoccini::ClientBuilder;
@@ -69,7 +69,7 @@ impl WebDriver {
 
             #[cfg(feature = "native-tls")]
             let mut builder = ClientBuilder::native();
-            #[cfg(feature = "rusttls-tls")]
+            #[cfg(feature = "rustls-tls")]
             let mut builder = ClientBuilder::rustls();
 
             let client = builder.capabilities(caps.clone()).connect(server_url).await?;

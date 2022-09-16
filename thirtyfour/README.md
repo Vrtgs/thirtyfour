@@ -50,7 +50,7 @@ aim to migrate code away from the deprecated methods as soon as is practical.
 
 ## Feature Flags
 
-- `rusttls-tls`: (Default) Use rusttls to provide TLS support (via fantoccini/hyper).
+- `rustls-tls`: (Default) Use rustls to provide TLS support (via fantoccini/hyper).
 - `native-tls`: Use native TLS (via fantoccini/hyper).
 - `component`: (Default) Enable the `Component` derive macro (via thirtyfour_macros).
 
