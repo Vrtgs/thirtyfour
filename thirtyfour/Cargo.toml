@@ -18,8 +18,8 @@ keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"
 categories = ["api-bindings", "development-tools::testing", "web-programming::http-client"]
 
 [features]
-default = ["rusttls-tls", "component"]
-rusttls-tls = ["fantoccini/rustls-tls"]
+default = ["rustls-tls", "component"]
+rustls-tls = ["fantoccini/rustls-tls"]
 native-tls = ["fantoccini/native-tls"]
 component = ["thirtyfour-macros"]
 
