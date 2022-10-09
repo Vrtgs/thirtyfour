@@ -1,4 +1,4 @@
-Copyright 2019-2021 Stephen Pryde and the thirtyfour contributors
+Copyright 2019-2022 Stephen Pryde and the thirtyfour contributors
 
 The file at /src/components/select.rs contains a port of the Select class from the selenium project, according to the terms of the Apache 2.0 license.
 See the LICENSE and NOTICE files at https://github.com/SeleniumHQ/selenium for more details.
