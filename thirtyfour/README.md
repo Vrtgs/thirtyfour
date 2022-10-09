@@ -340,7 +340,7 @@ In separate terminal tabs, run the following:
 
 ## Minimum Supported Rust Version
 
-The MSRV for `thirtyfour` is 1.57.
+The MSRV for `thirtyfour` is currently 1.59 and will be updated as needed by dependencies.
 
 ## LICENSE
 
