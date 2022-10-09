@@ -16,6 +16,7 @@ async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
     let caps = DesiredCapabilities::chrome();
+    // NOTE: For selenium 3.x, use "http://localhost:4444/wd/hub/session".
     let driver = WebDriver::new("http://localhost:4444", caps).await?;
 
     // Navigate to https://wikipedia.org.

@@ -17,6 +17,7 @@ use std::ops::{Deref, DerefMut};
 /// // NOTE: this assumes you have a WebDriver compatible server running
 /// //       at http://localhost:4444
 /// //       e.g. `geckodriver -p 4444`
+/// // NOTE: If using selenium 3.x, use "http://localhost:4444/wd/hub/session" for the url.
 /// let driver = WebDriver::new("http://localhost:4444", caps).await?;
 /// driver.goto("https://www.rust-lang.org/").await?;
 /// // Always remember to close the session.
@@ -44,6 +45,7 @@ impl WebDriver {
     /// // NOTE: this assumes you have a WebDriver compatible server running
     /// //       at http://localhost:4444
     /// //       e.g. `geckodriver -p 4444`
+    /// // NOTE: If using selenium 3.x, use "http://localhost:4444/wd/hub/session" for the url.
     /// let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -51,8 +53,15 @@ impl WebDriver {
     /// # }
     /// ```
     ///
-    /// **NOTE:** If the webdriver appears to hang or give no response, please check that the
-    ///     capabilities object is of the correct type for that webdriver.
+    /// ## Using Selenium Server
+    /// - For selenium 3.x, you need to also add "/wd/hub/session" to the end of the url
+    ///   (e.g. "http://localhost:4444/wd/hub/session")
+    /// - For selenium 4.x and later, no path should be needed on the url.
+    ///
+    /// ## Troubleshooting
+    ///
+    /// - If the webdriver appears to hang or give no response, please check that the
+    ///   capabilities object is of the correct type for that webdriver.
     #[allow(unused_variables)]
     pub async fn new<C>(server_url: &str, capabilities: C) -> WebDriverResult<Self>
     where
