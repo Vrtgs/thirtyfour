@@ -18,8 +18,8 @@ keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"
 categories = ["api-bindings", "development-tools::testing", "web-programming::http-client"]
 
 [features]
-default = ["rusttls-tls", "component"]
-rusttls-tls = ["fantoccini/rustls-tls"]
+default = ["rustls-tls", "component"]
+rustls-tls = ["fantoccini/rustls-tls"]
 native-tls = ["fantoccini/native-tls"]
 component = ["thirtyfour-macros"]
 
@@ -28,7 +28,7 @@ async-trait = "0.1.56"
 base64 = "0.13.0"
 chrono = { version = "0.4.22", features = ["serde"] }
 cookie = { version = "0.16.0", features = ["percent-encode"] }
-fantoccini = { version = "0.19.2", default-features = false }
+fantoccini = { version = "0.19.3", default-features = false }
 futures = "0.3.21"
 http = "0.2.8"
 log = "0.4.17"
