@@ -8,6 +8,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 use crate::error::WebDriverError;
+use crate::js::SIMULATE_DRAG_AND_DROP;
 use crate::session::handle::SessionHandle;
 use crate::upstream::ElementRef;
 use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHelper};
@@ -757,6 +758,34 @@ impl WebElement {
     /// ```
     pub async fn enter_frame(self) -> WebDriverResult<()> {
         self.element.enter_frame().await?;
+        Ok(())
+    }
+
+    /// Drag the element to a target element using JavaScript. This is a convenient replacement 
+    /// for dragging elements in an action chain, which is currently not working
+    /// due to a bug in Selenium. The idea is to deprecate this once the bug is fixed.
+    /// 
+    /// # Example
+    /// ```no_run
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// let elem = driver.find(By::Id("draggable")).await?;
+    /// let target = driver.find(By::Id("target")).await?;
+    /// elem.js_drag_to(&target).await?;
+    /// #         driver.quit().await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn js_drag_to(&self, target: &Self) -> WebDriverResult<()> {
+        self.handle
+            .execute(SIMULATE_DRAG_AND_DROP, vec![self.to_json()?, target.to_json()?])
+            .await?;
         Ok(())
     }
 }

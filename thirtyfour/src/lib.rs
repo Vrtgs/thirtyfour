@@ -189,6 +189,7 @@ pub mod session;
 /// Miscellaneous support functions for `thirtyfour` tests.
 pub mod support;
 
+mod js;
 mod switch_to;
 mod upstream;
 mod webdriver;
