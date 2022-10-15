@@ -182,3 +182,7 @@ pub fn sample_page_url(port: u16) -> String {
 pub fn other_page_url(port: u16) -> String {
     format!("http://localhost:{}/other_page.html", port)
 }
+
+pub fn drag_to_url(port: u16) -> String {
+    format!("http://localhost:{}/drag_to.html", port)
+}
