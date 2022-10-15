@@ -1,8 +1,6 @@
-//! A place to store reusable JavaScript to pass to executeScript and executeScriptAsync.
+//! A place to store reusable JavaScript to pass to execute and execute_async.
 
-/// A javascript function for simulating drag and drop. Using this
-/// as a temporary measure until a bug in Selenium itself is fixed,
-/// as recommended here: https://github.com/SeleniumHQ/selenium/issues/8003.
+/// A javascript function for simulating drag and drop.
 pub const SIMULATE_DRAG_AND_DROP: &str = r#"
 function simulateDragDrop(sourceNode, destinationNode) {
     var EVENT_TYPES = {

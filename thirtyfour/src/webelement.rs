@@ -761,9 +761,7 @@ impl WebElement {
         Ok(())
     }
 
-    /// Drag the element to a target element using JavaScript. This is a convenient replacement 
-    /// for dragging elements in an action chain, which is currently not working
-    /// due to a bug in Selenium. The idea is to deprecate this once the bug is fixed.
+    /// Drag the element to a target element using JavaScript.
     /// 
     /// # Example
     /// ```no_run
