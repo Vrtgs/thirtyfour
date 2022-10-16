@@ -1,6 +1,6 @@
 use super::conditions::{handle_errors, negate};
 use super::{conditions, ElementPollerNoWait, ElementPollerWithTimeout, IntoElementPoller};
-use crate::error::WebDriverError;
+use crate::error::{WebDriverError, WebDriverErrorDetails};
 use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
 use crate::{By, ElementPredicate, WebElement};
@@ -16,16 +16,16 @@ fn get_selector_summary(selectors: &[ElementSelector]) -> String {
 /// Helper function to return the NoSuchElement error struct.
 fn no_such_element(selectors: &[ElementSelector], description: &str) -> WebDriverError {
     let element_description = if description.is_empty() {
-        String::from("Element(s)")
+        String::from("element(s)")
     } else {
         format!("'{}' element(s)", description)
     };
 
-    WebDriverError::NoSuchElement(format!(
-        "{} not found using selectors: {}",
+    WebDriverError::NoSuchElement(WebDriverErrorDetails::new(format!(
+        "no such element: {} not found using selectors: {}",
         element_description,
         get_selector_summary(selectors)
-    ))
+    )))
 }
 
 pub async fn filter_elements(
