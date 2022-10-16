@@ -1,5 +1,4 @@
-use fantoccini::elements::Element;
-use fantoccini::error::CmdError;
+use crate::upstream::Element;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 use std::fmt;
@@ -494,7 +493,7 @@ impl WebElement {
     pub async fn is_present(&self) -> WebDriverResult<bool> {
         let present = match self.tag_name().await {
             Ok(..) => true,
-            Err(WebDriverError::NoSuchElement(..)) => false,
+            Err(WebDriverError::StaleElementReference(..)) => false,
             Err(e) => return Err(e),
         };
         Ok(present)
@@ -526,11 +525,7 @@ impl WebElement {
     /// ```
     pub async fn find(&self, by: impl Into<By>) -> WebDriverResult<WebElement> {
         let by = by.into();
-        let elem = self.element.find(by.locator()).await.map_err(|e| match e {
-            // It's generally only useful to know the element query that failed.
-            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
-            x => WebDriverError::CmdError(x),
-        })?;
+        let elem = self.element.find(by.locator()).await?;
         Ok(WebElement::new(elem, self.handle.clone()))
     }
 
@@ -568,11 +563,7 @@ impl WebElement {
     /// ```
     pub async fn find_all(&self, by: impl Into<By>) -> WebDriverResult<Vec<WebElement>> {
         let by = by.into();
-        let elems = self.element.find_all(by.locator()).await.map_err(|e| match e {
-            // It's generally only useful to know the element query that failed.
-            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
-            x => WebDriverError::CmdError(x),
-        })?;
+        let elems = self.element.find_all(by.locator()).await?;
         Ok(elems.into_iter().map(|x| WebElement::new(x, self.handle.clone())).collect())
     }
 
@@ -762,7 +753,7 @@ impl WebElement {
     }
 
     /// Drag the element to a target element using JavaScript.
-    /// 
+    ///
     /// # Example
     /// ```no_run
     /// # use thirtyfour::prelude::*;

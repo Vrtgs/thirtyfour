@@ -1,3 +1,4 @@
+use crate::error::WebDriverErrorDetails;
 use crate::session::handle::SessionHandle;
 use crate::WindowHandle;
 use crate::{
@@ -111,7 +112,9 @@ impl SwitchTo {
         }
 
         self.handle.switch_to_window(original_handle).await?;
-        Err(WebDriverError::NoSuchWindow(name.to_string()))
+        Err(WebDriverError::NoSuchWindow(WebDriverErrorDetails::new(format!(
+            "unable to find named window: {name}"
+        ))))
     }
 }
 
@@ -306,7 +309,9 @@ impl SessionHandle {
         }
 
         self.switch_to_window(original_handle).await?;
-        Err(WebDriverError::NoSuchWindow(name.to_string()))
+        Err(WebDriverError::NoSuchWindow(WebDriverErrorDetails::new(format!(
+            "unable to find named window: {name}"
+        ))))
     }
 
     /// Switch to a new window.

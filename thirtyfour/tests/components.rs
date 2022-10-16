@@ -111,7 +111,7 @@ mod feature_component {
         assert_eq!(elem.tag_name().await?, "label");
 
         let result = tc.elem_desc.resolve().await;
-        assert_matches!(result, Err(WebDriverError::NoSuchElement(x)) if x.contains("my_test_description"));
+        assert_matches!(result, Err(WebDriverError::NoSuchElement(x)) if x.message.contains("my_test_description"));
 
         let start = Instant::now();
         let result = tc.elem_ignore.resolve().await;

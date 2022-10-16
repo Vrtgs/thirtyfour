@@ -91,7 +91,7 @@ async fn stale_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     .await?;
 
     match elem.click().await {
-        Err(WebDriverError::NoSuchElement(_)) => Ok(()),
+        Err(WebDriverError::StaleElementReference(_)) => Ok(()),
         _ => panic!("Expected a stale element reference error"),
     }
 }

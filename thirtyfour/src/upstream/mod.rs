@@ -7,7 +7,10 @@ pub extern crate fantoccini;
 // Re-export fantoccini types
 pub use fantoccini::actions;
 pub use fantoccini::cookies::Cookie;
+pub(crate) use fantoccini::elements::Element;
 pub use fantoccini::elements::{ElementRef, Form};
+pub use fantoccini::error::NewSessionError;
+pub(crate) use fantoccini::error::{CmdError, ErrorStatus};
 pub use fantoccini::key::Key;
 pub use fantoccini::wd::Capabilities;
 pub use fantoccini::wd::TimeoutConfiguration;

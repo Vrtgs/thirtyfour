@@ -1,6 +1,6 @@
 use super::conditions::handle_errors;
 use super::{conditions, ElementPollerWithTimeout, IntoElementPoller};
-use crate::error::WebDriverError;
+use crate::error::{WebDriverError, WebDriverErrorDetails};
 use crate::prelude::WebDriverResult;
 use crate::{ElementPredicate, WebElement};
 use std::time::Duration;
@@ -93,7 +93,10 @@ impl ElementWaiter {
     }
 
     fn timeout(self) -> WebDriverResult<()> {
-        Err(WebDriverError::Timeout(self.message))
+        Err(WebDriverError::Timeout(WebDriverErrorDetails::new(format!(
+            "element condition timed out: {}",
+            self.message
+        ))))
     }
 
     pub async fn condition(self, f: ElementPredicate) -> WebDriverResult<()> {

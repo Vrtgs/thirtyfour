@@ -1,11 +1,10 @@
 use crate::action_chain::ActionChain;
-use crate::error::{WebDriverError, WebDriverResult};
+use crate::error::WebDriverResult;
 use crate::session::scriptret::ScriptRet;
 use crate::Cookie;
 use crate::Form;
 use crate::{By, Rect, SessionId, SwitchTo, WebElement};
 use crate::{TimeoutConfiguration, WebDriverStatus, WindowHandle};
-use fantoccini::error::CmdError;
 use serde_json::Value;
 use std::future::Future;
 use std::path::Path;
@@ -208,11 +207,7 @@ impl SessionHandle {
     /// ```
     pub async fn find(&self, by: impl Into<By>) -> WebDriverResult<WebElement> {
         let by = by.into();
-        let elem = self.client.find(by.locator()).await.map_err(|e| match e {
-            // It's generally only useful to know the element query that failed.
-            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
-            x => WebDriverError::CmdError(x),
-        })?;
+        let elem = self.client.find(by.locator()).await?;
         Ok(self.wrap_element(elem))
     }
 
@@ -248,11 +243,7 @@ impl SessionHandle {
     /// ```
     pub async fn find_all(&self, by: impl Into<By>) -> WebDriverResult<Vec<WebElement>> {
         let by = by.into();
-        let elems = self.client.find_all(by.locator()).await.map_err(|e| match e {
-            // It's generally only useful to know the element query that failed.
-            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
-            x => WebDriverError::CmdError(x),
-        })?;
+        let elems = self.client.find_all(by.locator()).await?;
         Ok(elems.into_iter().map(|x| self.wrap_element(x)).collect())
     }
 
@@ -266,11 +257,7 @@ impl SessionHandle {
     /// Through the returned `Form`, HTML forms can be filled out and submitted.
     pub async fn form(&self, by: impl Into<By>) -> WebDriverResult<Form> {
         let by = by.into();
-        let form = self.client.form(by.locator()).await.map_err(|e| match e {
-            // It's generally only useful to know the element query that failed.
-            CmdError::NoSuchElement(_) => WebDriverError::NoSuchElement(by.to_string()),
-            x => WebDriverError::CmdError(x),
-        })?;
+        let form = self.client.form(by.locator()).await?;
         Ok(form)
     }
 

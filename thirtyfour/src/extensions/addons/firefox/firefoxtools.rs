@@ -54,9 +54,10 @@ impl FirefoxTools {
     pub async fn full_screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
         let src = self.handle.client.issue_cmd(FirefoxCommand::FullScreenshot {}).await?;
         if let Some(src) = src.as_str() {
-            base64::decode(src).map_err(|x| WebDriverError::CmdError(CmdError::ImageDecodeError(x)))
+            let decoded = base64::decode(src)?;
+            Ok(decoded)
         } else {
-            Err(WebDriverError::CmdError(CmdError::NotW3C(src)))
+            Err(WebDriverError::Cmd(CmdError::NotW3C(src)))
         }
     }
 
