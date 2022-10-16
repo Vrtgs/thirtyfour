@@ -1,7 +1,7 @@
 //! Requires chromedriver running on port 9515:
 //!
 //!     chromedriver --port=9515
-//!     chrome --remote-debugging-port=9222 --user-data-dir="H:\WebWorkspace\tauri-learn\browser-data"
+//!     chrome --remote-debugging-port=9222 --user-data-dir="C:\Users\username\my-browser-profile\"
 //!
 //! Run as follows:
 //!
