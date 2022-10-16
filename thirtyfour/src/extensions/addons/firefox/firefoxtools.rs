@@ -1,7 +1,7 @@
 use super::FirefoxCommand;
 use crate::error::{WebDriverError, WebDriverResult};
 use crate::session::handle::SessionHandle;
-use fantoccini::error::CmdError;
+use crate::upstream::CmdError;
 use std::path::Path;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;

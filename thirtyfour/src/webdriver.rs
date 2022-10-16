@@ -72,8 +72,8 @@ impl WebDriver {
 
         #[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
         {
+            use crate::upstream::ClientBuilder;
             use crate::TimeoutConfiguration;
-            use fantoccini::ClientBuilder;
             let caps: Capabilities = capabilities.into();
 
             #[cfg(feature = "native-tls")]

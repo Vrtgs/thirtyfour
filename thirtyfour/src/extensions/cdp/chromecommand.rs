@@ -1,5 +1,5 @@
 use super::NetworkConditions;
-use fantoccini::wd::WebDriverCompatibleCommand;
+use crate::upstream::WebDriverCompatibleCommand;
 use http::Method;
 use serde_json::{json, Value};
 use url::{ParseError, Url};

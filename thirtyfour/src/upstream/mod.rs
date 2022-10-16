@@ -5,15 +5,19 @@
 pub extern crate fantoccini;
 
 // Re-export fantoccini types
-pub use fantoccini::actions;
-pub use fantoccini::cookies::Cookie;
-pub(crate) use fantoccini::elements::Element;
-pub use fantoccini::elements::{ElementRef, Form};
-pub use fantoccini::error::NewSessionError;
-pub(crate) use fantoccini::error::{CmdError, ErrorStatus};
-pub use fantoccini::key::Key;
-pub use fantoccini::wd::Capabilities;
-pub use fantoccini::wd::TimeoutConfiguration;
-pub use fantoccini::wd::WebDriverStatus;
-pub use fantoccini::wd::WindowHandle;
-pub(crate) use fantoccini::Locator;
+pub use fantoccini::{
+    actions,
+    cookies::Cookie,
+    elements::{ElementRef, Form},
+    error::NewSessionError,
+    key::Key,
+    wd::{Capabilities, TimeoutConfiguration, WebDriverStatus, WindowHandle},
+};
+
+// Imports needed internally to thirtyfour.
+pub(crate) use fantoccini::{
+    elements::Element,
+    error::{CmdError, ErrorStatus},
+    wd::WebDriverCompatibleCommand,
+    ClientBuilder, Locator,
+};
