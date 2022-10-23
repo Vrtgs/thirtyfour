@@ -46,7 +46,6 @@ impl SessionHandle {
     }
 
     /// Create new `SessionHandle` with the specified `WebDriverConfig`.
-    #[allow(dead_code)]
     pub(crate) fn new_with_config(
         client: fantoccini::Client,
         session_id: SessionId,
