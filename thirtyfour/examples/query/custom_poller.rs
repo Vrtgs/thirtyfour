@@ -4,7 +4,7 @@
 //!
 //! Run as follows:
 //!
-//!     cargo run --example wikipedia
+//!     cargo run --example custom_poller
 
 use std::sync::Arc;
 use std::time::Duration;
