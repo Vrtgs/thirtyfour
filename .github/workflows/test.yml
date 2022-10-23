@@ -29,7 +29,7 @@ jobs:
       - name: Install ${{ matrix.browser }}
         run: |
           ./ci/${{ matrix.os }}-${{ matrix.browser }}
-      - name: cargo test
+      - name: cargo test -- --test-threads=1
         uses: actions-rs/cargo@v1
         with:
           command: test
