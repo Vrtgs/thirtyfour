@@ -1,7 +1,7 @@
-use crate::Capabilities;
 use serde::Serialize;
-use serde_json::json;
-use std::ops::{Deref, DerefMut};
+use serde_json::{json, Value};
+
+use crate::{Capabilities, CapabilitiesHelper};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
@@ -31,16 +31,16 @@ impl From<SafariCapabilities> for Capabilities {
     }
 }
 
-impl Deref for SafariCapabilities {
-    type Target = Capabilities;
-
-    fn deref(&self) -> &Self::Target {
-        &self.capabilities
+impl CapabilitiesHelper for SafariCapabilities {
+    fn _get(&self, key: &str) -> Option<&Value> {
+        self.capabilities._get(key)
     }
-}
 
-impl DerefMut for SafariCapabilities {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.capabilities
+    fn _get_mut(&mut self, key: &str) -> Option<&mut Value> {
+        self.capabilities._get_mut(key)
+    }
+
+    fn insert_base_capability(&mut self, key: String, value: Value) {
+        self.capabilities.insert_base_capability(key, value);
     }
 }

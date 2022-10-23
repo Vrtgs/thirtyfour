@@ -1,5 +1,6 @@
-use serde::Serialize;
-use serde_json::{json, to_value, Value};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
+use serde_json::{from_value, json, to_value, Value};
 
 use crate::common::capabilities::chrome::ChromeCapabilities;
 use crate::common::capabilities::edge::EdgeCapabilities;
@@ -10,87 +11,25 @@ use crate::common::capabilities::safari::SafariCapabilities;
 use crate::error::WebDriverResult;
 use crate::Capabilities;
 
-const W3C_CAPABILITY_NAMES: &[&str] = &[
-    "acceptInsecureCerts",
-    "browserName",
-    "browserVersion",
-    "platformName",
-    "pageLoadStrategy",
-    "proxy",
-    "setWindowRect",
-    "timeouts",
-    "unhandledPromptBehavior",
-    "strictFileInteractability",
-];
-
-const OSS_W3C_CONVERSION: &[(&str, &str)] = &[
-    ("acceptSslCerts", "acceptInsecureCerts"),
-    ("version", "browserVersion"),
-    ("platform", "platformName"),
-];
-
-pub fn make_w3c_caps(caps: &Value) -> Value {
-    let mut always_match = json!({});
-
-    if let Some(caps_map) = caps.as_object() {
-        for (k, v) in caps_map.iter() {
-            if !v.is_null() {
-                for (k_from, k_to) in OSS_W3C_CONVERSION {
-                    if k_from == k {
-                        always_match[k_to] = v.clone();
-                    }
-                }
-            }
-
-            if W3C_CAPABILITY_NAMES.contains(&k.as_str()) || k.contains(':') {
-                always_match[k] = v.clone();
-            }
-        }
-    }
-
-    json!({
-        "firstMatch": [{}], "alwaysMatch": always_match
-    })
-}
-
-/// Merge two serde_json::Value structs.
+/// Provides static methods for constructing browser-specific capabilities.
 ///
-/// From https://stackoverflow.com/questions/47070876/how-can-i-merge-two-json-objects-with-rust
-fn merge(a: &mut Value, b: Value) {
-    match (a, b) {
-        (a @ &mut Value::Object(_), Value::Object(b)) => {
-            let a = a.as_object_mut().unwrap();
-            for (k, v) in b {
-                merge(a.entry(k).or_insert(Value::Null), v);
-            }
-        }
-        (a, b) => *a = b,
-    }
-}
-
-/// The DesiredCapabilities struct provides a generic way to construct capabilities as well as
-/// helper methods that create specific capabilities structs for the various browsers.
-#[derive(Debug, Clone, Serialize)]
-#[serde(transparent)]
-pub struct DesiredCapabilities {
-    capabilities: Capabilities,
-}
-
-impl Default for DesiredCapabilities {
-    fn default() -> Self {
-        Self {
-            capabilities: serde_json::Map::new(),
-        }
-    }
-}
+/// ## Example
+/// ```no_run
+/// use thirtyfour::{DesiredCapabilities, WebDriver};
+/// let caps = DesiredCapabilities::chrome();
+/// let driver = WebDriver::new("http://localhost:4444", caps);
+/// ```
+pub struct DesiredCapabilities;
 
 impl DesiredCapabilities {
-    /// Create a new custom DesiredCapabilities struct. Generally you should use the
-    /// browser-specific functions instead, such as `DesiredCapabilities::firefox()`,
-    /// but you can use `DesiredCapabilities::new` if you need to create capabilities
-    /// for a browser not listed here.
-    pub fn new() -> Self {
-        Self::default()
+    /// Create a ChromeCapabilities struct.
+    pub fn chrome() -> ChromeCapabilities {
+        ChromeCapabilities::new()
+    }
+
+    /// Create an EdgeCapabilities struct.
+    pub fn edge() -> EdgeCapabilities {
+        EdgeCapabilities::new()
     }
 
     /// Create a FirefoxCapabilities struct.
@@ -101,16 +40,6 @@ impl DesiredCapabilities {
     /// Create an InternetExplorerCapabilities struct.
     pub fn internet_explorer() -> InternetExplorerCapabilities {
         InternetExplorerCapabilities::new()
-    }
-
-    /// Create an EdgeCapabilities struct.
-    pub fn edge() -> EdgeCapabilities {
-        EdgeCapabilities::new()
-    }
-
-    /// Create a ChromeCapabilities struct.
-    pub fn chrome() -> ChromeCapabilities {
-        ChromeCapabilities::new()
     }
 
     /// Create an OperaCapabilities struct.
@@ -124,12 +53,6 @@ impl DesiredCapabilities {
     }
 }
 
-impl From<DesiredCapabilities> for Capabilities {
-    fn from(caps: DesiredCapabilities) -> Capabilities {
-        caps.capabilities
-    }
-}
-
 pub trait CapabilitiesHelper {
     /// Get an immutable reference to the underlying serde_json::Value.
     fn _get(&self, key: &str) -> Option<&Value>;
@@ -137,123 +60,88 @@ pub trait CapabilitiesHelper {
     /// Get a mutable reference to the underlying serde_json::Value.
     fn _get_mut(&mut self, key: &str) -> Option<&mut Value>;
 
-    fn _set(&mut self, key: String, value: Value);
+    /// Set the specified capability at the root level.
+    fn insert_base_capability(&mut self, key: String, value: Value);
 
     /// Add any Serialize-able object to the capabilities under the specified key.
-    fn add<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
+    fn set_base_capability<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
     where
         T: Serialize,
     {
-        self._set(key.to_string(), to_value(value)?);
+        self.insert_base_capability(key.to_string(), to_value(value)?);
         Ok(())
-    }
-
-    /// Add any Serialize-able object to the capabilities under the specified key and subkey.
-    fn add_subkey<T>(&mut self, key: &str, subkey: &str, value: T) -> WebDriverResult<()>
-    where
-        T: Serialize,
-    {
-        match self._get_mut(key) {
-            Some(v) => {
-                v[subkey] = to_value(value)?;
-            }
-            None => self._set(key.to_string(), json!({ subkey: value })),
-        }
-        Ok(())
-    }
-
-    /// Remove a subkey from the specified key, if it exists.
-    fn remove_subkey(&mut self, key: &str, subkey: &str) -> WebDriverResult<()> {
-        if let Some(Value::Object(v)) = &mut self._get_mut(key) {
-            v.remove(subkey);
-        }
-        Ok(())
-    }
-
-    /// Add all keys of the specified object into the capabilities, overwriting any
-    /// matching keys that already exist.
-    fn update(&mut self, key: &str, value: Value) {
-        assert!(value.is_object());
-        let merged = match self._get_mut(key) {
-            Some(x) => {
-                merge(x, value);
-                x.clone()
-            }
-            None => value,
-        };
-        self._set(key.to_string(), merged);
     }
 
     /// Set the desired browser version.
     fn set_version(&mut self, version: &str) -> WebDriverResult<()> {
-        self.add("version", version)
+        self.set_base_capability("version", version)
     }
 
     /// Set the desired browser platform.
     fn set_platform(&mut self, platform: &str) -> WebDriverResult<()> {
-        self.add("platform", platform)
+        self.set_base_capability("platform", platform)
     }
 
     /// Set whether the session supports executing user-supplied Javascript.
     fn set_javascript_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
-        self.add("javascriptEnabled", enabled)
+        self.set_base_capability("javascriptEnabled", enabled)
     }
 
     /// Set whether the session can interact with database storage.
     fn set_database_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
-        self.add("databaseEnabled", enabled)
+        self.set_base_capability("databaseEnabled", enabled)
     }
 
     /// Set whether the session can set and query the browser's location context.
     fn set_location_context_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
-        self.add("locationContextEnabled", enabled)
+        self.set_base_capability("locationContextEnabled", enabled)
     }
 
     /// Set whether the session can interact with the application cache.
     fn set_application_cache_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
-        self.add("applicationCacheEnabled", enabled)
+        self.set_base_capability("applicationCacheEnabled", enabled)
     }
 
     /// Set whether the session can query for the browser's connectivity and disable it if desired.
     fn set_browser_connection_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
-        self.add("browserConnectionEnabled", enabled)
+        self.set_base_capability("browserConnectionEnabled", enabled)
     }
 
     /// Set whether the session supports interactions with local storage.
     fn set_web_storage_enabled(&mut self, enabled: bool) -> WebDriverResult<()> {
-        self.add("webStorageEnabled", enabled)
+        self.set_base_capability("webStorageEnabled", enabled)
     }
 
     /// Set whether the session should accept all SSL certificates by default.
     fn accept_ssl_certs(&mut self, enabled: bool) -> WebDriverResult<()> {
-        self.add("acceptSslCerts", enabled)
+        self.set_base_capability("acceptSslCerts", enabled)
     }
 
     /// Set whether the session can rotate the current page's layout between portrait and landscape
     /// orientations. Only applies to mobile platforms.
     fn set_rotatable(&mut self, enabled: bool) -> WebDriverResult<()> {
-        self.add("rotatable", enabled)
+        self.set_base_capability("rotatable", enabled)
     }
 
     /// Set whether the session is capable of generating native events when simulating user input.
     fn set_native_events(&mut self, enabled: bool) -> WebDriverResult<()> {
-        self.add("nativeEvents", enabled)
+        self.set_base_capability("nativeEvents", enabled)
     }
 
     /// Set the proxy to use.
     fn set_proxy(&mut self, proxy: Proxy) -> WebDriverResult<()> {
-        self.add("proxy", proxy)
+        self.set_base_capability("proxy", proxy)
     }
 
     /// Set the behaviour to be followed when an unexpected alert is encountered.
     fn set_unexpected_alert_behaviour(&mut self, behaviour: AlertBehaviour) -> WebDriverResult<()> {
-        self.add("unexpectedAlertBehaviour", behaviour)
+        self.set_base_capability("unexpectedAlertBehaviour", behaviour)
     }
 
     /// Set whether elements are scrolled into the viewport for interation to align with the top
     /// or the bottom of the viewport. The default is to align with the top.
     fn set_element_scroll_behaviour(&mut self, behaviour: ScrollBehaviour) -> WebDriverResult<()> {
-        self.add("elementScrollBehavior", behaviour)
+        self.set_base_capability("elementScrollBehavior", behaviour)
     }
 
     /// Get whether the session can interact with modal popups such as `window.alert`.
@@ -264,6 +152,57 @@ pub trait CapabilitiesHelper {
     /// Get whether the session supports CSS selectors when searching for elements.
     fn css_selectors_enabled(&self) -> Option<bool> {
         self._get("cssSelectorsEnabled").and_then(|x| x.as_bool())
+    }
+
+    /// Get the current page load strategy.
+    fn page_load_strategy(&self) -> WebDriverResult<PageLoadStrategy> {
+        let strategy = self._get("pageLoadStrategy").map(|x| from_value(x.clone())).transpose()?;
+        Ok(strategy.unwrap_or_default())
+    }
+
+    /// Set the page load strategy to use.
+    fn set_page_load_strategy(&mut self, strategy: PageLoadStrategy) -> WebDriverResult<()> {
+        self.set_base_capability("pageLoadStrategy", strategy)
+    }
+}
+
+/// Helper trait for adding browser-specific capabilities.
+///
+/// For example, chrome stores capabilities under `goog:chromeOptions` and firefox
+/// stores capabilities under `moz:firefoxOptions`.
+pub trait BrowserCapabilitiesHelper: CapabilitiesHelper {
+    const KEY: &'static str;
+
+    /// Add any Serialize-able object to the capabilities under the browser's custom key.
+    fn insert_browser_option(
+        &mut self,
+        key: impl Into<String>,
+        value: impl Serialize,
+    ) -> WebDriverResult<()> {
+        match self._get_mut(Self::KEY) {
+            Some(Value::Object(v)) => {
+                v.insert(key.into(), to_value(value)?);
+            }
+            _ => self.insert_base_capability(Self::KEY.to_string(), json!({ key: value })),
+        }
+        Ok(())
+    }
+
+    /// Remove the custom browser-specific property, if it exists.
+    fn remove_browser_option(&mut self, key: &str) {
+        if let Some(Value::Object(v)) = &mut self._get_mut(Self::KEY) {
+            v.remove(key);
+        }
+    }
+
+    /// Get the custom browser-specific property, if it exists.
+    fn browser_option<T>(&self, key: &str) -> Option<T>
+    where
+        T: DeserializeOwned,
+    {
+        self._get(Self::KEY)
+            .and_then(|options| options.get(key))
+            .and_then(|option| from_value(option.clone()).ok())
     }
 }
 
@@ -276,7 +215,7 @@ impl CapabilitiesHelper for Capabilities {
         self.get_mut(key)
     }
 
-    fn _set(&mut self, key: String, value: Value) {
+    fn insert_base_capability(&mut self, key: String, value: Value) {
         self.insert(key, value);
     }
 }
@@ -328,7 +267,7 @@ pub enum ScrollBehaviour {
     Bottom = 1,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PageLoadStrategy {
     /// Wait for full page loading (the default).
@@ -338,4 +277,10 @@ pub enum PageLoadStrategy {
     /// Return immediately after the initial page content is fully received
     /// (html content downloaded).
     None,
+}
+
+impl Default for PageLoadStrategy {
+    fn default() -> Self {
+        PageLoadStrategy::Normal
+    }
 }

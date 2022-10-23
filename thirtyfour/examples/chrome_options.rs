@@ -13,7 +13,7 @@ async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
     let mut caps = DesiredCapabilities::chrome();
-    caps.add_chrome_option(
+    caps.insert_browser_option(
         "prefs",
         serde_json::json!({
             "profile.default_content_settings": {

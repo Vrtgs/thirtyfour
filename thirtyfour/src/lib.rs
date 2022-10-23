@@ -168,7 +168,9 @@ pub mod prelude {
     pub use crate::switch_to::SwitchTo;
     pub use crate::WebDriver;
     pub use crate::WebElement;
-    pub use crate::{By, Capabilities, DesiredCapabilities};
+    pub use crate::{
+        BrowserCapabilitiesHelper, By, Capabilities, CapabilitiesHelper, DesiredCapabilities,
+    };
     pub use crate::{Cookie, Key, TimeoutConfiguration, WindowHandle};
 }
 

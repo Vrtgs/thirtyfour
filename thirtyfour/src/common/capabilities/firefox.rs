@@ -1,14 +1,10 @@
-use std::ops::{Deref, DerefMut};
-use std::path::Path;
-
-use crate::Capabilities;
-use crate::CapabilitiesHelper;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
+use paste::paste;
+use serde::{Deserialize, Serialize};
 use serde_json::{from_value, json, to_value, Value};
 
 use crate::error::WebDriverResult;
-use crate::PageLoadStrategy;
+use crate::CapabilitiesHelper;
+use crate::{BrowserCapabilitiesHelper, Capabilities};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
@@ -26,77 +22,117 @@ impl Default for FirefoxCapabilities {
     }
 }
 
+macro_rules! firefox_arg_wrapper {
+    ($($fname:ident => $opt:literal),*) => {
+
+        paste! {
+            $(
+                #[doc = concat!("Set the ", $opt, " option.")]
+                pub fn [<set_ $fname>](&mut self) -> WebDriverResult<()> {
+                    self.add_arg($opt)
+                }
+
+                #[doc = concat!("Unset the ", $opt, " option.")]
+                pub fn [<unset_ $fname>](&mut self) -> WebDriverResult<()> {
+                    self.remove_arg($opt)
+                }
+
+                #[doc = concat!("Return true if the ", $opt, " option is set.")]
+                pub fn [<is_ $fname>](&mut self) -> bool {
+                    self.has_arg($opt)
+                }
+            )*
+        }
+    }
+}
+
 impl FirefoxCapabilities {
     pub fn new() -> Self {
         FirefoxCapabilities::default()
     }
 
-    /// Add the specified firefox option. This is a helper method for the various
-    /// specific option methods.
-    pub fn add_firefox_option<T>(&mut self, key: &str, value: T) -> WebDriverResult<()>
-    where
-        T: Serialize,
-    {
-        self.add_subkey("moz:firefoxOptions", key, value)
+    /// Set the selenium logging preferences.
+    ///
+    /// To set the `geckodriver` log level, use `set_log_level()` instead.
+    pub fn set_logging_prefs(
+        &mut self,
+        component: String,
+        log_level: LoggingPrefsLogLevel,
+    ) -> WebDriverResult<()> {
+        self.set_base_capability("loggingPrefs", json!({ component: log_level }))
     }
 
-    /// Set the selenium logging preferences. To set the `geckodriver` log level,
-    /// use `set_log_level()` instead.
-    pub fn set_logging_prefs(&mut self, component: String, log_level: LoggingPrefsLogLevel) {
-        self.update("loggingPrefs", json!({ component: log_level }));
+    /// Get the `geckodriver` log level.
+    pub fn log_level(&self) -> WebDriverResult<LogLevel> {
+        let level: LogLevel = match self.browser_option("log") {
+            Some(Value::Object(x)) => {
+                x.get("level").map(|x| from_value(x.clone())).transpose()?.unwrap_or_default()
+            }
+            _ => LogLevel::default(),
+        };
+        Ok(level)
     }
 
     /// Set the `geckodriver` log level.
     pub fn set_log_level(&mut self, log_level: LogLevel) -> WebDriverResult<()> {
-        self.add_firefox_option("log", json!({ "level": log_level }))
+        self.insert_browser_option("log", json!({ "level": log_level }))
     }
 
-    /// Set the path to the firefox binary.
-    pub fn set_firefox_binary(&mut self, path: &Path) -> WebDriverResult<()> {
-        self.add("firefox_binary", path.to_string_lossy().to_string())
-    }
-
-    /// Set the page load strategy to use.
-    /// Valid values are: `normal` (the default)
-    pub fn set_page_load_strategy(&mut self, strategy: PageLoadStrategy) -> WebDriverResult<()> {
-        self.add("pageLoadStrategy", strategy)
+    /// Set the start command for the firefox binary.
+    pub fn set_firefox_binary(&mut self, start_cmd: &str) -> WebDriverResult<()> {
+        self.insert_browser_option("binary", start_cmd)
     }
 
     /// Set the firefox preferences to use.
     pub fn set_preferences(&mut self, preferences: FirefoxPreferences) -> WebDriverResult<()> {
-        self.add_firefox_option("prefs", preferences)
+        self.insert_browser_option("prefs", preferences)
+    }
+
+    /// Get the firefox profile zip as a base64-encoded string.
+    pub fn encoded_profile(&self) -> Option<String> {
+        self.browser_option("profile")
+    }
+
+    /// Set the firefox profile to use.
+    ///
+    /// The profile must be a zipped, base64-encoded string of the profile directory.
+    pub fn set_encoded_profile(&mut self, profile: &str) -> WebDriverResult<()> {
+        self.insert_browser_option("profile", profile)
+    }
+
+    /// Get the current list of command-line arguments to `geckodriver` as a vec.
+    pub fn args(&self) -> Vec<String> {
+        self.browser_option("args").unwrap_or_default()
     }
 
     /// Add the specified command-line argument to `geckodriver`.
-    pub fn add_firefox_arg(&mut self, arg: &str) -> WebDriverResult<()> {
-        let mut args = self.get_args();
+    pub fn add_arg(&mut self, arg: &str) -> WebDriverResult<()> {
+        let mut args = self.args();
         let arg_string = arg.to_string();
         if !args.contains(&arg_string) {
             args.push(arg_string);
         }
-        self.add_firefox_option("args", to_value(args)?)
+        self.insert_browser_option("args", to_value(args)?)
     }
 
-    /// Get the specified Firefox option.
-    pub fn get_firefox_option<T>(&self, key: &str) -> T
-    where
-        T: DeserializeOwned + Default,
-    {
-        self.capabilities
-            .get("moz:firefoxOptions")
-            .and_then(|options| options.get(key))
-            .and_then(|option| from_value(option.clone()).ok())
-            .unwrap_or_default()
+    /// Remove the specified `geckodriver` command-line argument if it had been added previously.
+    pub fn remove_arg(&mut self, arg: &str) -> WebDriverResult<()> {
+        let mut args = self.args();
+        if args.is_empty() {
+            Ok(())
+        } else {
+            args.retain(|v| v != arg);
+            self.insert_browser_option("args", to_value(args)?)
+        }
     }
 
-    /// Get the current list of command-line arguments to `geckodriver` as a vec.
-    pub fn get_args(&self) -> Vec<String> {
-        self.get_firefox_option("args")
+    /// Return true if the specified arg is currently set.
+    pub fn has_arg(&self, arg: &str) -> bool {
+        self.args().contains(&arg.to_string())
     }
 
-    /// Set the browser to run headless.
-    pub fn set_headless(&mut self) -> WebDriverResult<()> {
-        self.add_firefox_arg("--headless")
+    firefox_arg_wrapper! {
+        headless => "-headless"
     }
 }
 
@@ -106,21 +142,25 @@ impl From<FirefoxCapabilities> for Capabilities {
     }
 }
 
-impl Deref for FirefoxCapabilities {
-    type Target = Capabilities;
+impl CapabilitiesHelper for FirefoxCapabilities {
+    fn _get(&self, key: &str) -> Option<&Value> {
+        self.capabilities._get(key)
+    }
 
-    fn deref(&self) -> &Self::Target {
-        &self.capabilities
+    fn _get_mut(&mut self, key: &str) -> Option<&mut Value> {
+        self.capabilities._get_mut(key)
+    }
+
+    fn insert_base_capability(&mut self, key: String, value: Value) {
+        self.capabilities.insert_base_capability(key, value);
     }
 }
 
-impl DerefMut for FirefoxCapabilities {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.capabilities
-    }
+impl BrowserCapabilitiesHelper for FirefoxCapabilities {
+    const KEY: &'static str = "moz:firefoxOptions";
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     Trace,
@@ -133,7 +173,13 @@ pub enum LogLevel {
     Default,
 }
 
-#[derive(Debug, Serialize)]
+impl Default for LogLevel {
+    fn default() -> Self {
+        LogLevel::Default
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum LoggingPrefsLogLevel {
     Off,
@@ -147,7 +193,7 @@ pub enum LoggingPrefsLogLevel {
     All,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(transparent)]
 pub struct FirefoxPreferences {
     preferences: serde_json::Map<String, Value>,
