@@ -1,7 +1,9 @@
+use crate::common::config::WebDriverConfig;
 use crate::error::WebDriverResult;
 use crate::session::handle::SessionHandle;
-use crate::Capabilities;
-use std::ops::{Deref, DerefMut};
+use crate::{Capabilities, SessionId};
+use std::ops::Deref;
+use std::sync::Arc;
 
 /// The `WebDriver` struct encapsulates an async Selenium WebDriver browser
 /// session.
@@ -26,9 +28,10 @@ use std::ops::{Deref, DerefMut};
 /// #     })
 /// # }
 /// ```
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct WebDriver {
-    pub handle: SessionHandle,
+    /// The underlying session handle.
+    pub handle: Arc<SessionHandle>,
 }
 
 impl WebDriver {
@@ -62,8 +65,21 @@ impl WebDriver {
     ///
     /// - If the webdriver appears to hang or give no response, please check that the
     ///   capabilities object is of the correct type for that webdriver.
-    #[allow(unused_variables)]
     pub async fn new<C>(server_url: &str, capabilities: C) -> WebDriverResult<Self>
+    where
+        C: Into<Capabilities>,
+    {
+        Self::new_with_config(server_url, capabilities, WebDriverConfig::default()).await
+    }
+
+    /// Create a new `WebDriver` with the specified `WebDriverConfig`.
+    ///
+    /// Use `WebDriverConfig::builder().build()` to construct the config.
+    pub async fn new_with_config<C>(
+        server_url: &str,
+        capabilities: C,
+        config: WebDriverConfig,
+    ) -> WebDriverResult<Self>
     where
         C: Into<Capabilities>,
     {
@@ -86,43 +102,30 @@ impl WebDriver {
             // Set default timeouts.
             let timeouts = TimeoutConfiguration::default();
             client.update_timeouts(timeouts).await?;
+            let session_id = client.session_id().await?.expect("session id is not valid");
 
             Ok(Self {
-                handle: SessionHandle::new(client).await?,
+                handle: Arc::new(SessionHandle::new_with_config(
+                    client,
+                    SessionId::from(session_id),
+                    config,
+                )?),
             })
         }
     }
 
-    // /// Creates a new WebDriver just like the `new` function. Allows a
-    // /// configurable timeout for all HTTP requests including the session creation.
-    // ///
-    // /// Create a new WebDriver as follows:
-    // ///
-    // /// # Example
-    // /// ```no_run
-    // /// # use thirtyfour::prelude::*;
-    // /// # use thirtyfour::support::block_on;
-    // /// # use std::time::Duration;
-    // /// #
-    // /// # fn main() -> WebDriverResult<()> {
-    // /// #     block_on(async {
-    // /// let caps = DesiredCapabilities::chrome();
-    // /// let driver = WebDriver::new_with_timeout("http://localhost:4444", &caps, Some(Duration::from_secs(120))).await?;
-    // /// #         driver.quit().await?;
-    // /// #         Ok(())
-    // /// #     })
-    // /// # }
-    // /// ```
-    // pub async fn new_with_timeout<C>(
-    //     _server_url: &str,
-    //     _capabilities: C,
-    //     _timeout: Option<Duration>,
-    // ) -> WebDriverResult<Self>
-    // where
-    //     C: Into<Capabilities>,
-    // {
-    //     unimplemented!()
-    // }
+    /// Clone this `WebDriver` keeping the session handle, but supplying a new `WebDriverConfig`.
+    ///
+    /// This still uses the same underlying client, and still controls the same browser
+    /// session, but uses a different `WebDriverConfig` for this instance.
+    ///
+    /// This is useful in cases where you want to specify a custom poller configuration (or
+    /// some other configuration option) for only one instance of `WebDriver`.
+    pub fn clone_with_config(&self, config: WebDriverConfig) -> Self {
+        Self {
+            handle: self.handle.clone_with_config(config),
+        }
+    }
 
     /// End the webdriver session and close the browser.
     ///
@@ -130,7 +133,8 @@ impl WebDriver {
     ///           Thus if you intend for the browser to close once you are done with it, then
     ///           you must call this method at that point, and await it.
     pub async fn quit(self) -> WebDriverResult<()> {
-        self.handle.client.close().await?;
+        let client = self.handle.client.clone();
+        client.close().await?;
         Ok(())
     }
 }
@@ -139,15 +143,9 @@ impl WebDriver {
 /// exposes all of the methods there without requiring us to use an async_trait.
 /// See documentation at the top of this module for more details on the design.
 impl Deref for WebDriver {
-    type Target = SessionHandle;
+    type Target = Arc<SessionHandle>;
 
     fn deref(&self) -> &Self::Target {
         &self.handle
-    }
-}
-
-impl DerefMut for WebDriver {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.handle
     }
 }

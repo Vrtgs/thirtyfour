@@ -3,6 +3,7 @@ use serde_json::{json, Value};
 
 use crate::{BrowserCapabilitiesHelper, Capabilities, CapabilitiesHelper};
 
+/// Capabilities for Opera.
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
 pub struct OperaCapabilities {
@@ -11,17 +12,18 @@ pub struct OperaCapabilities {
 
 impl Default for OperaCapabilities {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl OperaCapabilities {
+    /// Create a new `OperaCapabilities`.
+    pub fn new() -> Self {
         let mut capabilities = Capabilities::new();
         capabilities.insert("browserName".to_string(), json!("opera"));
         OperaCapabilities {
             capabilities,
         }
-    }
-}
-
-impl OperaCapabilities {
-    pub fn new() -> Self {
-        OperaCapabilities::default()
     }
 }
 

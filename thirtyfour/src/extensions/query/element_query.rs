@@ -4,6 +4,8 @@ use crate::error::{WebDriverError, WebDriverErrorDetails};
 use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
 use crate::{By, ElementPredicate, WebElement};
+use std::fmt::{Debug, Formatter};
+use std::sync::Arc;
 use std::time::Duration;
 use stringmatch::Needle;
 
@@ -28,6 +30,7 @@ fn no_such_element(selectors: &[ElementSelector], description: &str) -> WebDrive
     )))
 }
 
+/// Filter the specified elements using the specified filters.
 pub async fn filter_elements(
     mut elements: Vec<WebElement>,
     filters: &[ElementPredicate],
@@ -52,11 +55,20 @@ pub async fn filter_elements(
 /// The filters will be applied to any elements matched by the selector.
 /// Selectors and filters all run in full on every poll iteration.
 pub struct ElementSelector {
+    /// The selector to use.
     pub by: By,
+    /// The filters for this element selector.
     pub filters: Vec<ElementPredicate>,
 }
 
+impl Debug for ElementSelector {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ElementSelector").field("by", &self.by).finish()
+    }
+}
+
 impl ElementSelector {
+    /// Create a new `ElementSelector`.
     pub fn new(by: By) -> Self {
         Self {
             by,
@@ -74,8 +86,11 @@ impl ElementSelector {
 /// The command issued to the webdriver will differ depending on the source,
 /// i.e. FindElement vs FindElementFromElement etc. but the ElementQuery
 /// interface is the same for both.
+#[derive(Debug)]
 pub enum ElementQuerySource {
-    Driver(SessionHandle),
+    /// Execute query from the `WebDriver` instance.
+    Driver(Arc<SessionHandle>),
+    /// Execute query using the specified `WebElement` as the base.
     Element(WebElement),
 }
 
@@ -86,7 +101,9 @@ pub enum ElementQueryWaitOptions {
     WaitDefault,
     /// Use a poller with the specified timeout and interval.
     Wait {
+        /// The timeout for this poller.
         timeout: Duration,
+        /// The minimum interval between attempts.
         interval: Duration,
     },
     /// Do not wait. This uses a poller that quits immediately.
@@ -172,19 +189,28 @@ impl ElementQueryOptions {
 /// #     })
 /// # }
 /// ```
+#[derive(Debug)]
 pub struct ElementQuery {
     source: ElementQuerySource,
-    poller: Option<Box<dyn IntoElementPoller + Send + Sync>>,
+    poller: Arc<dyn IntoElementPoller + Send + Sync>,
     selectors: Vec<ElementSelector>,
     options: ElementQueryOptions,
 }
 
 impl ElementQuery {
-    fn new(source: ElementQuerySource, by: By) -> Self {
+    /// Create a new `ElementQuery`.
+    ///
+    /// See `WebDriver::query()` or `WebElement::query()` rather than instantiating
+    /// this directly.
+    pub fn new(
+        source: ElementQuerySource,
+        by: By,
+        poller: Arc<dyn IntoElementPoller + Send + Sync>,
+    ) -> Self {
         let selector = ElementSelector::new(by);
         Self {
             source,
-            poller: None,
+            poller,
             selectors: vec![selector],
             options: ElementQueryOptions::default(),
         }
@@ -226,8 +252,8 @@ impl ElementQuery {
 
     /// Use the specified ElementPoller for this ElementQuery.
     /// This will not affect the default ElementPoller used for other queries.
-    pub fn with_poller(mut self, poller: Box<dyn IntoElementPoller + Send + Sync>) -> Self {
-        self.poller = Some(poller);
+    pub fn with_poller(mut self, poller: Arc<dyn IntoElementPoller + Send + Sync>) -> Self {
+        self.poller = poller;
         self
     }
 
@@ -235,13 +261,13 @@ impl ElementQuery {
     /// after each interval. This will override the poller for this
     /// ElementQuery only.
     pub fn wait(self, timeout: Duration, interval: Duration) -> Self {
-        self.with_poller(Box::new(ElementPollerWithTimeout::new(timeout, interval)))
+        self.with_poller(Arc::new(ElementPollerWithTimeout::new(timeout, interval)))
     }
 
     /// Force this ElementQuery to not wait for the specified condition(s).
     /// This will override the poller for this ElementQuery only.
     pub fn nowait(self) -> Self {
-        self.with_poller(Box::new(ElementPollerNoWait))
+        self.with_poller(Arc::new(ElementPollerNoWait))
     }
 
     //
@@ -361,10 +387,7 @@ impl ElementQuery {
         };
 
         // Start the poller.
-        let mut poller = match &self.poller {
-            Some(p) => p.start(),
-            None => Box::new(ElementPollerWithTimeout::default()).start(),
-        };
+        let mut poller = self.poller.start();
 
         loop {
             for selector in &self.selectors {
@@ -745,6 +768,7 @@ impl ElementQuery {
 
 /// Trait for enabling the ElementQuery interface.
 pub trait ElementQueryable {
+    /// Start an element query using the specified selector.
     fn query(&self, by: By) -> ElementQuery;
 }
 
@@ -756,11 +780,15 @@ impl ElementQueryable for WebElement {
     ///
     /// See [`ElementQuery`] for more documentation.
     fn query(&self, by: By) -> ElementQuery {
-        ElementQuery::new(ElementQuerySource::Element(self.clone()), by)
+        ElementQuery::new(
+            ElementQuerySource::Element(self.clone()),
+            by,
+            self.handle.config().poller.clone(),
+        )
     }
 }
 
-impl ElementQueryable for SessionHandle {
+impl ElementQueryable for Arc<SessionHandle> {
     /// Return an ElementQuery instance for more executing powerful element queries.
     ///
     /// This uses the builder pattern to construct queries that will return one or
@@ -768,7 +796,11 @@ impl ElementQueryable for SessionHandle {
     ///
     /// See [`ElementQuery`] for more documentation.
     fn query(&self, by: By) -> ElementQuery {
-        ElementQuery::new(ElementQuerySource::Driver(self.clone()), by)
+        ElementQuery::new(
+            ElementQuerySource::Driver(self.clone()),
+            by,
+            self.config().poller.clone(),
+        )
     }
 }
 

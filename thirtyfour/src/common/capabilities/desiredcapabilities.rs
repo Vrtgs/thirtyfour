@@ -19,6 +19,7 @@ use crate::Capabilities;
 /// let caps = DesiredCapabilities::chrome();
 /// let driver = WebDriver::new("http://localhost:4444", caps);
 /// ```
+#[derive(Debug)]
 pub struct DesiredCapabilities;
 
 impl DesiredCapabilities {
@@ -53,6 +54,7 @@ impl DesiredCapabilities {
     }
 }
 
+/// Provides common features for all Capabilities structs.
 pub trait CapabilitiesHelper {
     /// Get an immutable reference to the underlying serde_json::Value.
     fn _get(&self, key: &str) -> Option<&Value>;
@@ -171,6 +173,7 @@ pub trait CapabilitiesHelper {
 /// For example, chrome stores capabilities under `goog:chromeOptions` and firefox
 /// stores capabilities under `moz:firefoxOptions`.
 pub trait BrowserCapabilitiesHelper: CapabilitiesHelper {
+    /// The key containing the browser-specific capabilities.
     const KEY: &'static str;
 
     /// Add any Serialize-able object to the capabilities under the browser's custom key.
@@ -220,53 +223,76 @@ impl CapabilitiesHelper for Capabilities {
     }
 }
 
+/// Proxy configuration settings.
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "proxyType", rename_all = "lowercase")]
 pub enum Proxy {
+    /// Direct connection to the webdriver server.
     Direct,
+    /// Manual proxy configuration.
     #[serde(rename_all = "camelCase")]
     Manual {
+        /// FTP proxy.
         #[serde(skip_serializing_if = "Option::is_none")]
         ftp_proxy: Option<String>,
+        /// HTTP proxy.
         #[serde(skip_serializing_if = "Option::is_none")]
         http_proxy: Option<String>,
+        /// SSL proxy.
         #[serde(skip_serializing_if = "Option::is_none")]
         ssl_proxy: Option<String>,
+        /// SOCKS proxy.
         #[serde(skip_serializing_if = "Option::is_none")]
         socks_proxy: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
+        /// The SOCKS version.
         socks_version: Option<u8>,
+        /// SOCKS username.
         #[serde(skip_serializing_if = "Option::is_none")]
         socks_username: Option<String>,
+        /// SOCKS password.
         #[serde(skip_serializing_if = "Option::is_none")]
         socks_password: Option<String>,
+        /// Urls to skip the proxy.
         #[serde(skip_serializing_if = "Option::is_none")]
         no_proxy: Option<String>,
     },
+    /// Autoconfiguration url.
     #[serde(rename = "pac")]
     AutoConfig {
+        /// The autoconfiguration url.
         #[serde(rename = "proxyAutoconfigUrl")]
         url: String,
     },
+    /// Auto-detect proxy.
     AutoDetect,
+    /// Use the system proxy configuration.
     System,
 }
 
+/// The action to take when an alert is encountered.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AlertBehaviour {
+    /// Automatically accept the alert.
     Accept,
+    /// Automatically dismiss the alert.
     Dismiss,
+    /// Ignore the alert.
     Ignore,
 }
 
+/// The automatic scrolling behaviour for this session.
 #[derive(Debug, Clone, Serialize)]
 #[repr(u8)]
 pub enum ScrollBehaviour {
+    /// Scroll until the element is at the top of the screen, if possible.
     Top = 0,
+    /// Scroll until the element is at the bottom of the screen, if possible.
     Bottom = 1,
 }
 
+/// The page load strategy for this session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PageLoadStrategy {

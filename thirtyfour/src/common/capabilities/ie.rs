@@ -3,6 +3,7 @@ use serde_json::{json, Value};
 
 use crate::{BrowserCapabilitiesHelper, Capabilities, CapabilitiesHelper};
 
+/// Capabilities for Internet Explorer.
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
 pub struct InternetExplorerCapabilities {
@@ -11,17 +12,18 @@ pub struct InternetExplorerCapabilities {
 
 impl Default for InternetExplorerCapabilities {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl InternetExplorerCapabilities {
+    /// Create a new `InternetExplorerCapabilities`.
+    pub fn new() -> Self {
         let mut capabilities = Capabilities::new();
         capabilities.insert("browserName".to_string(), json!("internet explorer"));
         InternetExplorerCapabilities {
             capabilities,
         }
-    }
-}
-
-impl InternetExplorerCapabilities {
-    pub fn new() -> Self {
-        InternetExplorerCapabilities::default()
     }
 }
 

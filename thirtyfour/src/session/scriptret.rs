@@ -3,6 +3,7 @@ use crate::session::handle::SessionHandle;
 use crate::WebElement;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
+use std::sync::Arc;
 
 /// Helper struct for getting return values from scripts.
 ///
@@ -12,8 +13,8 @@ use serde_json::Value;
 /// [`WebDriver::execute_async`]: crate::session::handle::SessionHandle::execute_async
 #[derive(Debug)]
 pub struct ScriptRet {
-    handle: SessionHandle,
-    value: serde_json::Value,
+    handle: Arc<SessionHandle>,
+    value: Value,
 }
 
 impl ScriptRet {
@@ -24,7 +25,7 @@ impl ScriptRet {
     ///
     /// [`WebDriver::execute`]: crate::session::handle::SessionHandle::execute_async
     /// [`WebDriver::execute_async`]: crate::session::handle::SessionHandle::execute_async
-    pub fn new(handle: SessionHandle, value: serde_json::Value) -> Self {
+    pub fn new(handle: Arc<SessionHandle>, value: Value) -> Self {
         Self {
             handle,
             value,
@@ -32,15 +33,17 @@ impl ScriptRet {
     }
 
     /// Get the raw JSON value.
-    pub fn json(&self) -> &serde_json::Value {
+    pub fn json(&self) -> &Value {
         &self.value
     }
 
+    /// Get the raw JSON value.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to json()")]
-    pub fn value(&self) -> &serde_json::Value {
+    pub fn value(&self) -> &Value {
         self.json()
     }
 
+    /// Convert the JSON value into the a deserializeable type.
     pub fn convert<T>(&self) -> WebDriverResult<T>
     where
         T: DeserializeOwned,
@@ -56,6 +59,7 @@ impl ScriptRet {
         WebElement::from_json(self.value, self.handle)
     }
 
+    /// Get a single WebElement return value.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to element()")]
     pub fn get_element(self) -> WebDriverResult<WebElement> {
         self.element()
@@ -70,6 +74,7 @@ impl ScriptRet {
         values.into_iter().map(|x| WebElement::from_json(x, handle.clone())).collect()
     }
 
+    /// Get a vec of WebElements from the return value.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to elements()")]
     pub fn get_elements(self) -> WebDriverResult<Vec<WebElement>> {
         self.elements()

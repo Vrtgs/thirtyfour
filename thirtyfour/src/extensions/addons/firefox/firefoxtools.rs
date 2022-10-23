@@ -3,12 +3,15 @@ use crate::error::{WebDriverError, WebDriverResult};
 use crate::session::handle::SessionHandle;
 use crate::upstream::CmdError;
 use std::path::Path;
+use std::sync::Arc;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
-#[derive(Clone)]
+/// Provider of Firefox-specific commands.
+#[derive(Debug, Clone)]
 pub struct FirefoxTools {
-    pub handle: SessionHandle,
+    /// The underlying session handle.
+    pub handle: Arc<SessionHandle>,
 }
 
 impl FirefoxTools {
@@ -32,7 +35,7 @@ impl FirefoxTools {
     /// #     })
     /// # }
     /// ```
-    pub fn new(handle: SessionHandle) -> Self {
+    pub fn new(handle: Arc<SessionHandle>) -> Self {
         Self {
             handle,
         }

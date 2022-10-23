@@ -8,6 +8,7 @@ use crate::error::WebDriverResult;
 use crate::CapabilitiesHelper;
 use crate::{BrowserCapabilitiesHelper, Capabilities};
 
+/// Capabilities for Chrome.
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
 pub struct ChromeCapabilities {

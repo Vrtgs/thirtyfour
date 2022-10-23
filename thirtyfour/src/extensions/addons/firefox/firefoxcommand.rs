@@ -3,12 +3,17 @@ use http::Method;
 use serde_json::json;
 use url::{ParseError, Url};
 
+/// Extra commands specific to Firefox.
 #[derive(Debug)]
 pub enum FirefoxCommand {
+    /// Install the specified add-on.
     InstallAddon {
+        /// Path to the add-on.
         path: String,
+        /// True if the add-on is temporary.
         temporary: Option<bool>,
     },
+    /// Take a full screenshot.
     FullScreenshot {},
 }
 

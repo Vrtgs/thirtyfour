@@ -3,6 +3,7 @@ use super::{conditions, ElementPollerWithTimeout, IntoElementPoller};
 use crate::error::{WebDriverError, WebDriverErrorDetails};
 use crate::prelude::WebDriverResult;
 use crate::{ElementPredicate, WebElement};
+use std::sync::Arc;
 use std::time::Duration;
 use stringmatch::Needle;
 
@@ -28,13 +29,16 @@ use stringmatch::Needle;
 #[derive(Debug)]
 pub struct ElementWaiter {
     element: WebElement,
-    poller: Box<dyn IntoElementPoller + Send + Sync>,
+    poller: Arc<dyn IntoElementPoller + Send + Sync>,
     message: String,
     ignore_errors: bool,
 }
 
 impl ElementWaiter {
-    fn new(element: WebElement, poller: Box<dyn IntoElementPoller + Send + Sync>) -> Self {
+    /// Create a new `ElementWaiter`.
+    ///
+    /// See `Element::wait_until()` rather than creating this directly.
+    pub fn new(element: WebElement, poller: Arc<dyn IntoElementPoller + Send + Sync>) -> Self {
         Self {
             element,
             poller,
@@ -45,7 +49,7 @@ impl ElementWaiter {
 
     /// Use the specified ElementPoller for this ElementWaiter.
     /// This will not affect the default ElementPoller used for other waits.
-    pub fn with_poller(mut self, poller: Box<dyn IntoElementPoller + Send + Sync>) -> Self {
+    pub fn with_poller(mut self, poller: Arc<dyn IntoElementPoller + Send + Sync>) -> Self {
         self.poller = poller;
         self
     }
@@ -68,7 +72,7 @@ impl ElementWaiter {
     /// after each interval. This will override the poller for this
     /// ElementWaiter only.
     pub fn wait(self, timeout: Duration, interval: Duration) -> Self {
-        self.with_poller(Box::new(ElementPollerWithTimeout::new(timeout, interval)))
+        self.with_poller(Arc::new(ElementPollerWithTimeout::new(timeout, interval)))
     }
 
     async fn run_poller(&self, conditions: Vec<ElementPredicate>) -> WebDriverResult<bool> {
@@ -99,6 +103,7 @@ impl ElementWaiter {
         ))))
     }
 
+    /// Wait for the specified condition to be true.
     pub async fn condition(self, f: ElementPredicate) -> WebDriverResult<()> {
         match self.run_poller(vec![f]).await? {
             true => Ok(()),
@@ -106,6 +111,7 @@ impl ElementWaiter {
         }
     }
 
+    /// Wait for the specified conditions to be true.
     pub async fn conditions(self, conditions: Vec<ElementPredicate>) -> WebDriverResult<()> {
         match self.run_poller(conditions).await? {
             true => Ok(()),
@@ -113,6 +119,7 @@ impl ElementWaiter {
         }
     }
 
+    /// Wait for the element to become stale.
     pub async fn stale(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
         self.condition(Box::new(move |elem| {
@@ -123,46 +130,55 @@ impl ElementWaiter {
         .await
     }
 
+    /// Wait for the element to be displayed.
     pub async fn displayed(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_is_displayed(ignore_errors)).await
     }
 
+    /// Wait for the element to not be displayed.
     pub async fn not_displayed(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_is_not_displayed(ignore_errors)).await
     }
 
+    /// Wait for the element to be selected.
     pub async fn selected(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_is_selected(ignore_errors)).await
     }
 
+    /// Wait for the element to not be selected.
     pub async fn not_selected(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_is_not_selected(ignore_errors)).await
     }
 
+    /// Wait for the element to be enabled.
     pub async fn enabled(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_is_enabled(ignore_errors)).await
     }
 
+    /// Wait for the element to not be enabled.
     pub async fn not_enabled(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_is_not_enabled(ignore_errors)).await
     }
 
+    /// Wait for the element to be clickable.
     pub async fn clickable(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_is_clickable(ignore_errors)).await
     }
 
+    /// Wait for the element to not be clickable.
     pub async fn not_clickable(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_is_not_clickable(ignore_errors)).await
     }
 
+    /// Wait until the element has the specified class.
     pub async fn has_class<N>(self, class_name: N) -> WebDriverResult<()>
     where
         N: Needle + Clone + Send + Sync + 'static,
@@ -171,6 +187,7 @@ impl ElementWaiter {
         self.condition(conditions::element_has_class(class_name, ignore_errors)).await
     }
 
+    /// Wait until the element lacks the specified class.
     pub async fn lacks_class<N>(self, class_name: N) -> WebDriverResult<()>
     where
         N: Needle + Clone + Send + Sync + 'static,
@@ -179,6 +196,7 @@ impl ElementWaiter {
         self.condition(conditions::element_lacks_class(class_name, ignore_errors)).await
     }
 
+    /// Wait until the element has the specified text.
     pub async fn has_text<N>(self, text: N) -> WebDriverResult<()>
     where
         N: Needle + Clone + Send + Sync + 'static,
@@ -187,6 +205,7 @@ impl ElementWaiter {
         self.condition(conditions::element_has_text(text, ignore_errors)).await
     }
 
+    /// Wait until the element lacks the specified text.
     pub async fn lacks_text<N>(self, text: N) -> WebDriverResult<()>
     where
         N: Needle + Clone + Send + Sync + 'static,
@@ -195,6 +214,7 @@ impl ElementWaiter {
         self.condition(conditions::element_lacks_text(text, ignore_errors)).await
     }
 
+    /// Wait until the element has the specified value.
     pub async fn has_value<N>(self, value: N) -> WebDriverResult<()>
     where
         N: Needle + Clone + Send + Sync + 'static,
@@ -203,6 +223,7 @@ impl ElementWaiter {
         self.condition(conditions::element_has_value(value, ignore_errors)).await
     }
 
+    /// Wait until the element lacks the specified value.
     pub async fn lacks_value<N>(self, value: N) -> WebDriverResult<()>
     where
         N: Needle + Clone + Send + Sync + 'static,
@@ -211,6 +232,7 @@ impl ElementWaiter {
         self.condition(conditions::element_lacks_value(value, ignore_errors)).await
     }
 
+    /// Wait until the element has the specified attribute.
     pub async fn has_attribute<S, N>(self, attribute_name: S, value: N) -> WebDriverResult<()>
     where
         S: Into<String>,
@@ -221,6 +243,7 @@ impl ElementWaiter {
             .await
     }
 
+    /// Wait until the element lacks the specified attribute.
     pub async fn lacks_attribute<S, N>(self, attribute_name: S, value: N) -> WebDriverResult<()>
     where
         S: Into<String>,
@@ -231,6 +254,7 @@ impl ElementWaiter {
             .await
     }
 
+    /// Wait until the element has all of the specified attributes.
     pub async fn has_attributes<S, N>(self, desired_attributes: &[(S, N)]) -> WebDriverResult<()>
     where
         S: Into<String> + Clone,
@@ -240,6 +264,7 @@ impl ElementWaiter {
         self.condition(conditions::element_has_attributes(desired_attributes, ignore_errors)).await
     }
 
+    /// Wait until the element lacks all of the specified attributes.
     pub async fn lacks_attributes<S, N>(self, desired_attributes: &[(S, N)]) -> WebDriverResult<()>
     where
         S: Into<String> + Clone,
@@ -250,6 +275,7 @@ impl ElementWaiter {
             .await
     }
 
+    /// Wait until the element has the specified property.
     pub async fn has_property<S, N>(self, property_name: S, value: N) -> WebDriverResult<()>
     where
         S: Into<String>,
@@ -259,6 +285,7 @@ impl ElementWaiter {
         self.condition(conditions::element_has_property(property_name, value, ignore_errors)).await
     }
 
+    /// Wait until the element lacks the specified property.
     pub async fn lacks_property<S, N>(self, property_name: S, value: N) -> WebDriverResult<()>
     where
         S: Into<String>,
@@ -269,6 +296,7 @@ impl ElementWaiter {
             .await
     }
 
+    /// Wait until the element has all of the specified properties.
     pub async fn has_properties<S, N>(self, desired_properties: &[(S, N)]) -> WebDriverResult<()>
     where
         S: Into<String> + Clone,
@@ -278,6 +306,7 @@ impl ElementWaiter {
         self.condition(conditions::element_has_properties(desired_properties, ignore_errors)).await
     }
 
+    /// Wait until the element lacks all of the specified properties.
     pub async fn lacks_properties<S, N>(self, desired_properties: &[(S, N)]) -> WebDriverResult<()>
     where
         S: Into<String> + Clone,
@@ -288,6 +317,7 @@ impl ElementWaiter {
             .await
     }
 
+    /// Wait until the element has the specified CSS property.
     pub async fn has_css_property<S, N>(self, css_property_name: S, value: N) -> WebDriverResult<()>
     where
         S: Into<String>,
@@ -302,6 +332,7 @@ impl ElementWaiter {
         .await
     }
 
+    /// Wait until the element lacks the specified CSS property.
     pub async fn lacks_css_property<S, N>(
         self,
         css_property_name: S,
@@ -320,6 +351,7 @@ impl ElementWaiter {
         .await
     }
 
+    /// Wait until the element has all of the specified CSS properties.
     pub async fn has_css_properties<S, N>(
         self,
         desired_css_properties: &[(S, N)],
@@ -336,6 +368,7 @@ impl ElementWaiter {
         .await
     }
 
+    /// Wait until the element lacks all of the specified CSS properties.
     pub async fn lacks_css_properties<S, N>(
         self,
         desired_css_properties: &[(S, N)],
@@ -355,6 +388,7 @@ impl ElementWaiter {
 
 /// Trait for enabling the ElementWaiter interface.
 pub trait ElementWaitable {
+    /// Wait until the element meets one or more conditions.
     fn wait_until(&self) -> ElementWaiter;
 }
 
@@ -366,8 +400,7 @@ impl ElementWaitable for WebElement {
     ///
     /// See [`ElementWaiter`] for more documentation.
     fn wait_until(&self) -> ElementWaiter {
-        let poller = Box::new(ElementPollerWithTimeout::default());
-        ElementWaiter::new(self.clone(), poller)
+        ElementWaiter::new(self.clone(), self.handle.config().poller.clone())
     }
 }
 

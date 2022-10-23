@@ -4,16 +4,26 @@ use http::Method;
 use serde_json::{json, Value};
 use url::{ParseError, Url};
 
+/// Extra commands specific to Chrome.
 #[derive(Debug)]
 pub enum ChromeCommand {
+    /// Launch the specified Chrome app.
     LaunchApp(String),
+    /// Get the current simulated network conditions.
     GetNetworkConditions,
+    /// Set the specified network conditions to simulate.
     SetNetworkConditions(NetworkConditions),
+    /// Execute the specified Chrome DevTools Protocol command.
     ExecuteCdpCommand(String, Value),
+    /// Get the current sinks.
     GetSinks,
+    /// Get the issue message.
     GetIssueMessage,
+    /// Set the specified sink to use.
     SetSinkToUse(String),
+    /// Start tab mirroring.
     StartTabMirroring(String),
+    /// Stop casting.
     StopCasting(String),
 }
 

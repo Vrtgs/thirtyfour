@@ -66,6 +66,7 @@ fn get_longest_token(value: &str) -> &str {
 }
 
 /// Convenience wrapper for `<select>` elements.
+#[derive(Debug)]
 pub struct SelectElement {
     element: WebElement,
     multiple: bool,

@@ -84,7 +84,8 @@ macro_rules! tester_inner {
         let res = thread::spawn(move || {
             let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
             let c = rt.block_on(c).expect("failed to construct test WebDriver");
-            *sid.lock().unwrap() = rt.block_on(c.session_id()).ok();
+            let _sid = c.session_id().clone();
+            *sid.lock().unwrap() = Some(_sid);
             // make sure we close, even if an assertion fails
             let client = c.clone();
             let x = rt.block_on(async move {

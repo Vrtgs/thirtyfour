@@ -3,6 +3,7 @@ use super::NetworkConditions;
 use crate::error::WebDriverResult;
 use crate::session::handle::SessionHandle;
 use serde_json::{json, Value};
+use std::sync::Arc;
 
 /// The ChromeDevTools struct allows you to interact with Chromium-based browsers via
 /// the Chrome Devtools Protocol (CDP).
@@ -29,9 +30,10 @@ use serde_json::{json, Value};
 /// #     })
 /// # }
 /// ```
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ChromeDevTools {
-    pub handle: SessionHandle,
+    /// The underlying session handle.
+    pub handle: Arc<SessionHandle>,
 }
 
 impl ChromeDevTools {
@@ -53,7 +55,7 @@ impl ChromeDevTools {
     /// #     })
     /// # }
     /// ```
-    pub fn new(handle: SessionHandle) -> Self {
+    pub fn new(handle: Arc<SessionHandle>) -> Self {
         Self {
             handle,
         }

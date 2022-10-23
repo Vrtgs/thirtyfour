@@ -1,20 +1,23 @@
 use crate::error::WebDriverResult;
 use crate::session::handle::SessionHandle;
+use std::sync::Arc;
 
 /// Struct for managing alerts.
+#[derive(Debug)]
 pub struct Alert {
-    handle: SessionHandle,
+    handle: Arc<SessionHandle>,
 }
 
 impl Alert {
     /// Create a new Alert struct. This is typically created internally
     /// via a call to `WebDriver::switch_to().alert()`.
-    pub fn new(handle: SessionHandle) -> Self {
+    pub fn new(handle: Arc<SessionHandle>) -> Self {
         Self {
             handle,
         }
     }
 
+    /// Get the text of the active alert, if there is one.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::get_alert_text()"
@@ -23,6 +26,7 @@ impl Alert {
         Ok(self.handle.client.get_alert_text().await?)
     }
 
+    /// Dismiss the active alert, if there is one.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::dismiss_alert()"
@@ -32,6 +36,7 @@ impl Alert {
         Ok(())
     }
 
+    /// Accept the active alert, if there is one.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::accept_alert()"
@@ -41,6 +46,7 @@ impl Alert {
         Ok(())
     }
 
+    /// Send the specified text to the active alert, if there is one.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::send_alert_text()"

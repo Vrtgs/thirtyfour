@@ -140,7 +140,8 @@
 //! extra features that `thirtyfour` provides, consider using `fantoccini`
 //! directly.
 //!
-
+#![deny(missing_docs)]
+#![warn(missing_debug_implementations, rustdoc::all)]
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_doctest_main)]
 
@@ -198,7 +199,7 @@ mod webdriver;
 mod webelement;
 
 // Re-export StringMatch if needed.
-pub extern crate stringmatch;
+pub use stringmatch;
 
 // Re-export common fantoccini types at the root level.
 pub use crate::upstream::*;

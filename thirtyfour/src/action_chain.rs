@@ -4,6 +4,7 @@ use crate::actions::{
 };
 use crate::session::handle::SessionHandle;
 use crate::{error::WebDriverResult, WebElement};
+use std::sync::Arc;
 use std::time::Duration;
 
 /// The ActionChain struct allows you to perform multiple input actions in
@@ -21,8 +22,9 @@ use std::time::Duration;
 ///     .perform()
 ///     .await?;
 /// ```
+#[derive(Debug)]
 pub struct ActionChain {
-    handle: SessionHandle,
+    handle: Arc<SessionHandle>,
     key_actions: Option<KeyActions>,
     mouse_actions: Option<MouseActions>,
 }
@@ -32,7 +34,7 @@ impl ActionChain {
     ///
     /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
-    pub fn new(handle: SessionHandle) -> Self {
+    pub fn new(handle: Arc<SessionHandle>) -> Self {
         ActionChain {
             handle,
             key_actions: Some(KeyActions::new("key".to_string())),

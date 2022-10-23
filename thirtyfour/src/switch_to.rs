@@ -5,30 +5,34 @@ use crate::{
     error::{WebDriverError, WebDriverResult},
     Alert, WebElement,
 };
+use std::sync::Arc;
 
 /// Struct for switching between frames/windows/alerts.
+#[derive(Debug)]
 pub struct SwitchTo {
-    handle: SessionHandle,
+    handle: Arc<SessionHandle>,
 }
 
 impl SwitchTo {
     /// Create a new SwitchTo struct. This is typically created internally
     /// via a call to `WebDriver::switch_to()`.
-    pub fn new(handle: SessionHandle) -> Self {
+    pub fn new(handle: Arc<SessionHandle>) -> Self {
         Self {
             handle,
         }
     }
 
+    /// Get the active element for this session.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::active_element()"
     )]
     pub async fn active_element(self) -> WebDriverResult<WebElement> {
         let elem = self.handle.client.active_element().await?;
-        Ok(WebElement::new(elem, self.handle.clone()))
+        Ok(self.handle.wrap_element(elem))
     }
 
+    /// Switch to the specified alert.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been deprecated. See the `Alert` module for new method names"
@@ -37,6 +41,7 @@ impl SwitchTo {
         Alert::new(self.handle)
     }
 
+    /// Switch to the default frame.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::enter_default_frame()"
@@ -46,25 +51,28 @@ impl SwitchTo {
         Ok(())
     }
 
+    /// Switch to the frame specified at the index.
     #[deprecated(since = "0.30.0", note = "This method has been moved to WebDriver::enter_frame()")]
     pub async fn frame_number(self, frame_number: u16) -> WebDriverResult<()> {
         self.handle.client.enter_frame(Some(frame_number)).await?;
         Ok(())
     }
 
+    /// Switch to the frame contained within the element.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebElement::enter_frame()"
     )]
     pub async fn frame_element(self, frame_element: &WebElement) -> WebDriverResult<()> {
         let frame = fantoccini::elements::Element::from_element_id(
-            self.handle.client,
+            self.handle.client.clone(),
             frame_element.element_id(),
         );
         frame.enter_frame().await?;
         Ok(())
     }
 
+    /// Switch to the parent of the frame the client is currently contained within.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::enter_parent_frame()"
@@ -74,18 +82,21 @@ impl SwitchTo {
         Ok(())
     }
 
+    /// Create a new window.
     #[deprecated(since = "0.30.0", note = "This method has been moved to WebDriver::new_window()")]
     pub async fn new_window(self) -> WebDriverResult<WindowHandle> {
         let response = self.handle.client.new_window(false).await?;
         Ok(response.handle)
     }
 
+    /// Create a new tab.
     #[deprecated(since = "0.30.0", note = "This method has been moved to WebDriver::new_tab()")]
     pub async fn new_tab(self) -> WebDriverResult<WindowHandle> {
         let response = self.handle.client.new_window(true).await?;
         Ok(response.handle)
     }
 
+    /// Switch to the specified window.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::switch_to_window()"
@@ -95,6 +106,7 @@ impl SwitchTo {
         Ok(())
     }
 
+    /// Switch to the specified named window.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::switch_to_named_window()"
@@ -146,9 +158,9 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn active_element(&self) -> WebDriverResult<WebElement> {
+    pub async fn active_element(self: &Arc<SessionHandle>) -> WebDriverResult<WebElement> {
         let elem = self.client.active_element().await?;
-        Ok(WebElement::new(elem, self.clone()))
+        Ok(self.wrap_element(elem))
     }
 
     /// Switch to the default frame.
@@ -296,7 +308,10 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn switch_to_named_window(&self, name: &str) -> WebDriverResult<()> {
+    pub async fn switch_to_named_window(
+        self: &Arc<SessionHandle>,
+        name: &str,
+    ) -> WebDriverResult<()> {
         let original_handle = self.window().await?;
         let handles = self.windows().await?;
         for handle in handles {

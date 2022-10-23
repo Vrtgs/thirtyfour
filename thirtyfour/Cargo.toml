@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.32.0-rc.2"
+version = "0.32.0-rc.3"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -75,6 +75,10 @@ name = "chrome_options"
 [[example]]
 name = "wikipedia"
 path = "examples/query/wikipedia.rs"
+
+[[example]]
+name = "custom_poller"
+path = "examples/query/custom_poller.rs"
 
 [[example]]
 name = "firefox_preferences"

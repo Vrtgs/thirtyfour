@@ -1,4 +1,5 @@
 use crate::action_chain::ActionChain;
+use crate::common::config::WebDriverConfig;
 use crate::error::WebDriverResult;
 use crate::session::scriptret::ScriptRet;
 use crate::Cookie;
@@ -6,8 +7,10 @@ use crate::Form;
 use crate::{By, Rect, SessionId, SwitchTo, WebElement};
 use crate::{TimeoutConfiguration, WebDriverStatus, WindowHandle};
 use serde_json::Value;
+use std::fmt::{Debug, Formatter};
 use std::future::Future;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -17,35 +20,81 @@ use tokio::io::AsyncWriteExt;
 #[derive(Clone)]
 pub struct SessionHandle {
     pub(crate) client: fantoccini::Client,
-    pub session_id: String,
+    /// The session id for this webdriver session.
+    session_id: SessionId,
+    /// The config used by this instance.
+    config: WebDriverConfig,
 }
 
-impl std::fmt::Debug for SessionHandle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SessionHandle").field("session_id", &self.session_id).finish()
+impl Debug for SessionHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SessionHandle")
+            .field("session_id", &self.session_id)
+            .field("config", &self.config)
+            .finish()
     }
 }
 
 impl SessionHandle {
     /// Create new SessionHandle from a fantoccini Client.
-    #[allow(dead_code)]
-    pub(crate) async fn new(client: fantoccini::Client) -> WebDriverResult<Self> {
-        let session_id = client.session_id().await?.expect("session id to be valid");
+    pub fn new(client: fantoccini::Client, session_id: SessionId) -> WebDriverResult<Self> {
         Ok(Self {
             client,
             session_id,
+            config: WebDriverConfig::default(),
+        })
+    }
+
+    /// Create new `SessionHandle` with the specified `WebDriverConfig`.
+    #[allow(dead_code)]
+    pub(crate) fn new_with_config(
+        client: fantoccini::Client,
+        session_id: SessionId,
+        config: WebDriverConfig,
+    ) -> WebDriverResult<Self> {
+        Ok(Self {
+            client,
+            session_id,
+            config,
+        })
+    }
+
+    /// Clone this session handle but attach the specified `WebDriverConfig`.
+    ///
+    /// See `WebDriver::clone_with_config()`.
+    pub(crate) fn clone_with_config(
+        self: &Arc<SessionHandle>,
+        config: WebDriverConfig,
+    ) -> Arc<Self> {
+        Arc::new(Self {
+            client: self.client.clone(),
+            session_id: self.session_id.clone(),
+            config,
         })
     }
 
     /// Convert a fantoccini `Element` into a thirtyfour `WebElement`.
-    fn wrap_element(&self, element: fantoccini::elements::Element) -> WebElement {
+    pub(crate) fn wrap_element(
+        self: &Arc<SessionHandle>,
+        element: fantoccini::elements::Element,
+    ) -> WebElement {
         WebElement::new(element, self.clone())
     }
 
-    /// Get the session ID.
-    pub async fn session_id(&self) -> WebDriverResult<SessionId> {
-        let id = self.client.session_id().await?;
-        Ok(SessionId::from(id.unwrap_or_default()))
+    /// The session id for this webdriver session.
+    pub fn session_id(&self) -> &SessionId {
+        &self.session_id
+    }
+
+    /// The configuration used by this instance.
+    ///
+    /// NOTE: It's sometimes useful to have separate instances pointing at the same
+    ///       underlying browser session but using different configurations.
+    ///       See [`WebDriver::clone_with_config()`] for more details.
+    ///
+    /// [`WebDriver::clone_with_config()`]: crate::WebDriver::clone_with_config()
+    pub fn config(&self) -> &WebDriverConfig {
+        &self.config
     }
 
     /// Get the WebDriver status.
@@ -68,28 +117,6 @@ impl SessionHandle {
     pub async fn status(&self) -> WebDriverResult<WebDriverStatus> {
         Ok(self.client.status().await?)
     }
-
-    // /// Set the request timeout for the HTTP client.
-    // ///
-    // /// # Example
-    // /// ```no_run
-    // /// # use thirtyfour::prelude::*;
-    // /// # use std::time::Duration;
-    // /// # use thirtyfour::support::block_on;
-    // /// #
-    // /// # fn main() -> WebDriverResult<()> {
-    // /// #     block_on(async {
-    // /// let caps = DesiredCapabilities::chrome();
-    // /// let mut driver = WebDriver::new("http://localhost:4444", caps).await?;
-    // /// driver.set_request_timeout(Duration::from_secs(180)).await?;
-    // /// #         driver.quit().await?;
-    // /// #         Ok(())
-    // /// #     })
-    // /// # }
-    // /// ```
-    // pub async fn set_request_timeout(&mut self, _timeout: Duration) -> WebDriverResult<()> {
-    //     unimplemented!()
-    // }
 
     /// Close the current window or tab. This will close the session if no other windows exist.
     ///
@@ -124,6 +151,7 @@ impl SessionHandle {
         Ok(())
     }
 
+    /// Close the current window or tab. This will close the session if no other windows exist.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to close_window()")]
     pub async fn close(&self) -> WebDriverResult<()> {
         self.client.close_window().await?;
@@ -154,6 +182,7 @@ impl SessionHandle {
         Ok(self.client.goto(url.as_ref()).await?)
     }
 
+    /// Navigate to the specified URL.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to goto()")]
     pub async fn get<S>(&self, url: S) -> WebDriverResult<()>
     where
@@ -172,6 +201,7 @@ impl SessionHandle {
         Ok(self.client.source().await?)
     }
 
+    /// Get the page source as a String.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to source()")]
     pub async fn page_source(&self) -> WebDriverResult<String> {
         self.source().await
@@ -205,14 +235,15 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn find(&self, by: impl Into<By>) -> WebDriverResult<WebElement> {
+    pub async fn find(self: &Arc<SessionHandle>, by: impl Into<By>) -> WebDriverResult<WebElement> {
         let by = by.into();
         let elem = self.client.find(by.locator()).await?;
         Ok(self.wrap_element(elem))
     }
 
+    /// Search for an element on the current page using the specified selector.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to find()")]
-    pub async fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
+    pub async fn find_element(self: &Arc<SessionHandle>, by: By) -> WebDriverResult<WebElement> {
         self.find(by).await
     }
 
@@ -241,14 +272,21 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_all(&self, by: impl Into<By>) -> WebDriverResult<Vec<WebElement>> {
+    pub async fn find_all(
+        self: &Arc<SessionHandle>,
+        by: impl Into<By>,
+    ) -> WebDriverResult<Vec<WebElement>> {
         let by = by.into();
         let elems = self.client.find_all(by.locator()).await?;
         Ok(elems.into_iter().map(|x| self.wrap_element(x)).collect())
     }
 
+    /// Search for all elements on the current page that match the specified selector.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to find_all()")]
-    pub async fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
+    pub async fn find_elements(
+        self: &Arc<SessionHandle>,
+        by: By,
+    ) -> WebDriverResult<Vec<WebElement>> {
         self.find_all(by).await
     }
 
@@ -309,14 +347,19 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn execute(&self, script: &str, args: Vec<Value>) -> WebDriverResult<ScriptRet> {
+    pub async fn execute(
+        self: &Arc<SessionHandle>,
+        script: &str,
+        args: Vec<Value>,
+    ) -> WebDriverResult<ScriptRet> {
         let v = self.client.execute(script, args).await?;
         Ok(ScriptRet::new(self.clone(), v))
     }
 
+    /// Execute the specified Javascript synchronously and return the result.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to execute()")]
     pub async fn execute_script(
-        &self,
+        self: &Arc<SessionHandle>,
         script: &str,
         args: Vec<Value>,
     ) -> WebDriverResult<ScriptRet> {
@@ -383,7 +426,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn execute_async(
-        &self,
+        self: &Arc<SessionHandle>,
         script: &str,
         args: Vec<Value>,
     ) -> WebDriverResult<ScriptRet> {
@@ -391,9 +434,10 @@ impl SessionHandle {
         Ok(ScriptRet::new(self.clone(), v))
     }
 
+    /// Execute the specified Javascrypt asynchronously and return the result.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to execute_async()")]
     pub async fn execute_script_async(
-        &self,
+        self: &Arc<SessionHandle>,
         script: &str,
         args: Vec<Value>,
     ) -> WebDriverResult<ScriptRet> {
@@ -437,6 +481,7 @@ impl SessionHandle {
         Ok(self.client.window().await?)
     }
 
+    /// Get the current window handle.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to window()")]
     pub async fn current_window_handle(&self) -> WebDriverResult<WindowHandle> {
         self.window().await
@@ -470,6 +515,7 @@ impl SessionHandle {
         Ok(self.client.windows().await?)
     }
 
+    /// Get all window handles for the current session.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to windows()")]
     pub async fn window_handles(&self) -> WebDriverResult<Vec<WindowHandle>> {
         self.windows().await
@@ -720,6 +766,7 @@ impl SessionHandle {
         Ok(())
     }
 
+    /// Set all timeouts for the current session.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to update_timeouts()")]
     pub async fn set_timeouts(&self, timeouts: TimeoutConfiguration) -> WebDriverResult<()> {
         self.update_timeouts(timeouts).await
@@ -846,7 +893,7 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub fn action_chain(&self) -> ActionChain {
+    pub fn action_chain(self: &Arc<SessionHandle>) -> ActionChain {
         ActionChain::new(self.clone())
     }
 
@@ -909,6 +956,7 @@ impl SessionHandle {
         Ok(self.client.get_all_cookies().await?)
     }
 
+    /// Get all cookies.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to get_all_cookies()")]
     pub async fn get_cookies(&self) -> WebDriverResult<Vec<Cookie<'static>>> {
         self.get_all_cookies().await
@@ -937,6 +985,7 @@ impl SessionHandle {
         Ok(self.client.get_named_cookie(name).await?)
     }
 
+    /// Get the specified cookie.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to get_named_cookie()")]
     pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie<'static>> {
         self.get_named_cookie(name).await
@@ -1032,7 +1081,7 @@ impl SessionHandle {
         since = "0.30.0",
         note = "SwitchTo has been deprecated. Use WebDriver::switch_to_*() methods instead"
     )]
-    pub fn switch_to(&self) -> SwitchTo {
+    pub fn switch_to(self: &Arc<SessionHandle>) -> SwitchTo {
         SwitchTo::new(self.clone())
     }
 
@@ -1073,7 +1122,10 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn set_window_name(&self, window_name: &str) -> WebDriverResult<()> {
+    pub async fn set_window_name(
+        self: &Arc<SessionHandle>,
+        window_name: &str,
+    ) -> WebDriverResult<()> {
         let script = format!(r#"window.name = "{}""#, window_name);
         self.execute(&script, Vec::new()).await?;
         Ok(())

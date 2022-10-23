@@ -3,6 +3,7 @@ use serde_json::{json, Value};
 
 use crate::{Capabilities, CapabilitiesHelper};
 
+/// Capabilities for Safari.
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
 pub struct SafariCapabilities {
@@ -11,17 +12,18 @@ pub struct SafariCapabilities {
 
 impl Default for SafariCapabilities {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SafariCapabilities {
+    /// Create a new `SafariCapabilities`.
+    pub fn new() -> Self {
         let mut capabilities = Capabilities::new();
         capabilities.insert("browserName".to_string(), json!("safari"));
         SafariCapabilities {
             capabilities,
         }
-    }
-}
-
-impl SafariCapabilities {
-    pub fn new() -> Self {
-        SafariCapabilities::default()
     }
 }
 

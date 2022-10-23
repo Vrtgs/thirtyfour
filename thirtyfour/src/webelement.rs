@@ -3,6 +3,7 @@ use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 use std::fmt;
 use std::path::Path;
+use std::sync::Arc;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
@@ -56,7 +57,8 @@ use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHe
 #[derive(Clone)]
 pub struct WebElement {
     pub(crate) element: Element,
-    pub handle: SessionHandle,
+    /// The underlying session handle.
+    pub handle: Arc<SessionHandle>,
 }
 
 impl fmt::Debug for WebElement {
@@ -79,7 +81,7 @@ impl WebElement {
     /// Typically you would not call this directly. WebElement structs are
     /// usually constructed by calling one of the find_element*() methods
     /// either on WebDriver or another WebElement.
-    pub(crate) fn new(element: Element, handle: SessionHandle) -> Self {
+    pub(crate) fn new(element: Element, handle: Arc<SessionHandle>) -> Self {
         Self {
             element,
             handle,
@@ -99,7 +101,7 @@ impl WebElement {
     ///       `WebElement`, use [`ScriptRet::element`] instead.
     ///
     /// [`ScriptRet::element`]: crate::session::scriptret::ScriptRet::element
-    pub fn from_json(value: Value, handle: SessionHandle) -> WebDriverResult<Self> {
+    pub fn from_json(value: Value, handle: Arc<SessionHandle>) -> WebDriverResult<Self> {
         let element_ref: ElementRefHelper = serde_json::from_value(value)?;
         Ok(Self {
             element: Element::from_element_id(handle.client.clone(), element_ref.into()),
@@ -322,6 +324,7 @@ impl WebElement {
         Ok(self.element.prop(name).await?)
     }
 
+    /// Get the specified property.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to prop()")]
     pub async fn get_property(&self, name: &str) -> WebDriverResult<Option<String>> {
         self.prop(name).await
@@ -353,6 +356,7 @@ impl WebElement {
         Ok(self.element.attr(name).await?)
     }
 
+    /// Get the specified attribute.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to attr()")]
     pub async fn get_attribute(&self, name: &str) -> WebDriverResult<Option<String>> {
         self.attr(name).await
@@ -384,6 +388,7 @@ impl WebElement {
         Ok(self.element.css_value(name).await?)
     }
 
+    /// Get the specified CSS property.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to css_value()")]
     pub async fn get_css_property(&self, name: &str) -> WebDriverResult<String> {
         self.css_value(name).await
@@ -499,8 +504,7 @@ impl WebElement {
         Ok(present)
     }
 
-    /// Search for a child element of this WebElement using the specified
-    /// selector.
+    /// Search for a child element of this WebElement using the specified selector.
     ///
     /// **NOTE**: For more powerful element queries including polling and filters, see the
     ///  [`WebElement::query`] method instead.
@@ -526,16 +530,16 @@ impl WebElement {
     pub async fn find(&self, by: impl Into<By>) -> WebDriverResult<WebElement> {
         let by = by.into();
         let elem = self.element.find(by.locator()).await?;
-        Ok(WebElement::new(elem, self.handle.clone()))
+        Ok(self.handle.wrap_element(elem))
     }
 
+    /// Search for a child element of this WebElement using the specified selector.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to find()")]
     pub async fn find_element(&self, by: By) -> WebDriverResult<WebElement> {
         self.find(by).await
     }
 
-    /// Search for all child elements of this WebElement that match the
-    /// specified selector.
+    /// Search for all child elements of this WebElement that match the specified selector.
     ///
     /// **NOTE**: For more powerful element queries including polling and filters, see the
     /// [`WebElement::query`] method instead.
@@ -564,9 +568,10 @@ impl WebElement {
     pub async fn find_all(&self, by: impl Into<By>) -> WebDriverResult<Vec<WebElement>> {
         let by = by.into();
         let elems = self.element.find_all(by.locator()).await?;
-        Ok(elems.into_iter().map(|x| WebElement::new(x, self.handle.clone())).collect())
+        Ok(elems.into_iter().map(|x| self.handle.wrap_element(x)).collect())
     }
 
+    /// Search for all child elements of this WebElement that match the specified selector.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to find_all()")]
     pub async fn find_elements(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
         self.find_all(by).await

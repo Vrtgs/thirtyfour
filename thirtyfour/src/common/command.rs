@@ -2,17 +2,24 @@ use crate::Locator;
 use std::fmt;
 use std::fmt::Debug;
 
+/// The webdriver selector to use when querying elements.
 #[derive(Debug, Clone)]
 pub enum BySelector {
+    /// Query by element id.
     Id(String),
+    /// Query by link text.
     LinkText(String),
+    /// Query by CSS.
     Css(String),
+    /// Query by XPath.
     XPath(String),
 }
 
 // NOTE: This needs to own its data so that we allow the user to specify custom
 //       CSS selectors such as tag/name/class etc and send fantoccini a reference
 //       to the formatted Css selector.
+
+/// The webdriver selector to use when querying elements.
 #[derive(Debug, Clone)]
 pub struct By {
     selector: BySelector,
@@ -29,56 +36,58 @@ impl fmt::Display for By {
     }
 }
 
+#[allow(non_snake_case)]
 impl By {
-    #[allow(non_snake_case)]
+    /// Select element by id.
     pub fn Id(id: &str) -> Self {
         Self {
             selector: BySelector::Id(id.to_string()),
         }
     }
 
-    #[allow(non_snake_case)]
+    /// Select element by link text.
     pub fn LinkText(text: &str) -> Self {
         Self {
             selector: BySelector::LinkText(text.to_string()),
         }
     }
 
-    #[allow(non_snake_case)]
+    /// Select element by CSS.
     pub fn Css(css: &str) -> Self {
         Self {
             selector: BySelector::Css(css.to_string()),
         }
     }
 
-    #[allow(non_snake_case)]
+    /// Select element by XPath.
     pub fn XPath(x: &str) -> Self {
         Self {
             selector: BySelector::XPath(x.to_string()),
         }
     }
 
-    #[allow(non_snake_case)]
+    /// Select element by name.
     pub fn Name(name: &str) -> Self {
         Self {
             selector: BySelector::Css(format!(r#"[name="{}"]"#, name)),
         }
     }
 
-    #[allow(non_snake_case)]
+    /// Select element by tag.
     pub fn Tag(tag: &str) -> Self {
         Self {
             selector: BySelector::Css(tag.to_string()),
         }
     }
 
-    #[allow(non_snake_case)]
+    /// Select element by class.
     pub fn ClassName(name: &str) -> Self {
         Self {
             selector: BySelector::Css(format!(".{}", name)),
         }
     }
 
+    /// Get the [`Locator`] for this selector.
     pub fn locator(&self) -> Locator {
         match &self.selector {
             BySelector::Id(id) => Locator::Id(id),
@@ -106,6 +115,7 @@ impl<'a> From<Locator<'a>> for By {
     }
 }
 
+/// Convert the specified locator to a string, used for debugging.
 pub fn locator_to_string(locator: Locator<'_>) -> String {
     match locator {
         Locator::Css(s) => format!("Css({})", s),

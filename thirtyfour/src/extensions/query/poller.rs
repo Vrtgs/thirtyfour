@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 /// called. Upon returning `false` the polling loop will terminate.
 #[async_trait::async_trait]
 pub trait ElementPoller: Debug {
+    /// Process the poller forward by one tick.
     async fn tick(&mut self) -> bool;
 }
 
@@ -15,6 +16,7 @@ pub trait ElementPoller: Debug {
 ///
 /// The start() method will be called at the beginning of the polling loop.
 pub trait IntoElementPoller: Debug {
+    /// Start a new poller.
     fn start(&self) -> Box<dyn ElementPoller + Send + Sync>;
 }
 
@@ -32,6 +34,7 @@ pub struct ElementPollerWithTimeout {
 }
 
 impl ElementPollerWithTimeout {
+    /// Create a new `ElementPollerWithTimeout`.
     pub fn new(timeout: Duration, interval: Duration) -> Self {
         Self {
             timeout,

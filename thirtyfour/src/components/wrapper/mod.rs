@@ -14,5 +14,6 @@ pub use thirtyfour_macros::Component;
 ///
 /// There is also an implementation of ElementResolver for a Vec containing such types.
 pub trait Component: Sized + From<WebElement> {
+    /// Get the base element for this component.
     fn base_element(&self) -> WebElement;
 }

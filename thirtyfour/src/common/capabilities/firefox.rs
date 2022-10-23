@@ -6,6 +6,7 @@ use crate::error::WebDriverResult;
 use crate::CapabilitiesHelper;
 use crate::{BrowserCapabilitiesHelper, Capabilities};
 
+/// Capabilities for Firefox.
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
 pub struct FirefoxCapabilities {
@@ -14,11 +15,7 @@ pub struct FirefoxCapabilities {
 
 impl Default for FirefoxCapabilities {
     fn default() -> Self {
-        let mut capabilities = Capabilities::new();
-        capabilities.insert("browserName".to_string(), json!("firefox"));
-        FirefoxCapabilities {
-            capabilities,
-        }
+        Self::new()
     }
 }
 
@@ -47,8 +44,13 @@ macro_rules! firefox_arg_wrapper {
 }
 
 impl FirefoxCapabilities {
+    /// Create a new `FirefoxCapabilities`.
     pub fn new() -> Self {
-        FirefoxCapabilities::default()
+        let mut capabilities = Capabilities::new();
+        capabilities.insert("browserName".to_string(), json!("firefox"));
+        FirefoxCapabilities {
+            capabilities,
+        }
     }
 
     /// Set the selenium logging preferences.
@@ -160,16 +162,25 @@ impl BrowserCapabilitiesHelper for FirefoxCapabilities {
     const KEY: &'static str = "moz:firefoxOptions";
 }
 
+/// LogLevel used by `geckodriver`.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
+    /// Trace log level.
     Trace,
+    /// Debug log level.
     Debug,
+    /// Config log level.
     Config,
+    /// Info log level.
     Info,
+    /// Warn log level.
     Warn,
+    /// Error log level.
     Error,
+    /// Fatal log level.
     Fatal,
+    /// Default log level.
     Default,
 }
 
@@ -179,20 +190,31 @@ impl Default for LogLevel {
     }
 }
 
+/// Log level for the webdriver server.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum LoggingPrefsLogLevel {
+    /// Disable logging.
     Off,
+    /// Severe log level.
     Severe,
+    /// Warning log level.
     Warning,
+    /// Info log level.
     Info,
+    /// Config log level.
     Config,
+    /// Fine log level.
     Fine,
+    /// Finer log level.
     Finer,
+    /// Finest log level.
     Finest,
+    /// All logs.
     All,
 }
 
+/// Firefox preferences. See [`FirefoxCapabilities::set_preferences()`] for details.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(transparent)]
 pub struct FirefoxPreferences {
@@ -200,6 +222,7 @@ pub struct FirefoxPreferences {
 }
 
 impl FirefoxPreferences {
+    /// Create a new `FirefoxPreferences` instance.
     pub fn new() -> Self {
         FirefoxPreferences::default()
     }
@@ -292,12 +315,18 @@ impl FirefoxPreferences {
     }
 }
 
+/// Log level for Firefox profile.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum FirefoxProfileLogDriver {
+    /// Debug log level.
     Debug,
+    /// Info log level.
     Info,
+    /// Warning log level.
     Warning,
+    /// Error log level.
     Error,
+    /// Disable logging.
     Off,
 }

@@ -3,6 +3,7 @@ use serde_json::{json, Value};
 
 use crate::{BrowserCapabilitiesHelper, Capabilities, CapabilitiesHelper};
 
+/// Capabilities for Microsoft Edge.
 #[derive(Debug, Clone, Serialize)]
 #[serde(transparent)]
 pub struct EdgeCapabilities {
@@ -11,17 +12,18 @@ pub struct EdgeCapabilities {
 
 impl Default for EdgeCapabilities {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EdgeCapabilities {
+    /// Create a new `EdgeCapabilities`.
+    pub fn new() -> Self {
         let mut capabilities = Capabilities::new();
         capabilities.insert("browserName".to_string(), json!("MicrosoftEdge"));
         EdgeCapabilities {
             capabilities,
         }
-    }
-}
-
-impl EdgeCapabilities {
-    pub fn new() -> Self {
-        EdgeCapabilities::default()
     }
 }
 

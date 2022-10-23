@@ -135,6 +135,7 @@
 //! [`IntoElementPoller`]: crate::extensions::query::IntoElementPoller
 //! [`ElementPollerWithTimeout`]: crate::extensions::query::ElementPollerWithTimeout
 
+/// Predicates to use for element conditions.
 pub mod conditions;
 mod element_query;
 mod element_waiter;

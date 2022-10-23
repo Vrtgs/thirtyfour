@@ -4,10 +4,13 @@ use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
+/// Result of a webdriver operation.
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
 
+/// Error returned from a webdriver operation.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum WebDriverError {
     #[error("error creating new session: {0}")]
     NewSessionError(#[from] NewSessionError),
@@ -146,6 +149,7 @@ pub struct WebDriverErrorDetails {
 }
 
 impl WebDriverErrorDetails {
+    /// Create a new `WebDriverErrorDetails`.
     pub fn new(message: impl Into<Cow<'static, str>>) -> Self {
         Self {
             message: message.into(),
