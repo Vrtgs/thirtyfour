@@ -315,14 +315,15 @@ For more information on running selenium in docker, visit
 
 You generally only need to run the tests if you plan on contributing to the development of `thirtyfour`. If you just want to use the crate in your own project, you can skip this section.
 
-Make sure selenium is not still running (or anything else that might use port 4444 or port 9515).
+Make sure selenium is not still running (or anything else that might use port 4444 or port 9515). 
 
-To run the tests, you need to have an instance of `geckodriver` and an instance of `chromedriver` running in the background, perhaps in separate tabs in your terminal.
+To run the tests, you need to have an instance of `geckodriver` and an instance of `chromedriver` running in the background, as well as a selenium grid in standalone mode, perhaps in separate tabs in your terminal.
 
 Download links for these are here:
 
 * chromedriver: https://chromedriver.chromium.org/downloads
 * geckodriver: https://github.com/mozilla/geckodriver/releases
+* selenium: https://www.selenium.dev/downloads/
 
 In separate terminal tabs, run the following:
 
@@ -334,7 +335,11 @@ In separate terminal tabs, run the following:
 
       geckodriver
 
-* Tab 3 (navigate to the root of this repository):
+* Tab 3:
+
+      MOZ_HEADLESS=1 java -jar <selenium-jar>.jar standalone --port 1234
+
+* Tab 4 (navigate to the root of this repository):
 
       cargo test
 

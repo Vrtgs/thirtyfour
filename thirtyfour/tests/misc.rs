@@ -149,7 +149,7 @@ mod firefox {
     #[test]
     #[serial]
     fn status_test() {
-        local_tester!(status_firefox, "firefox");
+        local_tester_webdriver!(status_firefox, "firefox");
     }
 
     #[test]
@@ -175,7 +175,7 @@ mod chrome {
 
     #[test]
     fn status_test() {
-        local_tester!(status_chrome, "chrome");
+        local_tester_webdriver!(status_chrome, "chrome");
     }
 
     #[test]

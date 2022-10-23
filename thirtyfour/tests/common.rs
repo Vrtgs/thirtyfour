@@ -33,6 +33,7 @@ pub fn make_url(s: &str) -> &'static str {
     match s {
         "firefox" => "http://localhost:4444",
         "chrome" => "http://localhost:9515",
+        "grid" => "http://localhost:1234",
         browser => unimplemented!("unsupported browser backend {}", browser),
     }
 }
@@ -58,12 +59,30 @@ pub fn handle_test_error(
 }
 
 #[macro_export]
-macro_rules! tester {
+macro_rules! tester_webdriver {
     ($f:ident, $endpoint:expr) => {{
         use common::{make_capabilities, make_url};
         let url = make_url($endpoint);
         let caps = make_capabilities($endpoint);
         tester_inner!($f, WebDriver::new(url, caps));
+    }};
+}
+
+#[macro_export]
+macro_rules! tester_grid {
+    ($f:ident, $endpoint:expr) => {{
+        use common::{make_capabilities, make_url};
+        let url = make_url("grid");
+        let caps = make_capabilities($endpoint);
+        tester_inner!($f, WebDriver::new(url, caps));
+    }};
+}
+
+#[macro_export]
+macro_rules! tester {
+    ($f:ident, $endpoint:expr) => {{
+        tester_webdriver!($f, $endpoint);
+        tester_grid!($f, $endpoint);
     }};
 }
 
@@ -103,7 +122,20 @@ macro_rules! tester_inner {
 }
 
 #[macro_export]
-macro_rules! local_tester {
+macro_rules! local_tester_grid {
+    ($f:ident, $endpoint:expr) => {{
+        use thirtyfour::prelude::*;
+
+        let port = common::setup_server();
+        let url = common::make_url("grid");
+        let caps = common::make_capabilities($endpoint);
+        let f = move |c: WebDriver| async move { $f(c, port).await };
+        tester_inner!(f, WebDriver::new(url, caps));
+    }};
+}
+
+#[macro_export]
+macro_rules! local_tester_webdriver {
     ($f:ident, $endpoint:expr) => {{
         use thirtyfour::prelude::*;
 
@@ -112,6 +144,14 @@ macro_rules! local_tester {
         let caps = common::make_capabilities($endpoint);
         let f = move |c: WebDriver| async move { $f(c, port).await };
         tester_inner!(f, WebDriver::new(url, caps));
+    }}
+}
+
+#[macro_export]
+macro_rules! local_tester {
+    ($f:ident, $endpoint:expr) => {{
+        local_tester_webdriver!($f, $endpoint);
+        local_tester_grid!($f, $endpoint);
     }};
 }
 
