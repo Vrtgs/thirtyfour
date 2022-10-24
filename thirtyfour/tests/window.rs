@@ -236,6 +236,7 @@ mod firefox {
 
     #[test]
     #[serial]
+    #[ignore]
     fn window_rect_test() {
         tester!(window_rect, "firefox");
     }
