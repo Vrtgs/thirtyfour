@@ -141,6 +141,7 @@
 //! directly.
 //!
 #![deny(missing_docs)]
+#![allow(unknown_lints)]
 #![warn(missing_debug_implementations, rustdoc::all)]
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_doctest_main)]

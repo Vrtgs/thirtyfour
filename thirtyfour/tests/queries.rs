@@ -1,6 +1,7 @@
 use crate::common::sample_page_url;
 use assert_matches::assert_matches;
 use serial_test::serial;
+use std::time::Duration;
 use thirtyfour::components::{ElementResolverMulti, ElementResolverSingle};
 use thirtyfour::{components::SelectElement, prelude::*};
 
@@ -38,12 +39,110 @@ async fn query(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
 async fn query_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     let url = sample_page_url(port);
     c.goto(&url).await?;
-    let elems = c.query(By::Css("nav a")).all_required().await?;
+
+    // Match all, single selector.
+    let elems = c.query(By::Css("nav a")).all_from_selector_required().await?;
     assert_eq!(elems.len(), 2);
-    let elems = c.query(By::Id("doesnotexist")).all().await?;
+    let elems = c.query(By::Css("nav a")).all_from_selector().await?;
+    assert_eq!(elems.len(), 2);
+
+    // Multiple selectors, only 1 selector's elements were returned.
+    let elems =
+        c.query(By::Css("nav a")).or(By::Id("navigation")).all_from_selector_required().await?;
+    assert_eq!(elems.len(), 2); // Should only return the 2 from 'nav a' and ignore the rest.
+    let elems = c.query(By::Css("nav a")).or(By::Id("navigation")).all_from_selector().await?;
+    assert_eq!(elems.len(), 2); // Should only return the 2 from 'nav a' and ignore the rest.
+
+    // Match only second selector.
+    let elems = c
+        .query(By::Id("doesnotexist"))
+        .or(By::Id("navigation"))
+        .all_from_selector_required()
+        .await?;
+    assert_eq!(elems.len(), 1);
+    let elems =
+        c.query(By::Id("doesnotexist")).or(By::Id("navigation")).all_from_selector().await?;
+    assert_eq!(elems.len(), 1);
+
+    // Match none.
+    let elems = c.query(By::Id("doesnotexist")).nowait().all_from_selector().await?;
     assert!(elems.is_empty());
-    let elem_result = c.query(By::Id("doesnotexist")).all_required().await;
+
+    // Match none, but at least 1 was required.
+    let elem_result = c.query(By::Id("doesnotexist")).nowait().all_from_selector_required().await;
     assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
+    Ok(())
+}
+
+async fn query_any(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+
+    // Match both selectors.
+    let elems = c.query(By::Css("nav a")).or(By::Id("navigation")).any_required().await?;
+    assert_eq!(elems.len(), 3); // Should be 2 from 'nav a' and 1 from '#navigation'.
+    let elems = c.query(By::Css("nav a")).or(By::Id("navigation")).any().await?;
+    assert_eq!(elems.len(), 3); // Should be 2 from 'nav a' and 1 from '#navigation'.
+
+    // Match none.
+    let elems = c.query(By::Id("doesnotexist")).or(By::Id("invalid")).nowait().any().await?;
+    assert!(elems.is_empty());
+
+    // Match only second selector.
+    let elems = c.query(By::Id("doesnotexist")).or(By::Id("navigation")).any_required().await?;
+    assert_eq!(elems.len(), 1);
+    let elems = c.query(By::Id("doesnotexist")).or(By::Id("navigation")).any().await?;
+    assert_eq!(elems.len(), 1);
+
+    // Match none, but at least 1 was required.
+    let elem_result =
+        c.query(By::Id("doesnotexist")).or(By::Id("invalid")).nowait().any_required().await;
+    assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
+    Ok(())
+}
+
+async fn query_exists(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+
+    // Nowait.
+    assert!(
+        !c.query(By::Id("doesnotexist")).nowait().exists().await.unwrap(),
+        "nowait().exists() should return false for non-existent element"
+    );
+    assert!(
+        c.query(By::Id("doesnotexist")).nowait().not_exists().await.unwrap(),
+        "nowait().not_exists() should return true for non-existent element"
+    );
+
+    // Wait (1 sec).
+    assert!(
+        !c.query(By::Id("doesnotexist"))
+            .wait(Duration::from_secs(1), Duration::from_millis(200))
+            .exists()
+            .await
+            .unwrap(),
+        "exists() should return false for non-existent element"
+    );
+    assert!(
+        c.query(By::Id("doesnotexist")).not_exists().await.unwrap(),
+        "not_exists() with poll should return true for non-existent element"
+    );
+
+    // Exists, wait (1 sec).
+    assert!(
+        c.query(By::Id("footer")).exists().await.unwrap(),
+        "exists() should return true for existing element"
+    );
+    assert!(
+        !c.query(By::Id("navigation"))
+            .wait(Duration::from_secs(1), Duration::from_millis(200))
+            .not_exists()
+            .await
+            .unwrap(),
+        "not_exists() should return false for existing element"
+    );
+
     Ok(())
 }
 
@@ -200,6 +299,18 @@ mod firefox {
 
     #[test]
     #[serial]
+    fn query_any_test() {
+        local_tester!(query_any, "firefox");
+    }
+
+    #[test]
+    #[serial]
+    fn query_exists_test() {
+        local_tester!(query_exists, "firefox");
+    }
+
+    #[test]
+    #[serial]
     fn resolve_test() {
         local_tester!(resolve, "firefox");
     }
@@ -257,6 +368,16 @@ mod chrome {
     #[test]
     fn query_all_test() {
         local_tester!(query_all, "chrome");
+    }
+
+    #[test]
+    fn query_any_test() {
+        local_tester!(query_any, "chrome");
+    }
+
+    #[test]
+    fn query_exists_test() {
+        local_tester!(query_exists, "chrome");
     }
 
     #[test]

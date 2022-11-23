@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.32.0-rc.3"
+version = "0.32.0-rc.4"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -31,6 +31,7 @@ cookie = { version = "0.16.0", features = ["percent-encode"] }
 fantoccini = { version = "0.20.0-rc.1", default-features = false }
 futures = "0.3.21"
 http = "0.2.8"
+indexmap = "1.9.2"
 log = "0.4.17"
 parking_lot = "0.12.1"
 paste = "1.0.9"

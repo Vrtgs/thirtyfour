@@ -183,7 +183,7 @@ impl ElementResolver<Vec<WebElement>> {
     pub fn new_allow_empty(base_element: WebElement, by: By) -> Self {
         let resolver: ElementQueryFn<Vec<WebElement>> = Box::new(move |elem| {
             let by = by.clone();
-            Box::pin(async move { elem.query(by).all().await })
+            Box::pin(async move { elem.query(by).all_from_selector().await })
         });
         Self::new_custom(base_element, resolver)
     }
@@ -197,7 +197,7 @@ impl ElementResolver<Vec<WebElement>> {
         let resolver: ElementQueryFn<Vec<WebElement>> = Box::new(move |elem| {
             let by = by.clone();
             let options = options.clone();
-            Box::pin(async move { elem.query(by).options(options).all().await })
+            Box::pin(async move { elem.query(by).options(options).all_from_selector().await })
         });
         Self::new_custom(base_element, resolver)
     }
@@ -209,7 +209,7 @@ impl ElementResolver<Vec<WebElement>> {
     pub fn new_not_empty(base_element: WebElement, by: By) -> Self {
         let resolver: ElementQueryFn<Vec<WebElement>> = Box::new(move |elem| {
             let by = by.clone();
-            Box::pin(async move { elem.query(by).all_required().await })
+            Box::pin(async move { elem.query(by).all_from_selector_required().await })
         });
         Self::new_custom(base_element, resolver)
     }
@@ -226,7 +226,9 @@ impl ElementResolver<Vec<WebElement>> {
         let resolver: ElementQueryFn<Vec<WebElement>> = Box::new(move |elem| {
             let by = by.clone();
             let options = options.clone();
-            Box::pin(async move { elem.query(by).options(options).all_required().await })
+            Box::pin(
+                async move { elem.query(by).options(options).all_from_selector_required().await },
+            )
         });
         Self::new_custom(base_element, resolver)
     }
@@ -375,7 +377,7 @@ impl<T: Component + Clone> ElementResolver<Vec<T>> {
         let resolver: ElementQueryFn<Vec<T>> = Box::new(move |elem| {
             let by = by.clone();
             Box::pin(async move {
-                let elems = elem.query(by).all().await?;
+                let elems = elem.query(by).all_from_selector().await?;
                 Ok(elems.into_iter().map(T::from).collect())
             })
         });
@@ -392,7 +394,7 @@ impl<T: Component + Clone> ElementResolver<Vec<T>> {
             let by = by.clone();
             let options = options.clone();
             Box::pin(async move {
-                let elems = elem.query(by).options(options).all().await?;
+                let elems = elem.query(by).options(options).all_from_selector().await?;
                 Ok(elems.into_iter().map(T::from).collect())
             })
         });
@@ -407,7 +409,7 @@ impl<T: Component + Clone> ElementResolver<Vec<T>> {
         let resolver: ElementQueryFn<Vec<T>> = Box::new(move |elem| {
             let by = by.clone();
             Box::pin(async move {
-                let elems = elem.query(by).all_required().await?;
+                let elems = elem.query(by).all_from_selector_required().await?;
                 Ok(elems.into_iter().map(T::from).collect())
             })
         });
@@ -427,7 +429,7 @@ impl<T: Component + Clone> ElementResolver<Vec<T>> {
             let by = by.clone();
             let options = options.clone();
             Box::pin(async move {
-                let elems = elem.query(by).options(options).all_required().await?;
+                let elems = elem.query(by).options(options).all_from_selector_required().await?;
                 Ok(elems.into_iter().map(T::from).collect())
             })
         });

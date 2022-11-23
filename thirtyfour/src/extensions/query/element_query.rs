@@ -4,6 +4,7 @@ use crate::error::{WebDriverError, WebDriverErrorDetails};
 use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
 use crate::{By, ElementPredicate, WebElement};
+use indexmap::IndexMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use std::time::Duration;
@@ -292,15 +293,15 @@ impl ElementQuery {
     // Retrievers
     //
 
-    /// Return true if an element matches any selector, otherwise false.
+    /// Return true if an element matches any selector (including filters), otherwise false.
     pub async fn exists(&self) -> WebDriverResult<bool> {
-        let elements = self.run_poller(false).await?;
+        let elements = self.run_poller(true, false).await?;
         Ok(!elements.is_empty())
     }
 
-    /// Return true if no element matches any selector, otherwise false.
+    /// Return true if no element matches any selector (including filters), otherwise false.
     pub async fn not_exists(&self) -> WebDriverResult<bool> {
-        let elements = self.run_poller(true).await?;
+        let elements = self.run_poller(false, true).await?;
         Ok(elements.is_empty())
     }
 
@@ -308,7 +309,7 @@ impl ElementQuery {
     ///
     /// Returns None if no elements match.
     pub async fn first_opt(&self) -> WebDriverResult<Option<WebElement>> {
-        let elements = self.run_poller(false).await?;
+        let elements = self.run_poller(true, false).await?;
         Ok(elements.into_iter().next())
     }
 
@@ -316,7 +317,7 @@ impl ElementQuery {
     ///
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
     pub async fn first(&self) -> WebDriverResult<WebElement> {
-        let mut elements = self.run_poller(false).await?;
+        let mut elements = self.run_poller(true, false).await?;
 
         if elements.is_empty() {
             let desc: &str = self.options.description.as_deref().unwrap_or("");
@@ -330,10 +331,10 @@ impl ElementQuery {
     /// Return only a single WebElement that matches any selector (including filters).
     ///
     /// This method requires that only one element was found, and will return
-    /// Err(WebDriverError::NoSuchElement) if the number of elements found was not
-    /// equal to 1.
+    /// Err(WebDriverError::NoSuchElement) if the number of elements found after processing
+    /// all selectors was not equal to 1.
     pub async fn single(&self) -> WebDriverResult<WebElement> {
-        let mut elements = self.run_poller(false).await?;
+        let mut elements = self.run_poller(false, false).await?;
 
         if elements.len() == 1 {
             Ok(elements.remove(0))
@@ -344,18 +345,22 @@ impl ElementQuery {
         }
     }
 
-    /// Return all WebElements that match any one selector (including filters).
+    /// Return all WebElements that match any selector (including filters).
+    ///
+    /// This will return when at least one element is found, after processing all selectors.
     ///
     /// Returns an empty Vec if no elements match.
-    pub async fn all(&self) -> WebDriverResult<Vec<WebElement>> {
-        self.run_poller(false).await
+    pub async fn any(&self) -> WebDriverResult<Vec<WebElement>> {
+        self.run_poller(false, false).await
     }
 
-    /// Return all WebElements that match any one selector (including filters).
+    /// Return all WebElements that match any selector (including filters).
+    ///
+    /// This will return when at least one element is found, after processing all selectors.
     ///
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
-    pub async fn all_required(&self) -> WebDriverResult<Vec<WebElement>> {
-        let elements = self.run_poller(false).await?;
+    pub async fn any_required(&self) -> WebDriverResult<Vec<WebElement>> {
+        let elements = self.run_poller(false, false).await?;
 
         if elements.is_empty() {
             let desc: &str = self.options.description.as_deref().unwrap_or("");
@@ -365,50 +370,105 @@ impl ElementQuery {
         }
     }
 
-    //
-    // Helper Retrievers
-    //
+    /// Return all WebElements that match any single selector (including filters).
+    #[deprecated(since = "0.32.0", note = "use all_from_selector() instead")]
+    pub async fn all(&self) -> WebDriverResult<Vec<WebElement>> {
+        self.all_from_selector().await
+    }
+
+    /// Return all WebElements that match any single selector (including filters).
+    ///
+    /// This will return when at least one element is found from any selector, without
+    /// processing other selectors afterwards.
+    ///
+    /// Returns an empty Vec if no elements match.
+    pub async fn all_from_selector(&self) -> WebDriverResult<Vec<WebElement>> {
+        self.run_poller(true, false).await
+    }
+
+    /// Return all WebElements that match any single selector (including filters).
+    #[deprecated(since = "0.32.0", note = "use all_from_selector_required() instead")]
+    pub async fn all_required(&self) -> WebDriverResult<Vec<WebElement>> {
+        self.all_from_selector_required().await
+    }
+
+    /// Return all WebElements that match any single selector (including filters).
+    ///
+    /// This will return when at least one element is found from any selector, without
+    /// processing other selectors afterwards.
+    ///
+    /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
+    pub async fn all_from_selector_required(&self) -> WebDriverResult<Vec<WebElement>> {
+        let elements = self.run_poller(true, false).await?;
+
+        if elements.is_empty() {
+            let desc: &str = self.options.description.as_deref().unwrap_or("");
+            Err(no_such_element(&self.selectors, desc))
+        } else {
+            Ok(elements)
+        }
+    }
 
     /// Run the poller for this ElementQuery and return the Vec of WebElements matched.
+    ///
     /// NOTE: This function doesn't return a no_such_element error and the caller must handle it.
-    async fn run_poller(&self, inverted: bool) -> WebDriverResult<Vec<WebElement>> {
+    ///
+    /// The parameters are as follows:
+    /// - `short_circuit`:
+    ///   - if true, return as soon as any selector meets the condition.
+    ///     The elements returned will be only the elements from that selector.
+    ///   - if false, only check the condition (and possibly return) after processing all selectors.
+    /// - `stop_on_miss`:
+    ///   - if true, the condition is true if no elements were found.
+    ///   - if false, the condition is true if at least one element was found.
+    ///
+    async fn run_poller(
+        &self,
+        short_circuit: bool,
+        stop_on_miss: bool,
+    ) -> WebDriverResult<Vec<WebElement>> {
         let desc: &str = self.options.description.as_deref().unwrap_or("");
         let no_such_element_error = no_such_element(&self.selectors, desc);
         if self.selectors.is_empty() {
             return Err(no_such_element_error);
         }
 
-        let check = |value: bool| {
-            if inverted {
-                !value
-            } else {
-                value
-            }
-        };
-
         // Start the poller.
         let mut poller = self.poller.start();
 
+        let mut elements = IndexMap::new();
         loop {
             for selector in &self.selectors {
-                let mut elements = match self.fetch_elements_from_source(selector.by.clone()).await
-                {
-                    Ok(x) => x,
-                    Err(WebDriverError::NoSuchElement(_)) => Vec::new(),
-                    Err(e) => return Err(e),
-                };
+                let mut new_elements =
+                    match self.fetch_elements_from_source(selector.by.clone()).await {
+                        Ok(x) => x,
+                        Err(WebDriverError::NoSuchElement(_)) => Vec::new(),
+                        Err(e) => return Err(e),
+                    };
 
-                if !elements.is_empty() {
-                    elements = filter_elements(elements, &selector.filters).await?;
+                if !new_elements.is_empty() {
+                    new_elements = filter_elements(new_elements, &selector.filters).await?;
                 }
 
-                if check(!elements.is_empty()) {
-                    return Ok(elements);
+                // Stop early?
+                if short_circuit && (stop_on_miss == new_elements.is_empty()) {
+                    return Ok(new_elements);
+                }
+
+                // Collect elements, excluding duplicates.
+                for element in new_elements {
+                    elements.insert(element.element_id(), element);
                 }
             }
 
+            // Once all selectors have been processed, check if we have a match.
+            if stop_on_miss == elements.is_empty() {
+                return Ok(elements.into_values().collect());
+            }
+
+            // On timeout, return any elements found so far.
             if !poller.tick().await {
-                return Ok(Vec::new());
+                return Ok(elements.into_values().collect());
             }
         }
     }
@@ -826,8 +886,8 @@ async fn _test_is_send() -> WebDriverResult<()> {
     is_send_val(&query.exists());
     is_send_val(&query.not_exists());
     is_send_val(&query.first());
-    is_send_val(&query.all());
-    is_send_val(&query.all_required());
+    is_send_val(&query.all_from_selector());
+    is_send_val(&query.all_from_selector_required());
 
     Ok(())
 }

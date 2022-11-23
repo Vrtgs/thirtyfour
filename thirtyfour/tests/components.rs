@@ -153,7 +153,7 @@ mod feature_component {
     }
 
     async fn custom_resolve_fn_multi(elem: &WebElement) -> WebDriverResult<Vec<WebElement>> {
-        elem.query(By::Tag("label")).all().await
+        elem.query(By::Tag("label")).all_from_selector().await
     }
 
     async fn custom_resolve_fn_component(elem: &WebElement) -> WebDriverResult<CheckboxComponent> {
@@ -164,7 +164,7 @@ mod feature_component {
     async fn custom_resolve_fn_components(
         elem: &WebElement,
     ) -> WebDriverResult<Vec<CheckboxComponent>> {
-        let cbs = elem.query(By::Tag("label")).all().await?;
+        let cbs = elem.query(By::Tag("label")).all_from_selector().await?;
         Ok(cbs.into_iter().map(CheckboxComponent::new).collect())
     }
 
