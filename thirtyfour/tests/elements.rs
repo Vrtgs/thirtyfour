@@ -191,6 +191,15 @@ async fn element_html(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
+async fn element_get_parent(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let url = sample_page_url(port);
+    c.goto(&url).await?;
+    let elem = c.find(By::Id("other_page_id")).await?;
+    let parent = elem.get_parent().await?;
+    assert_eq!(parent.id().await?.unwrap(), "navigation");
+    Ok(())
+}
+
 mod firefox {
     use super::*;
 
@@ -277,6 +286,12 @@ mod firefox {
     fn element_html_test() {
         local_tester!(element_html, "firefox");
     }
+
+    #[test]
+    #[serial]
+    fn element_get_parent_test() {
+        local_tester!(element_get_parent, "firefox");
+    }
 }
 
 mod chrome {
@@ -350,5 +365,10 @@ mod chrome {
     #[test]
     fn element_html_test() {
         local_tester!(element_html, "chrome");
+    }
+
+    #[test]
+    fn element_get_parent_test() {
+        local_tester!(element_get_parent, "chrome");
     }
 }
