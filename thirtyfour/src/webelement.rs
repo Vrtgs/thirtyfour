@@ -802,7 +802,7 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    /// 
+    ///
     /// Note: This helper performs a new query for the parent element,
     /// with the sessions current settings. If you need more control,
     /// start with the equivalent query and customize to your needs.
