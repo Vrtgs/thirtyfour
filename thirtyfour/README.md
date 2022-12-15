@@ -276,6 +276,19 @@ This allows you to wrap any component using `ElementResolver` to resolve element
 
 See the documentation on the `Component` derive macro for more details.
 
+## Using Selenium Manager
+
+The selenium team is working on a project called "Selenium Manager", which is similar
+to bonigarcia's WebDriverManager but as a CLI. It's written in Rust as a Clap CLI,
+so we have the benefit of using it as a library as well. To add it to your project,
+you can add the selenium project as a git dependency in your Cargo.toml. Be sure to specify
+the branch is "trunk", like so.
+
+```
+[dependencies]
+selenium-manager = { git = "https://github.com/SeleniumHQ/selenium", branch = "trunk" }
+```
+
 ## Running against selenium
 
 **NOTE:** To run the selenium example, start selenium server and then run:
