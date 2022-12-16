@@ -1,3 +1,4 @@
+use crate::extensions::query::ElementQueryable;
 use crate::upstream::Element;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
@@ -781,6 +782,28 @@ impl WebElement {
             .execute(SIMULATE_DRAG_AND_DROP, vec![self.to_json()?, target.to_json()?])
             .await?;
         Ok(())
+    }
+
+    /// Get the parent of the WebElement.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// let elem = driver.find(By::Id("child")).await?;
+    /// let parent = elem.parent().await?;
+    /// #         driver.quit().await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub async fn parent(&self) -> WebDriverResult<Self> {
+        self.find(By::XPath("./..")).await
     }
 }
 
