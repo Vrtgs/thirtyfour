@@ -195,7 +195,7 @@ async fn element_get_parent(c: WebDriver, port: u16) -> Result<(), WebDriverErro
     let url = sample_page_url(port);
     c.goto(&url).await?;
     let elem = c.find(By::Id("other_page_id")).await?;
-    let parent = elem.get_parent().await?;
+    let parent = elem.parent().await?;
     assert_eq!(parent.id().await?.unwrap(), "navigation");
     Ok(())
 }

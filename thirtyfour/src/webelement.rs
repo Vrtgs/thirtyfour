@@ -796,33 +796,14 @@ impl WebElement {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// let elem = driver.find(By::Id("child")).await?;
-    /// let parent = elem.get_parent().await?;
+    /// let parent = elem.parent().await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    ///
-    /// Note: This helper performs a new query for the parent element,
-    /// with the sessions current settings. If you need more control,
-    /// start with the equivalent query and customize to your needs.
-    /// ```no_run
-    /// # use thirtyfour::prelude::*;
-    /// # use thirtyfour::support::block_on;
-    /// #
-    /// # fn main() -> WebDriverResult<()> {
-    /// #     block_on(async {
-    /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// let elem = driver.find(By::Id("child")).await?;
-    /// let parent = elem.query(By::XPath("./..")).single().await?;
-    /// #         driver.quit().await?;
-    /// #         Ok(())
-    /// #     })
-    /// # }
-    /// ```
-    pub async fn get_parent(&self) -> WebDriverResult<Self> {
-        self.query(By::XPath("./..")).single().await
+    pub async fn parent(&self) -> WebDriverResult<Self> {
+        self.find(By::XPath("./..")).await
     }
 }
 
