@@ -21,15 +21,6 @@ to stick fairly close to the WebDriver specification, whereas `thirtyfour` build
 foundation and adds several high-level features as well as exploring ways to improve the 
 ergonomics of browser automation in Rust.
 
-## Important changes in v0.30.0
-
-A number of methods in the `thirtyfour` API have been renamed to more closely align 
-with `fantoccini`, as part of the move towards greater compatibility.
-The existing method names remain but have been deprecated.
-
-The deprecated methods will remain for the time being, however you should 
-aim to migrate code away from the deprecated methods as soon as is practical.
-
 ## Features
 
 - All W3C WebDriver and WebElement methods supported
@@ -129,22 +120,8 @@ let elem_text =
 ```
 
 This will execute both queries once per poll iteration and return the first one that matches.
-You can also filter on one or both query branches like this:
 
-```rust
-driver.query(By::Css("branch.one")).with_text("testing")
-    .or(By::Id("branchTwo")).with_class("search").and_not_enabled()
-    .first().await?;
-```
-
-The `all()` method will return an empty Vec if no elements were found.
-In order to return an error in this scenario, use the `all_required()` method instead.
-
-`ElementQuery` also allows the use of custom predicates that take a `&WebElement` argument
-and return a `WebDriverResult<bool>`.
-
-As noted above, the `query()` method is also available on `WebElement` structs as well for querying elements
-in relation to a particular element in the DOM.
+See [ElementQuery](https://docs.rs/thirtyfour/latest/thirtyfour/extensions/query/struct.ElementQuery.html) for more details.
 
 #### ElementWaiter
 
@@ -161,24 +138,7 @@ elem.wait_until().enabled().await?;
 elem.wait_until().clickable().await?;
 ```
 
-And so on. See the `ElementWaiter` docs for the full list of predicates available.
-
-`ElementWaiter` also allows the use of custom predicates that take a `&WebElement` argument
-and return a `WebDriverResult<bool>`.
-
-A range of pre-defined predicates are also supplied for convenience in the
-`thirtyfour::query::conditions` module.
-
-```rust
-use thirtyfour::query::conditions;
-
-elem.wait_until().conditions(vec![
-    conditions::element_is_displayed(true),
-    conditions::element_is_clickable(true)
-]).await?;
-```
-
-These predicates (or your own) can also be supplied as filters to `ElementQuery`.
+And so on. See the [ElementWaiter](https://docs.rs/thirtyfour/latest/thirtyfour/extensions/query/struct.ElementWaiter.html) docs for more details.
 
 ### Components
 
@@ -274,7 +234,8 @@ for checkbox in checkboxes {
 
 This allows you to wrap any component using `ElementResolver` to resolve elements and nested components easily.
 
-See the documentation on the `Component` derive macro for more details.
+For more details see the documentation for [Component](https://docs.rs/thirtyfour/latest/thirtyfour/components/index.html)
+and the [Component derive macro](https://docs.rs/thirtyfour-macros/latest/thirtyfour_macros/derive.Component.html).
 
 ## Using Selenium Manager
 
