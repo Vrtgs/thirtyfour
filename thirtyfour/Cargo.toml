@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.32.0-rc.4"
+version = "0.32.0-rc.5"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -27,7 +27,7 @@ component = ["thirtyfour-macros"]
 async-trait = "0.1.56"
 base64 = "0.13.0"
 cookie = { version = "0.16.0", features = ["percent-encode"] }
-fantoccini = { version = "0.20.0-rc.1", default-features = false }
+fantoccini = { version = "0.20.0-rc.3", default-features = false }
 futures = "0.3.21"
 http = "0.2.8"
 indexmap = "1.9.2"
