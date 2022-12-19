@@ -115,8 +115,14 @@ pub trait CapabilitiesHelper {
     }
 
     /// Set whether the session should accept all SSL certificates by default.
+    #[deprecated(since = "0.32.0-rc.5", note = "please use `accept_insecure_certs` instead")]
     fn accept_ssl_certs(&mut self, enabled: bool) -> WebDriverResult<()> {
         self.set_base_capability("acceptSslCerts", enabled)
+    }
+
+    /// Set whether the session should accept insecure SSL certificates by default.
+    fn accept_insecure_certs(&mut self, enabled: bool) -> WebDriverResult<()> {
+        self.set_base_capability("acceptInsecureCerts", enabled)
     }
 
     /// Set whether the session can rotate the current page's layout between portrait and landscape
