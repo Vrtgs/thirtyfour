@@ -673,7 +673,7 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn scroll_into_view(&self) -> WebDriverResult<()> {
-        self.handle.execute(r#"arguments[0].scrollIntoView();"#, vec![self.to_json()?]).await?;
+        self.handle.execute(r#"arguments[0].scrollIntoView({block: "center", inline: "center"});"#, vec![self.to_json()?]).await?;
         Ok(())
     }
 
