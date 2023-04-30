@@ -163,7 +163,7 @@ impl BrowserCapabilitiesHelper for FirefoxCapabilities {
 }
 
 /// LogLevel used by `geckodriver`.
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     /// Trace log level.
@@ -181,8 +181,13 @@ pub enum LogLevel {
     /// Fatal log level.
     Fatal,
     /// Default log level.
-    #[default]
     Default,
+}
+
+impl Default for LogLevel {
+    fn default() -> Self {
+        LogLevel::Default
+    }
 }
 
 /// Log level for the webdriver server.
