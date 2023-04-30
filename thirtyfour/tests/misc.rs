@@ -1,9 +1,11 @@
 //! Tests that don't make use of external websites.
-use crate::common::sample_page_url;
+use std::time::Duration;
+
 use cookie::SameSite;
 use serial_test::serial;
-use std::time::Duration;
 use thirtyfour::prelude::*;
+
+use crate::common::sample_page_url;
 
 mod common;
 
@@ -116,7 +118,6 @@ async fn handle_cookies_test(c: WebDriver) -> Result<(), WebDriverError> {
     assert!(!cookies.is_empty());
 
     // Add a new cookie.
-    use thirtyfour::cookie::Cookie;
     let mut cookie = Cookie::new("cookietest", "fantoccini");
     cookie.set_domain(".wikipedia.org");
     cookie.set_path("/");

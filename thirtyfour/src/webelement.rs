@@ -607,8 +607,8 @@ impl WebElement {
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// let elem = driver.find(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
-    /// elem.send_keys(Key::Control + "a".to_string()).await?;
-    /// elem.send_keys("thirtyfour" + Key::Enter).await?;
+    /// elem.send_keys(Key::Control + "a").await?;
+    /// elem.send_keys("thirtyfour" + &Key::Enter).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })

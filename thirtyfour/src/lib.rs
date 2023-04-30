@@ -150,8 +150,13 @@
 pub use alert::Alert;
 pub use common::{
     capabilities::{
-        chrome::ChromeCapabilities, desiredcapabilities::*, edge::EdgeCapabilities,
-        firefox::FirefoxCapabilities, ie::InternetExplorerCapabilities, opera::OperaCapabilities,
+        chrome::ChromeCapabilities,
+        chromium::{ChromiumCapabilities, ChromiumLikeCapabilities},
+        desiredcapabilities::*,
+        edge::EdgeCapabilities,
+        firefox::FirefoxCapabilities,
+        ie::InternetExplorerCapabilities,
+        opera::OperaCapabilities,
         safari::SafariCapabilities,
     },
     command::By,
@@ -171,7 +176,8 @@ pub mod prelude {
     pub use crate::WebDriver;
     pub use crate::WebElement;
     pub use crate::{
-        BrowserCapabilitiesHelper, By, Capabilities, CapabilitiesHelper, DesiredCapabilities,
+        BrowserCapabilitiesHelper, By, Capabilities, CapabilitiesHelper, ChromiumLikeCapabilities,
+        DesiredCapabilities,
     };
     pub use crate::{Cookie, Key, TimeoutConfiguration, WindowHandle};
 }

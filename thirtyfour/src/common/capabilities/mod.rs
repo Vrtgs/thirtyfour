@@ -1,5 +1,7 @@
 /// Capabilities for Chrome.
 pub mod chrome;
+/// Capabilities for Chromium.
+pub mod chromium;
 /// Generic capabilities methods.
 pub mod desiredcapabilities;
 /// Capabilities for Microsoft Edge.
