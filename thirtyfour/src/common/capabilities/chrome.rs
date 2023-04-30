@@ -5,8 +5,7 @@ use serde::Serialize;
 use serde_json::{json, to_value, Value};
 
 use crate::error::WebDriverResult;
-use crate::CapabilitiesHelper;
-use crate::{BrowserCapabilitiesHelper, Capabilities};
+use crate::{BrowserCapabilitiesHelper, Capabilities, CapabilitiesHelper};
 
 /// Capabilities for Chrome.
 #[derive(Debug, Clone, Serialize)]
