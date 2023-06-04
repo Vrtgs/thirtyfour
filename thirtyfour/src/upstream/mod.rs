@@ -1,10 +1,9 @@
 //! Export upstream types.
 
-// Re-export entire fantoccini crate to allow users to access
-// anything we missed without needing to import it directly themselves.
+/// Re-export entire fantoccini crate
 pub extern crate fantoccini;
 
-// Re-export fantoccini types
+/// Re-export fantoccini types
 pub use fantoccini::{
     actions,
     cookies::Cookie,
@@ -14,7 +13,7 @@ pub use fantoccini::{
     wd::{Capabilities, TimeoutConfiguration, WebDriverStatus, WindowHandle},
 };
 
-// Imports needed internally to thirtyfour.
+/// Imports needed internally to thirtyfour.
 pub(crate) use fantoccini::{
     elements::Element,
     error::{CmdError, ErrorStatus},
