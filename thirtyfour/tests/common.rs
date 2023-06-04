@@ -121,7 +121,7 @@ pub fn setup_server() -> u16 {
 
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-        let _ = rt.block_on(async {
+        rt.block_on(async {
             let (socket_addr, server) = start_server();
             tx.send(socket_addr.port()).expect("To be able to send port");
             server.await.expect("To start the server")

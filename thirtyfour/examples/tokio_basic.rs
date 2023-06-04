@@ -7,7 +7,6 @@
 //!     cargo run --example tokio_async
 
 use thirtyfour::prelude::*;
-use tokio;
 
 fn main() -> color_eyre::Result<()> {
     let rt = tokio::runtime::Builder::new_current_thread().enable_all().build()?;

@@ -1,5 +1,5 @@
 //! Actions tests
-use crate::common::sample_page_url;
+use crate::common::{drag_to_url, sample_page_url};
 use serial_test::serial;
 use thirtyfour::prelude::*;
 
@@ -93,6 +93,31 @@ async fn actions_release(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
     Ok(())
 }
 
+async fn actions_drag_and_drop(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+    let drag_to_url = drag_to_url(port);
+    c.goto(&drag_to_url).await?;
+
+    // Validate we are starting with a div and an image that are adjacent to one another.
+    c.find(By::XPath("//div[@id='target']/../img[@id='draggable']")).await?;
+
+    // Drag the image to the target div
+    let elem = c.find(By::Id("draggable")).await?;
+    let target = c.find(By::Id("target")).await?;
+    c.action_chain().drag_and_drop_element(&elem, &target).perform().await?;
+
+    // Currently drag and drop is known to fail due to a bug.
+    // See the docs for `drag_and_drop_element()` for more info.
+    // For now we just confirm that the issue persists. If this unit test fails,
+    // it means the bug has been fixed and we need to update the docs (and this test).
+
+    assert!(matches!(
+        c.find(By::XPath("//div[@id='target']/img[@id='draggable']")).await,
+        Err(WebDriverError::NoSuchElement(_))
+    ));
+
+    Ok(())
+}
+
 mod firefox {
     use super::*;
 
@@ -119,6 +144,12 @@ mod firefox {
     fn actions_release_test() {
         local_tester!(actions_release, "firefox");
     }
+
+    #[test]
+    #[serial]
+    fn actions_drag_and_drop_test() {
+        local_tester!(actions_drag_and_drop, "firefox");
+    }
 }
 
 mod chrome {
@@ -142,5 +173,10 @@ mod chrome {
     #[test]
     fn actions_release_test() {
         local_tester!(actions_release, "chrome");
+    }
+
+    #[test]
+    fn actions_drag_and_drop_test() {
+        local_tester!(actions_drag_and_drop, "chrome");
     }
 }

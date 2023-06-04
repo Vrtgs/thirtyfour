@@ -7,6 +7,7 @@
 //!     cargo run --example wikipedia
 
 use std::time::Duration;
+
 use thirtyfour::{
     components::{Component, ElementResolver},
     prelude::*,

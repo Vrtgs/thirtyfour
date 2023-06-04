@@ -8,7 +8,6 @@
 //!     cargo run --example remote_debugging
 
 use thirtyfour::prelude::*;
-use tokio;
 
 #[tokio::main]
 async fn main() -> Result<(), WebDriverError> {
