@@ -34,8 +34,7 @@ async fn main() -> color_eyre::Result<()> {
     // Sleep so you as the user can see what it did.
     sleep(Duration::from_secs(1)).await;
 
-    // Always explicitly close the browser. There are no async destructors.
-    driver.quit().await?;
+    // driver is implicitly quit as no other instances are running
 
     Ok(())
 }

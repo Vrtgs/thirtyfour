@@ -11,9 +11,11 @@ use std::fmt::{Debug, Formatter};
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
+use std::thread;
 use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use tokio::runtime::{Handle, RuntimeFlavor};
 
 /// The SessionHandle contains a shared reference to the [`fantoccini::Client`]
 /// to allow sending commands to the underlying WebDriver.
@@ -1172,5 +1174,35 @@ impl SessionHandle {
         self.switch_to_window(handle).await?;
 
         result
+    }
+}
+
+impl Drop for SessionHandle {
+    fn drop(&mut self) {
+        let client = self.client.clone();
+
+        // We dont care about the result
+        // the only time this returns an error
+        // is if teh driver was already closed
+        // we can safely ignore it
+        let _ = match Handle::try_current() {
+            Ok(handle) if handle.runtime_flavor() == RuntimeFlavor::MultiThread => {
+                tokio::task::block_in_place(|| {
+                    handle.block_on(client.close())
+                })
+            },
+            Ok(_) => thread::spawn(move || {
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap()
+                    .block_on(client.close())
+            }).join().unwrap(),
+            Err(_) => tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap()
+                    .block_on(client.close())
+        };
     }
 }

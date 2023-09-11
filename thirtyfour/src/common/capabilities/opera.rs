@@ -1,4 +1,5 @@
 use std::path::Path;
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 
 use paste::paste;
 use serde::Serialize;
@@ -172,7 +173,7 @@ impl OperaCapabilities {
     /// Add Chromium extension file. This will be a file with a .CRX extension.
     pub fn add_extension(&mut self, crx_file: &Path) -> WebDriverResult<()> {
         let contents = std::fs::read(crx_file)?;
-        let b64_contents = base64::encode(contents);
+        let b64_contents = BASE64.encode(contents);
         self.add_encoded_extension(&b64_contents)
     }
 
@@ -180,7 +181,7 @@ impl OperaCapabilities {
     /// previously.
     pub fn remove_extension(&mut self, crx_file: &Path) -> WebDriverResult<()> {
         let contents = std::fs::read(crx_file)?;
-        let b64_contents = base64::encode(contents);
+        let b64_contents = BASE64.encode(contents);
         self.remove_encoded_extension(&b64_contents)
     }
 

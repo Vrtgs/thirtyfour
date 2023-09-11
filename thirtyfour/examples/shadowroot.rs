@@ -33,8 +33,7 @@ async fn main() -> color_eyre::Result<()> {
     assert!(name.is_some());
     assert_eq!(name.unwrap(), "title");
 
-    // Always explicitly close the browser. There are no async destructors.
-    driver.quit().await?;
+    // driver is implicitly quit as no other instances are running
 
     Ok(())
 }

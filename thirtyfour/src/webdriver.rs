@@ -92,10 +92,13 @@ impl WebDriver {
             use crate::TimeoutConfiguration;
             let caps: Capabilities = capabilities.into();
 
-            #[cfg(feature = "native-tls")]
-            let mut builder = ClientBuilder::native();
-            #[cfg(feature = "rustls-tls")]
+            #[cfg(all(feature = "rustls-tls", not(feature = "native-tls")))]
             let mut builder = ClientBuilder::rustls();
+            #[cfg(all(feature = "native-tls", not(feature = "rustls-tls")))]
+            let mut builder = ClientBuilder::native();
+            // used as a default since native-tls isn't a default feature
+            #[cfg(all(feature = "native-tls", feature = "rustls-tls"))]
+            let mut builder = ClientBuilder::native();
 
             let client = builder.capabilities(caps.clone()).connect(server_url).await?;
 

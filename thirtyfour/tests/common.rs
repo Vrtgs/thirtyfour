@@ -87,10 +87,8 @@ macro_rules! tester_inner {
             let _sid = c.session_id().clone();
             *sid.lock().unwrap() = Some(_sid);
             // make sure we close, even if an assertion fails
-            let client = c.clone();
             let x = rt.block_on(async move {
                 let r = tokio::spawn($f(c)).await;
-                let _ = client.quit().await;
                 r
             });
             drop(rt);

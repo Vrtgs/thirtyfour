@@ -29,8 +29,7 @@ async fn main() -> color_eyre::Result<()> {
     // Navigate to https://wikipedia.org.
     driver.goto("https://wikipedia.org").await?;
 
-    // Always explicitly close the browser. There are no async destructors.
-    driver.quit().await?;
+    // driver is implicitly quit as no other instances are running
 
     Ok(())
 }
