@@ -6,7 +6,6 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 use super::FirefoxCommand;
-use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use crate::error::{WebDriverError, WebDriverResult};
 use crate::session::handle::SessionHandle;
 use crate::upstream::CmdError;
