@@ -7,7 +7,6 @@
 //!     cargo run --example selenium_example
 
 use thirtyfour::prelude::*;
-use tokio;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {

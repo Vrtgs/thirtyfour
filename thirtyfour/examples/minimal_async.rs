@@ -7,7 +7,6 @@
 //!     cargo run --example minimal_async
 
 use thirtyfour::prelude::*;
-use tokio;
 
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {

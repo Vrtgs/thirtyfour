@@ -158,6 +158,37 @@ impl ActionChain {
         Ok(())
     }
 
+    /// Add a pause in the action sequence.
+    ///
+    /// # Example:
+    /// ```no_run
+    /// use std::time::Duration;
+    /// # use thirtyfour::prelude::*;
+    /// # use thirtyfour::support::block_on;
+    /// #
+    /// # fn main() -> WebDriverResult<()> {
+    /// #     block_on(async {
+    /// #         let caps = DesiredCapabilities::chrome();
+    /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
+    /// driver
+    ///     .action_chain()
+    ///     .click_and_hold()
+    ///     .pause(Duration::from_millis(200))
+    ///     .release()
+    ///     .perform()
+    ///     .await?;
+    /// #         driver.quit().await?;
+    /// #         Ok(())
+    /// #     })
+    /// # }
+    /// ```
+    pub fn pause(mut self, duration: Duration) -> Self {
+        self.key_actions = Some(self.key_actions.take().unwrap().pause(duration));
+        self.mouse_actions = Some(self.mouse_actions.take().unwrap().pause(duration));
+        self
+    }
+
     /// Click and release the left mouse button.
     ///
     /// # Example:

@@ -7,7 +7,6 @@
 //!     cargo run --example tokio_async
 
 use thirtyfour::prelude::*;
-use tokio;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {

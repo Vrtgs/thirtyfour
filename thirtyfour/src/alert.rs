@@ -153,7 +153,7 @@ impl SessionHandle {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
-    /// driver.send_alert_text(Key::Control + "a".to_string()).await?;
+    /// driver.send_alert_text(Key::Control + "a").await?;
     /// driver.send_alert_text("thirtyfour").await?;
     /// #         driver.quit().await?;
     /// #         Ok(())

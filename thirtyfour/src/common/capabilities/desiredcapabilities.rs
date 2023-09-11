@@ -9,7 +9,7 @@ use crate::common::capabilities::ie::InternetExplorerCapabilities;
 use crate::common::capabilities::opera::OperaCapabilities;
 use crate::common::capabilities::safari::SafariCapabilities;
 use crate::error::WebDriverResult;
-use crate::Capabilities;
+use crate::{Capabilities, ChromiumCapabilities};
 
 /// Provides static methods for constructing browser-specific capabilities.
 ///
@@ -26,6 +26,11 @@ impl DesiredCapabilities {
     /// Create a ChromeCapabilities struct.
     pub fn chrome() -> ChromeCapabilities {
         ChromeCapabilities::new()
+    }
+
+    /// Create a ChromiumCapabilities struct.
+    pub fn chromium() -> ChromiumCapabilities {
+        ChromiumCapabilities::new()
     }
 
     /// Create an EdgeCapabilities struct.

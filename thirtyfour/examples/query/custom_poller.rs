@@ -8,6 +8,7 @@
 
 use std::sync::Arc;
 use std::time::Duration;
+
 use thirtyfour::common::config::WebDriverConfig;
 use thirtyfour::extensions::query::ElementPollerWithTimeout;
 use thirtyfour::prelude::*;
