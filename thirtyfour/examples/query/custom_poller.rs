@@ -40,7 +40,7 @@ async fn main() -> color_eyre::Result<()> {
     // Use a custom poller instance.
     let my_poller =
         Arc::new(ElementPollerWithTimeout::new(Duration::from_secs(120), Duration::from_secs(1)));
-    let new_config = WebDriverConfig::builder().poller(my_poller).build();
+    let new_config = WebDriverConfig::builder().poller(my_poller).build()?;
     let my_driver = driver.clone_with_config(new_config);
 
     // Perform query using custom poller.

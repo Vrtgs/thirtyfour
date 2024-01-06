@@ -5,8 +5,8 @@ use thirtyfour::prelude::*;
 
 mod common;
 
-async fn iframe_switch(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn iframe_switch(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
     // Go to the page that holds the iframe
     c.find(By::Css("#iframe_page_id")).await?.click().await?;
@@ -129,8 +129,8 @@ async fn close_window_twice_errors(c: WebDriver) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn window_name(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn window_name(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     let main_title = c.title().await?;
@@ -142,7 +142,7 @@ async fn window_name(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     c.switch_to_window(new_handle).await?;
 
     // We are now controlling the new tab.
-    let other_page_url = other_page_url(port);
+    let other_page_url = other_page_url();
     c.goto(&other_page_url).await?;
     assert_ne!(c.window().await?, handle);
 
@@ -156,14 +156,14 @@ async fn window_name(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn in_new_tab(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn in_new_tab(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     let main_title = c.title().await?;
     assert_eq!(main_title, "Sample Page");
 
-    let other_page_url = other_page_url(port);
+    let other_page_url = other_page_url();
     let other_title = c
         .in_new_tab(|| async {
             c.goto(&other_page_url).await?;
@@ -186,8 +186,8 @@ async fn window_rect(c: WebDriver) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn screenshot(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn screenshot(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     let screenshot_data = c.screenshot_as_png().await?;
@@ -195,121 +195,66 @@ async fn screenshot(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-mod firefox {
+mod tests {
     use super::*;
 
     #[test]
     #[serial]
     fn iframe_test() {
-        local_tester!(iframe_switch, "firefox");
+        local_tester!(iframe_switch);
     }
 
     #[test]
     #[serial]
     fn new_window_test() {
-        tester!(new_window, "firefox");
+        local_tester!(new_window);
     }
 
     #[test]
     #[serial]
     fn new_window_switch_test() {
-        tester!(new_window_switch, "firefox");
+        local_tester!(new_window_switch);
     }
 
     #[test]
     #[serial]
     fn new_tab_switch_test() {
-        tester!(new_tab_switch, "firefox");
+        local_tester!(new_tab_switch);
     }
 
     #[test]
     #[serial]
     fn close_window_test() {
-        tester!(close_window, "firefox");
+        local_tester!(close_window);
     }
 
     #[test]
     #[serial]
     fn double_close_window_test() {
-        tester!(close_window_twice_errors, "firefox");
+        local_tester!(close_window_twice_errors);
     }
 
     #[test]
     #[serial]
     fn window_rect_test() {
-        tester!(window_rect, "firefox");
+        local_tester!(window_rect);
     }
 
     #[test]
     #[serial]
     fn window_name_test() {
-        local_tester!(window_name, "firefox");
+        local_tester!(window_name);
     }
 
     #[test]
     #[serial]
     fn in_new_tab_test() {
-        local_tester!(in_new_tab, "firefox");
+        local_tester!(in_new_tab);
     }
 
     #[test]
     #[serial]
     fn screenshot_test() {
-        local_tester!(screenshot, "firefox");
-    }
-}
-
-mod chrome {
-    use super::*;
-
-    #[test]
-    fn iframe_test() {
-        local_tester!(iframe_switch, "chrome");
-    }
-
-    #[test]
-    fn new_window_test() {
-        tester!(new_window, "chrome");
-    }
-
-    #[test]
-    fn new_window_switch_test() {
-        tester!(new_window_switch, "chrome");
-    }
-
-    #[test]
-    fn new_tab_test() {
-        tester!(new_tab_switch, "chrome");
-    }
-
-    #[test]
-    fn close_window_test() {
-        tester!(close_window, "chrome");
-    }
-
-    #[test]
-    fn double_close_window_test() {
-        tester!(close_window_twice_errors, "chrome");
-    }
-
-    #[test]
-    #[ignore] // Ignored due to https://github.com/jonhoo/fantoccini/issues/26
-    fn window_rect_test() {
-        tester!(window_rect, "chrome");
-    }
-
-    #[test]
-    fn window_name_test() {
-        local_tester!(window_name, "chrome");
-    }
-
-    #[test]
-    fn in_new_tab_test() {
-        local_tester!(in_new_tab, "chrome");
-    }
-
-    #[test]
-    fn screenshot_test() {
-        local_tester!(screenshot, "chrome");
+        local_tester!(screenshot);
     }
 }

@@ -70,8 +70,9 @@ impl WebDriver {
     ///
     /// - If the webdriver appears to hang or give no response, please check that the
     ///   capabilities object is of the correct type for that webdriver.
-    pub async fn new<C>(server_url: &str, capabilities: C) -> WebDriverResult<Self>
+    pub async fn new<S, C>(server_url: S, capabilities: C) -> WebDriverResult<Self>
     where
+        S: Into<String>,
         C: Into<Capabilities>,
     {
         Self::new_with_config(server_url, capabilities, WebDriverConfig::default()).await
@@ -80,16 +81,18 @@ impl WebDriver {
     /// Create a new `WebDriver` with the specified `WebDriverConfig`.
     ///
     /// Use `WebDriverConfig::builder().build()` to construct the config.
-    pub async fn new_with_config<C>(
-        server_url: &str,
+    pub async fn new_with_config<S, C>(
+        server_url: S,
         capabilities: C,
         config: WebDriverConfig,
     ) -> WebDriverResult<Self>
     where
+        S: Into<String>,
         C: Into<Capabilities>,
     {
         let capabilities = capabilities.into();
         let server_url = server_url
+            .into()
             .parse()
             .map_err(|e| WebDriverError::ParseError(format!("invalid url: {e}")))?;
 

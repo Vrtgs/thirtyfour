@@ -357,7 +357,7 @@ impl SessionHandle {
     #[deprecated(since = "0.30.0", note = "This method has been renamed to execute()")]
     pub async fn execute_script(
         self: &Arc<Self>,
-        script: &str,
+        script: impl Into<String>,
         args: Vec<Value>,
     ) -> WebDriverResult<ScriptRet> {
         self.execute(script, args).await
@@ -435,7 +435,7 @@ impl SessionHandle {
     #[deprecated(since = "0.30.0", note = "This method has been renamed to execute_async()")]
     pub async fn execute_script_async(
         self: &Arc<Self>,
-        script: &str,
+        script: impl Into<String>,
         args: Vec<Value>,
     ) -> WebDriverResult<ScriptRet> {
         self.execute_async(script, args).await
@@ -956,14 +956,14 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn get_named_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
-        let r = self.cmd(Command::GetNamedCookie(name.to_owned())).await?;
+    pub async fn get_named_cookie(&self, name: impl Into<String>) -> WebDriverResult<Cookie> {
+        let r = self.cmd(Command::GetNamedCookie(name.into())).await?;
         r.value()
     }
 
     /// Get the specified cookie.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to get_named_cookie()")]
-    pub async fn get_cookie(&self, name: &str) -> WebDriverResult<Cookie> {
+    pub async fn get_cookie(&self, name: impl Into<String>) -> WebDriverResult<Cookie> {
         self.get_named_cookie(name).await
     }
 
@@ -1103,9 +1103,9 @@ impl SessionHandle {
     /// ```
     pub async fn set_window_name(
         self: &Arc<SessionHandle>,
-        window_name: &str,
+        window_name: impl Into<String>,
     ) -> WebDriverResult<()> {
-        let script = format!(r#"window.name = "{}""#, window_name);
+        let script = format!(r#"window.name = "{}""#, window_name.into());
         self.execute(&script, Vec::new()).await?;
         Ok(())
     }

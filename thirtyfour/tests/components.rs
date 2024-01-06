@@ -2,14 +2,14 @@ mod common;
 
 #[cfg(feature = "component")]
 mod feature_component {
-    use super::*;
     use crate::common::sample_page_url;
     use assert_matches::assert_matches;
-    use serial_test::serial;
     use std::time::Instant;
     use thirtyfour::components::{Component, ElementResolver};
     use thirtyfour::extensions::query::ElementQueryOptions;
     use thirtyfour::{prelude::*, resolve, resolve_present};
+
+    use super::common;
 
     /// This component shows how to nest components inside others.
     #[derive(Debug, Clone, Component)]
@@ -49,8 +49,8 @@ mod feature_component {
         }
     }
 
-    async fn basic_component(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-        let url = sample_page_url(port);
+    async fn basic_component(c: WebDriver) -> Result<(), WebDriverError> {
+        let url = sample_page_url();
         c.goto(&url).await?;
 
         // Get the checkbox div.
@@ -92,8 +92,8 @@ mod feature_component {
         elems_not_empty_explicit: ElementResolver<Vec<WebElement>>,
     }
 
-    async fn component_attributes(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-        let url = sample_page_url(port);
+    async fn component_attributes(c: WebDriver) -> Result<(), WebDriverError> {
+        let url = sample_page_url();
         c.goto(&url).await?;
 
         ElementQueryOptions::default().set_description(Some("hello"));
@@ -111,7 +111,7 @@ mod feature_component {
         assert_eq!(elem.tag_name().await?, "label");
 
         let result = tc.elem_desc.resolve().await;
-        assert_matches!(result, Err(WebDriverError::NoSuchElement(x)) if x.message.contains("my_test_description"));
+        assert_matches!(result, Err(WebDriverError::NoSuchElement(x)) if x.error.contains("my_test_description"));
 
         let start = Instant::now();
         let result = tc.elem_ignore.resolve().await;
@@ -168,8 +168,8 @@ mod feature_component {
         Ok(cbs.into_iter().map(CheckboxComponent::new).collect())
     }
 
-    async fn component_attributes_custom_fn(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-        let url = sample_page_url(port);
+    async fn component_attributes_custom_fn(c: WebDriver) -> Result<(), WebDriverError> {
+        let url = sample_page_url();
         c.goto(&url).await?;
 
         ElementQueryOptions::default().set_description(Some("hello"));
@@ -185,46 +185,11 @@ mod feature_component {
         Ok(())
     }
 
-    mod firefox {
-        use super::*;
+    mod tests {
         use crate::local_tester;
 
-        #[test]
-        #[serial]
-        fn basic_component_test() {
-            local_tester!(basic_component, "firefox");
-        }
-
-        #[test]
-        #[serial]
-        fn component_attributes_test() {
-            local_tester!(component_attributes, "firefox");
-        }
-
-        #[test]
-        #[serial]
-        fn component_attributes_custom_fn_test() {
-            local_tester!(component_attributes_custom_fn, "firefox");
-        }
-    }
-
-    mod chrome {
         use super::*;
-        use crate::local_tester;
 
-        #[test]
-        fn basic_component_test() {
-            local_tester!(basic_component, "chrome");
-        }
-
-        #[test]
-        fn component_attributes_test() {
-            local_tester!(component_attributes, "chrome");
-        }
-
-        #[test]
-        fn component_attributes_custom_fn_test() {
-            local_tester!(component_attributes_custom_fn, "chrome");
-        }
+        local_tester!(basic_component, component_attributes, component_attributes_custom_fn);
     }
 }

@@ -136,6 +136,7 @@ pub(crate) async fn run_webdriver_cmd(
         Some(body) => Body::Json(body),
         None => Body::Empty,
     };
+
     let request = builder
         .body(body)
         .map_err(|e| WebDriverError::RequestFailed(format!("invalid request body: {e}")))?;
@@ -150,15 +151,14 @@ pub(crate) async fn run_webdriver_cmd(
                 }),
                 Err(_) => {
                     // Try to parse the response as a string.
-                    let s = String::from_utf8_lossy(&response.body());
-                    Err(WebDriverError::UnknownResponse(status, s.to_string()))
+                    let body = String::from_utf8_lossy(&response.body()).to_string();
+                    Err(WebDriverError::parse(status, body))
                 }
             }
         }
         _ => {
-            // Try to parse the response as a string.
-            let s = String::from_utf8_lossy(&response.body());
-            Err(WebDriverError::UnknownResponse(status, s.to_string()))
+            let body = String::from_utf8_lossy(&response.body()).to_string();
+            Err(WebDriverError::parse(status, body))
         }
     }
 }

@@ -269,7 +269,7 @@ impl From<Rect> for OptionRect {
 }
 
 /// The timeout configuration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TimeoutConfiguration {
     /// The script timeout.
     #[serde(skip_serializing_if = "Option::is_none")]

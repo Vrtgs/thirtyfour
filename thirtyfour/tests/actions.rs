@@ -1,12 +1,14 @@
 //! Actions tests
-use crate::common::{drag_to_url, sample_page_url};
-use serial_test::serial;
+
+use assert_matches::assert_matches;
 use thirtyfour::prelude::*;
+
+use crate::common::{drag_to_url, sample_page_url};
 
 mod common;
 
-async fn actions_key(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let sample_url = sample_page_url(port);
+async fn actions_key(c: WebDriver) -> Result<(), WebDriverError> {
+    let sample_url = sample_page_url();
     c.goto(&sample_url).await?;
 
     // Test key down/up.
@@ -21,8 +23,8 @@ async fn actions_key(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn actions_mouse(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let sample_url = sample_page_url(port);
+async fn actions_mouse(c: WebDriver) -> Result<(), WebDriverError> {
+    let sample_url = sample_page_url();
     c.goto(&sample_url).await?;
 
     let elem = c.find(By::Id("button-alert")).await?;
@@ -34,11 +36,11 @@ async fn actions_mouse(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn actions_mouse_move(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
+async fn actions_mouse_move(c: WebDriver) -> Result<(), WebDriverError> {
     // Set window size to avoid moving the cursor out-of-bounds during actions.
     c.set_window_rect(0, 0, 800, 800).await?;
 
-    let sample_url = sample_page_url(port);
+    let sample_url = sample_page_url();
     c.goto(&sample_url).await?;
 
     let elem = c.find(By::Id("button-alert")).await?;
@@ -49,7 +51,7 @@ async fn actions_mouse_move(c: WebDriver, port: u16) -> Result<(), WebDriverErro
     // Test mouse MoveBy.
 
     // Sanity check - ensure no alerts are displayed prior to actions.
-    assert!(matches!(c.get_alert_text().await, Err(WebDriverError::NoSuchAlert(..))));
+    assert_matches!(c.get_alert_text().await, Err(WebDriverError::NoSuchAlert(..)));
 
     c.action_chain()
         .move_to(0, elem_center_y as i64 - 100)
@@ -63,8 +65,8 @@ async fn actions_mouse_move(c: WebDriver, port: u16) -> Result<(), WebDriverErro
     Ok(())
 }
 
-async fn actions_release(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let sample_url = sample_page_url(port);
+async fn actions_release(c: WebDriver) -> Result<(), WebDriverError> {
+    let sample_url = sample_page_url();
     c.goto(&sample_url).await?;
 
     // Focus the input element.
@@ -93,8 +95,8 @@ async fn actions_release(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
     Ok(())
 }
 
-async fn actions_drag_and_drop(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let drag_to_url = drag_to_url(port);
+async fn actions_drag_and_drop(c: WebDriver) -> Result<(), WebDriverError> {
+    let drag_to_url = drag_to_url();
     c.goto(&drag_to_url).await?;
 
     // Validate we are starting with a div and an image that are adjacent to one another.
@@ -110,73 +112,22 @@ async fn actions_drag_and_drop(c: WebDriver, port: u16) -> Result<(), WebDriverE
     // For now we just confirm that the issue persists. If this unit test fails,
     // it means the bug has been fixed and we need to update the docs (and this test).
 
-    assert!(matches!(
+    assert_matches!(
         c.find(By::XPath("//div[@id='target']/img[@id='draggable']")).await,
         Err(WebDriverError::NoSuchElement(_))
-    ));
+    );
 
     Ok(())
 }
 
-mod firefox {
+mod tests {
     use super::*;
 
-    #[test]
-    #[serial]
-    fn actions_key_test() {
-        local_tester!(actions_key, "firefox");
-    }
-
-    #[test]
-    #[serial]
-    fn actions_mouse_test() {
-        local_tester!(actions_mouse, "firefox");
-    }
-
-    #[test]
-    #[serial]
-    fn actions_mouse_move_test() {
-        local_tester!(actions_mouse_move, "firefox");
-    }
-
-    #[test]
-    #[serial]
-    fn actions_release_test() {
-        local_tester!(actions_release, "firefox");
-    }
-
-    #[test]
-    #[serial]
-    fn actions_drag_and_drop_test() {
-        local_tester!(actions_drag_and_drop, "firefox");
-    }
-}
-
-mod chrome {
-    use super::*;
-
-    #[test]
-    fn actions_key_test() {
-        local_tester!(actions_key, "chrome");
-    }
-
-    #[test]
-    fn actions_mouse_test() {
-        local_tester!(actions_mouse, "chrome");
-    }
-
-    #[test]
-    fn actions_mouse_move_test() {
-        local_tester!(actions_mouse_move, "chrome");
-    }
-
-    #[test]
-    fn actions_release_test() {
-        local_tester!(actions_release, "chrome");
-    }
-
-    #[test]
-    fn actions_drag_and_drop_test() {
-        local_tester!(actions_drag_and_drop, "chrome");
-    }
+    local_tester!(
+        actions_key,
+        actions_mouse,
+        actions_mouse_move,
+        actions_release,
+        actions_drag_and_drop
+    );
 }

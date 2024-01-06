@@ -82,7 +82,7 @@ pub trait ChromiumLikeCapabilities: BrowserCapabilitiesHelper {
     ///
     /// ```ignore
     /// let mut caps = DesiredCapabilities::chrome();
-    /// caps.add_chrome_arg("--disable-local-storage")?;
+    /// caps.add_arg("--disable-local-storage")?;
     /// ```
     ///
     /// The full list of switches can be found here:

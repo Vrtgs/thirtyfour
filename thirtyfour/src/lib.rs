@@ -175,7 +175,7 @@ pub mod prelude {
         BrowserCapabilitiesHelper, By, Capabilities, CapabilitiesHelper, ChromiumLikeCapabilities,
         DesiredCapabilities,
     };
-    pub use crate::{Cookie, Keys, TimeoutConfiguration, TypingData, WindowHandle};
+    pub use crate::{Cookie, Key, TimeoutConfiguration, TypingData, WindowHandle};
 }
 
 /// Action chains allow for more complex user interactions with the keyboard and mouse.
@@ -202,8 +202,5 @@ mod webelement;
 
 // Re-export StringMatch if needed.
 pub use stringmatch;
-
-// Re-export cookie crate.
-pub use cookie;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");

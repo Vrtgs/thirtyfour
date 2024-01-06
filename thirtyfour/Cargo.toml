@@ -27,7 +27,6 @@ component = ["thirtyfour-macros"]
 async-trait = "0.1.56"
 base64 = "0.21.0"
 chrono = "0.4"
-cookie = { version = "0.18", features = ["percent-encode"] }
 futures = "0.3.21"
 http = "1"
 indexmap = "2"
@@ -48,10 +47,10 @@ reqwest = { version = "0.11", default-features = false, features = ["json"], opt
 
 [dev-dependencies]
 assert_matches = "1.5.0"
+axum = "0.7"
 color-eyre = "0.6.2"
-hyper = { version = "1", features = ["server"] }
 serial_test = "2.0.0"
-
+tower-http = { version = "0.5", features = ["fs"] }
 
 
 [[example]]

@@ -4,8 +4,8 @@ use thirtyfour::{components::SelectElement, prelude::*};
 
 mod common;
 
-async fn goto(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn goto(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
     let current_url = c.current_url().await?;
     assert_eq!(url.as_str(), current_url.as_str());
@@ -15,13 +15,13 @@ async fn goto(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     c.close_window().await
 }
 
-async fn back_and_forward(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let sample_url = sample_page_url(port);
+async fn back_and_forward(c: WebDriver) -> Result<(), WebDriverError> {
+    let sample_url = sample_page_url();
     c.goto(&sample_url).await?;
 
     assert_eq!(c.current_url().await?.as_str(), sample_url);
 
-    let other_url = other_page_url(port);
+    let other_url = other_page_url();
     c.goto(&other_url).await?;
     assert_eq!(c.current_url().await?.as_str(), other_url);
 
@@ -34,8 +34,8 @@ async fn back_and_forward(c: WebDriver, port: u16) -> Result<(), WebDriverError>
     Ok(())
 }
 
-async fn refresh(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn refresh(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     let elem = c.find(By::Css("#select1")).await?;
@@ -64,83 +64,55 @@ async fn refresh(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn find_and_click_link(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn find_and_click_link(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
     c.find(By::Css("#other_page_id")).await?.click().await?;
 
     let new_url = c.current_url().await?;
-    let expected_url = other_page_url(port);
+    let expected_url = other_page_url();
     assert_eq!(new_url.as_str(), expected_url.as_str());
 
     c.close_window().await
 }
 
-async fn page_title(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let sample_url = sample_page_url(port);
+async fn page_title(c: WebDriver) -> Result<(), WebDriverError> {
+    let sample_url = sample_page_url();
     c.goto(&sample_url).await?;
     assert_eq!(c.title().await?, "Sample Page");
     Ok(())
 }
 
-mod firefox {
+mod tests {
     use super::*;
+
     #[test]
     #[serial]
     fn navigate_to_other_page() {
-        local_tester!(goto, "firefox");
+        local_tester!(goto);
     }
 
     #[test]
     #[serial]
     fn back_and_forward_test() {
-        local_tester!(back_and_forward, "firefox");
+        local_tester!(back_and_forward);
     }
 
     #[test]
     #[serial]
     fn refresh_test() {
-        local_tester!(refresh, "firefox");
+        local_tester!(refresh);
     }
 
     #[test]
     #[serial]
     fn find_and_click_link_test() {
-        local_tester!(find_and_click_link, "firefox");
+        local_tester!(find_and_click_link);
     }
 
     #[test]
     #[serial]
     fn title_test() {
-        local_tester!(page_title, "firefox");
-    }
-}
-
-mod chrome {
-    use super::*;
-
-    #[test]
-    fn navigate_to_other_page() {
-        local_tester!(goto, "chrome");
-    }
-
-    #[test]
-    fn back_and_forward_test() {
-        local_tester!(back_and_forward, "chrome");
-    }
-
-    #[test]
-    fn refresh_test() {
-        local_tester!(refresh, "chrome");
-    }
-
-    #[test]
-    fn find_and_click_link_test() {
-        local_tester!(find_and_click_link, "chrome");
-    }
-
-    #[test]
-    fn title_test() {
-        local_tester!(page_title, "chrome");
+        local_tester!(page_title);
     }
 }

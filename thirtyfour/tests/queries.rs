@@ -7,8 +7,8 @@ use thirtyfour::{components::SelectElement, prelude::*};
 
 mod common;
 
-async fn get_active_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn get_active_element(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
     c.find(By::Css("#select1")).await?.click().await?;
 
@@ -18,16 +18,16 @@ async fn get_active_element(c: WebDriver, port: u16) -> Result<(), WebDriverErro
     c.close_window().await
 }
 
-async fn find_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn find_all(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
     let elems = c.find_all(By::Css("nav a")).await?;
     assert_eq!(elems.len(), 2);
     Ok(())
 }
 
-async fn query(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn query(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
     let elem = c.query(By::Css("nav a")).first().await?;
     assert_eq!(elem.id().await?.unwrap(), "other_page_id");
@@ -36,8 +36,8 @@ async fn query(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn query_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn query_all(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     // Match all, single selector.
@@ -74,8 +74,8 @@ async fn query_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn query_any(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn query_any(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     // Match both selectors.
@@ -101,8 +101,8 @@ async fn query_any(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn query_exists(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn query_exists(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     // Nowait.
@@ -146,8 +146,8 @@ async fn query_exists(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn resolve(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn resolve(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
     let base_element = c.find(By::ClassName("vertical")).await?;
     let resolver = ElementResolverSingle::new_first(base_element.clone(), By::Css("nav a"));
@@ -163,8 +163,8 @@ async fn resolve(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn resolve_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn resolve_all(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
     let base_element = c.find(By::ClassName("vertical")).await?;
     let resolver = ElementResolverMulti::new_not_empty(base_element, By::Css("nav a"));
@@ -176,8 +176,8 @@ async fn resolve_all(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-async fn stale_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn stale_element(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
     let elem = c.find(By::Css("#other_page_id")).await?;
 
@@ -195,8 +195,8 @@ async fn stale_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     }
 }
 
-async fn select_by_index(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn select_by_index(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     let elem = c.find(By::Css("#select1")).await?;
@@ -227,8 +227,8 @@ async fn select_by_index(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
     Ok(())
 }
 
-async fn select_by_label(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn select_by_label(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     let elem = c.find(By::Css("#select1")).await?;
@@ -252,8 +252,8 @@ async fn select_by_label(c: WebDriver, port: u16) -> Result<(), WebDriverError> 
     Ok(())
 }
 
-async fn find_element_from_element(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn find_element_from_element(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     // Find.
@@ -270,138 +270,78 @@ async fn find_element_from_element(c: WebDriver, port: u16) -> Result<(), WebDri
     Ok(())
 }
 
-mod firefox {
+mod tests {
     use super::*;
 
     #[test]
     #[serial]
     fn get_active_element_test() {
-        local_tester!(get_active_element, "firefox");
+        local_tester!(get_active_element);
     }
 
     #[test]
     #[serial]
     fn find_all_test() {
-        local_tester!(find_all, "firefox");
+        local_tester!(find_all);
     }
 
     #[test]
     #[serial]
     fn query_test() {
-        local_tester!(query, "firefox");
+        local_tester!(query);
     }
 
     #[test]
     #[serial]
     fn query_all_test() {
-        local_tester!(query_all, "firefox");
+        local_tester!(query_all);
     }
 
     #[test]
     #[serial]
     fn query_any_test() {
-        local_tester!(query_any, "firefox");
+        local_tester!(query_any);
     }
 
     #[test]
     #[serial]
     fn query_exists_test() {
-        local_tester!(query_exists, "firefox");
+        local_tester!(query_exists);
     }
 
     #[test]
     #[serial]
     fn resolve_test() {
-        local_tester!(resolve, "firefox");
+        local_tester!(resolve);
     }
 
     #[test]
     #[serial]
     fn resolve_all_test() {
-        local_tester!(resolve_all, "firefox");
+        local_tester!(resolve_all);
     }
 
     #[test]
     #[serial]
     fn stale_element_test() {
-        local_tester!(stale_element, "firefox");
+        local_tester!(stale_element);
     }
 
     #[test]
     #[serial]
     fn select_by_index_test() {
-        local_tester!(select_by_index, "firefox");
+        local_tester!(select_by_index);
     }
 
     #[test]
     #[serial]
     fn select_by_label_test() {
-        local_tester!(select_by_label, "firefox");
+        local_tester!(select_by_label);
     }
 
     #[test]
     #[serial]
     fn find_element_from_element_test() {
-        local_tester!(find_element_from_element, "firefox");
-    }
-}
-
-mod chrome {
-
-    use super::*;
-
-    #[test]
-    fn get_active_element_test() {
-        local_tester!(get_active_element, "chrome");
-    }
-
-    #[test]
-    fn find_all_test() {
-        local_tester!(find_all, "chrome");
-    }
-
-    #[test]
-    fn query_test() {
-        local_tester!(query, "chrome");
-    }
-
-    #[test]
-    fn query_all_test() {
-        local_tester!(query_all, "chrome");
-    }
-
-    #[test]
-    fn query_any_test() {
-        local_tester!(query_any, "chrome");
-    }
-
-    #[test]
-    fn query_exists_test() {
-        local_tester!(query_exists, "chrome");
-    }
-
-    #[test]
-    fn resolve_test() {
-        local_tester!(resolve, "chrome");
-    }
-
-    #[test]
-    fn resolve_all_test() {
-        local_tester!(resolve_all, "chrome");
-    }
-
-    #[test]
-    fn select_by_label_test() {
-        local_tester!(select_by_label, "chrome");
-    }
-
-    #[test]
-    fn select_by_index_test() {
-        local_tester!(select_by_index, "chrome");
-    }
-
-    #[test]
-    fn find_element_from_element_test() {
-        local_tester!(find_element_from_element, "chrome");
+        local_tester!(find_element_from_element);
     }
 }

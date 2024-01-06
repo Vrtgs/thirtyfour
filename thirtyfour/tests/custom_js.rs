@@ -1,12 +1,11 @@
 //! Tests for validating functionality based on executing crate maintained JavaScript
 use crate::common::drag_to_url;
-use serial_test::serial;
 use thirtyfour::prelude::*;
 
 mod common;
 
-async fn drag_to(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let drag_to_url = drag_to_url(port);
+async fn drag_to(c: WebDriver) -> Result<(), WebDriverError> {
+    let drag_to_url = drag_to_url();
     c.goto(&drag_to_url).await?;
 
     // Validate we are starting with a div and an image that are adjacent to one another.
@@ -22,22 +21,8 @@ async fn drag_to(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-mod firefox {
+mod tests {
     use super::*;
 
-    #[test]
-    #[serial]
-    fn drag_to_test() {
-        local_tester!(drag_to, "firefox");
-    }
-}
-
-mod chrome {
-    use super::*;
-
-    #[test]
-    #[serial]
-    fn drag_to_test() {
-        local_tester!(drag_to, "chrome");
-    }
+    local_tester!(drag_to);
 }

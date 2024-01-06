@@ -319,10 +319,16 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn prop(&self, name: impl Into<String>) -> WebDriverResult<Option<String>> {
-        self.handle
+        let resp = self
+            .handle
             .cmd(Command::GetElementProperty(self.element_id.clone(), name.into()))
-            .await?
-            .value()
+            .await?;
+        match resp.value()? {
+            Value::String(v) => Ok(Some(v)),
+            Value::Bool(b) => Ok(Some(b.to_string())),
+            Value::Null => Ok(None),
+            v => Err(WebDriverError::Json(format!("Unexpected value for property: {:?}", v))),
+        }
     }
 
     /// Get the specified property.

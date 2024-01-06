@@ -1,16 +1,15 @@
 //! Tests that don't make use of external websites.
 use std::time::Duration;
 
-use cookie::SameSite;
 use serial_test::serial;
-use thirtyfour::prelude::*;
+use thirtyfour::{prelude::*, SameSite};
 
 use crate::common::sample_page_url;
 
 mod common;
 
-async fn resolve_execute_async_value(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
-    let url = sample_page_url(port);
+async fn resolve_execute_async_value(c: WebDriver) -> Result<(), WebDriverError> {
+    let url = sample_page_url();
     c.goto(&url).await?;
 
     let count: u64 = c
@@ -32,21 +31,21 @@ async fn resolve_execute_async_value(c: WebDriver, port: u16) -> Result<(), WebD
     Ok(())
 }
 
-async fn status_firefox(c: WebDriver, _: u16) -> Result<(), WebDriverError> {
+async fn status_firefox(c: WebDriver) -> Result<(), WebDriverError> {
     // Geckodriver only supports a single session, and since we're already in a
     // session, it should return `false` here.
     assert!(!c.status().await?.ready);
     Ok(())
 }
 
-async fn status_chrome(c: WebDriver, _: u16) -> Result<(), WebDriverError> {
+async fn status_chrome(c: WebDriver) -> Result<(), WebDriverError> {
     // Chromedriver supports multiple sessions, so it should always return
     // `true` here.
     assert!(c.status().await?.ready);
     Ok(())
 }
 
-async fn timeouts(c: WebDriver, _: u16) -> Result<(), WebDriverError> {
+async fn timeouts(c: WebDriver) -> Result<(), WebDriverError> {
     let new_timeouts = TimeoutConfiguration::new(
         Some(Duration::from_secs(60)),
         Some(Duration::from_secs(60)),
@@ -121,15 +120,15 @@ async fn handle_cookies_test(c: WebDriver) -> Result<(), WebDriverError> {
     let mut cookie = Cookie::new("cookietest", "thirtyfour");
     cookie.set_domain(".wikipedia.org");
     cookie.set_path("/");
-    cookie.set_same_site(Some(SameSite::Lax));
+    cookie.set_same_site(SameSite::Lax);
     c.add_cookie(cookie.clone()).await?;
 
     // Verify that the cookie exists.
-    assert_eq!(c.get_named_cookie(cookie.name()).await?.value(), cookie.value());
+    assert_eq!(c.get_named_cookie(&cookie.name).await?.value, cookie.value);
 
     // Delete the cookie and make sure it's gone
-    c.delete_cookie(cookie.name()).await?;
-    assert!(c.get_named_cookie(cookie.name()).await.is_err());
+    c.delete_cookie(&cookie.name).await?;
+    assert!(c.get_named_cookie(&cookie.name).await.is_err());
 
     c.delete_all_cookies().await?;
     let cookies = c.get_all_cookies().await?;
@@ -138,54 +137,19 @@ async fn handle_cookies_test(c: WebDriver) -> Result<(), WebDriverError> {
     Ok(())
 }
 
-mod firefox {
+mod tests {
     use super::*;
 
-    #[test]
-    #[serial]
-    fn resolve_execute_async_value_test() {
-        local_tester!(resolve_execute_async_value, "firefox");
-    }
+    local_tester!(resolve_execute_async_value, timeouts, handle_cookies_test);
 
     #[test]
     #[serial]
-    fn status_test() {
-        local_tester!(status_firefox, "firefox");
+    fn test_status_firefox() {
+        test_inner!(status_firefox, "firefix");
     }
 
     #[test]
-    #[serial]
-    fn timeouts_test() {
-        local_tester!(timeouts, "firefox");
-    }
-
-    #[test]
-    #[serial]
-    fn cookies_test() {
-        tester!(handle_cookies_test, "firefox");
-    }
-}
-
-mod chrome {
-    use super::*;
-
-    #[test]
-    fn resolve_execute_async_value_test() {
-        local_tester!(resolve_execute_async_value, "chrome");
-    }
-
-    #[test]
-    fn status_test() {
-        local_tester!(status_chrome, "chrome");
-    }
-
-    #[test]
-    fn timeouts_test() {
-        local_tester!(timeouts, "chrome");
-    }
-
-    #[test]
-    fn cookies_test() {
-        tester!(handle_cookies_test, "chrome");
+    fn test_status_chrome() {
+        test_inner!(status_chrome, "chrome");
     }
 }
