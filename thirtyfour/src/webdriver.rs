@@ -1,9 +1,14 @@
+use crate::common::command::Command;
 use crate::common::config::WebDriverConfig;
 use crate::error::WebDriverResult;
+use crate::prelude::WebDriverError;
+use crate::session::create::start_session;
 use crate::session::handle::SessionHandle;
-use crate::{Capabilities, SessionId};
+use crate::session::http::create_reqwest_client;
+use crate::Capabilities;
 use std::ops::Deref;
 use std::sync::Arc;
+use std::time::Duration;
 
 /// The `WebDriver` struct encapsulates an async Selenium WebDriver browser
 /// session.
@@ -83,35 +88,19 @@ impl WebDriver {
     where
         C: Into<Capabilities>,
     {
-        #[cfg(not(any(feature = "rustls-tls", feature = "native-tls")))]
-        panic!("please set either the rustls-tls or native-tls feature");
+        let capabilities = capabilities.into();
+        let server_url = server_url
+            .parse()
+            .map_err(|e| WebDriverError::ParseError(format!("invalid url: {e}")))?;
 
-        #[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
-        {
-            use crate::upstream::ClientBuilder;
-            use crate::TimeoutConfiguration;
-            let caps: Capabilities = capabilities.into();
+        // TODO: create builder and make timeout configurable.
+        let client = Arc::new(create_reqwest_client(Duration::from_secs(120)));
+        let session_id = start_session(client.as_ref(), &server_url, &config, capabilities).await?;
 
-            #[cfg(feature = "native-tls")]
-            let mut builder = ClientBuilder::native();
-            #[cfg(feature = "rustls-tls")]
-            let mut builder = ClientBuilder::rustls();
-
-            let client = builder.capabilities(caps.clone()).connect(server_url).await?;
-
-            // Set default timeouts.
-            let timeouts = TimeoutConfiguration::default();
-            client.update_timeouts(timeouts).await?;
-            let session_id = client.session_id().await?.expect("session id is not valid");
-
-            Ok(Self {
-                handle: Arc::new(SessionHandle::new_with_config(
-                    client,
-                    SessionId::from(session_id),
-                    config,
-                )?),
-            })
-        }
+        let handle = SessionHandle::new_with_config(client, server_url, session_id, config)?;
+        Ok(Self {
+            handle: Arc::new(handle),
+        })
     }
 
     /// Clone this `WebDriver` keeping the session handle, but supplying a new `WebDriverConfig`.
@@ -133,8 +122,7 @@ impl WebDriver {
     ///           Thus if you intend for the browser to close once you are done with it, then
     ///           you must call this method at that point, and await it.
     pub async fn quit(self) -> WebDriverResult<()> {
-        let client = self.handle.client.clone();
-        client.close().await?;
+        self.handle.cmd(Command::DeleteSession).await?;
         Ok(())
     }
 }

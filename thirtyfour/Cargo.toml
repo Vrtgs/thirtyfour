@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.32.0-rc.8"
+version = "0.32.0-rc.9"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -18,19 +18,19 @@ keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"
 categories = ["api-bindings", "development-tools::testing", "web-programming::http-client"]
 
 [features]
-default = ["rustls-tls", "component"]
-rustls-tls = ["fantoccini/rustls-tls"]
-native-tls = ["fantoccini/native-tls"]
+default = ["reqwest", "rustls-tls", "component"]
+rustls-tls = ["reqwest/rustls-tls"]
+native-tls = ["reqwest/native-tls"]
 component = ["thirtyfour-macros"]
 
 [dependencies]
 async-trait = "0.1.56"
 base64 = "0.21.0"
-cookie = { version = "0.16.0", features = ["percent-encode"] }
-fantoccini = { version = "0.20.0-rc.4", default-features = false }
+chrono = "0.4"
+cookie = { version = "0.18", features = ["percent-encode"] }
 futures = "0.3.21"
-http = "0.2.8"
-indexmap = "1.9.2"
+http = "1"
+indexmap = "2"
 log = "0.4.17"
 parking_lot = "0.12.1"
 paste = "1.0.9"
@@ -43,10 +43,13 @@ thiserror = "1.0.31"
 tokio = { version = "1.20", features = ["fs", "macros", "rt-multi-thread", "io-util", "sync"] }
 url = "2.2.2"
 
+# Optional HTTP client. Not needed if you supply your own.
+reqwest = { version = "0.11", default-features = false, features = ["json"], optional = true }
+
 [dev-dependencies]
 assert_matches = "1.5.0"
 color-eyre = "0.6.2"
-hyper = { version = "0.14", features = ["server", "tcp"] }
+hyper = { version = "1", features = ["server"] }
 serial_test = "2.0.0"
 
 

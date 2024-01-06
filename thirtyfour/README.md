@@ -13,14 +13,6 @@ It supports the full [W3C WebDriver spec](https://www.w3.org/TR/webdriver1/). Te
 
 34 is the atomic number for the Selenium chemical element (Se).
 
-## Built on top of fantoccini
-
-The thirtyfour crate uses [fantoccini](https://docs.rs/fantoccini/latest/fantoccini/) as the backend
-for interacting with the underlying WebDriver (chromedriver, geckodriver, etc). `Fantoccini` aims 
-to stick fairly close to the WebDriver specification, whereas `thirtyfour` builds on top of that
-foundation and adds several high-level features as well as exploring ways to improve the 
-ergonomics of browser automation in Rust.
-
 ## Features
 
 - All W3C WebDriver and WebElement methods supported
@@ -41,8 +33,8 @@ ergonomics of browser automation in Rust.
 
 ## Feature Flags
 
-- `rustls-tls`: (Default) Use rustls to provide TLS support (via fantoccini/hyper).
-- `native-tls`: Use native TLS (via fantoccini/hyper).
+- `rustls-tls`: (Default) Use rustls to provide TLS support (via reqwest).
+- `native-tls`: Use native TLS (via reqwest).
 - `component`: (Default) Enable the `Component` derive macro (via thirtyfour_macros).
 
 ## Examples

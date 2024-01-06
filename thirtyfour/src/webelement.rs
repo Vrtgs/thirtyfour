@@ -1,4 +1,3 @@
-use crate::upstream::Element;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 use std::fmt;
@@ -7,11 +6,12 @@ use std::sync::Arc;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
+use crate::common::command::Command;
 use crate::error::WebDriverError;
 use crate::js::SIMULATE_DRAG_AND_DROP;
 use crate::session::handle::SessionHandle;
-use crate::upstream::ElementRef;
-use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHelper};
+use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRef};
+use crate::{ElementId, TypingData};
 
 /// The WebElement struct encapsulates a single element on a page.
 ///
@@ -56,14 +56,15 @@ use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRefHe
 ///
 #[derive(Clone)]
 pub struct WebElement {
-    pub(crate) element: Element,
+    /// The element id.
+    pub element_id: ElementId,
     /// The underlying session handle.
     pub handle: Arc<SessionHandle>,
 }
 
 impl fmt::Debug for WebElement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("WebElement").field("element", &self.element).finish()
+        f.debug_struct("WebElement").field("element", &self.element_id).finish()
     }
 }
 
@@ -81,9 +82,9 @@ impl WebElement {
     /// Typically you would not call this directly. WebElement structs are
     /// usually constructed by calling one of the find_element*() methods
     /// either on WebDriver or another WebElement.
-    pub(crate) fn new(element: Element, handle: Arc<SessionHandle>) -> Self {
+    pub(crate) fn new(element_id: ElementId, handle: Arc<SessionHandle>) -> Self {
         Self {
-            element,
+            element_id,
             handle,
         }
     }
@@ -102,9 +103,9 @@ impl WebElement {
     ///
     /// [`ScriptRet::element`]: crate::session::scriptret::ScriptRet::element
     pub fn from_json(value: Value, handle: Arc<SessionHandle>) -> WebDriverResult<Self> {
-        let element_ref: ElementRefHelper = serde_json::from_value(value)?;
+        let element_ref: ElementRef = serde_json::from_value(value)?;
         Ok(Self {
-            element: Element::from_element_id(handle.client.clone(), element_ref.into()),
+            element_id: ElementId::from(element_ref.id()),
             handle,
         })
     }
@@ -115,15 +116,15 @@ impl WebElement {
     ///
     /// See the documentation for [`SessionHandle::execute`] for more details.
     pub fn to_json(&self) -> WebDriverResult<Value> {
-        Ok(serde_json::to_value(self.element.clone())?)
+        Ok(serde_json::to_value(self.element_id.clone())?)
     }
 
     /// Get the internal element id for this element.
     ///
     /// NOTE: If you want the `id` property of an element,
     ///       use [`WebElement::id`] instead.
-    pub fn element_id(&self) -> ElementRef {
-        self.element.element_id()
+    pub fn element_id(&self) -> ElementId {
+        self.element_id.clone()
     }
 
     /// Get the bounding rectangle for this WebElement.
@@ -145,16 +146,12 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn rect(&self) -> WebDriverResult<ElementRect> {
-        let (x, y, w, h) = self.element.rectangle().await?;
-        Ok(ElementRect {
-            x,
-            y,
-            width: w,
-            height: h,
-        })
+        let r = self.handle.cmd(Command::GetElementRect(self.element_id.clone())).await?;
+        r.value()
     }
 
-    /// Alias for [`WebElement::rect()`], for compatibility with fantoccini.
+    /// Alias for [`WebElement::rect()`].
+    #[deprecated(since = "0.32.0", note = "Use rect() instead")]
     pub async fn rectangle(&self) -> WebDriverResult<ElementRect> {
         self.rect().await
     }
@@ -178,7 +175,7 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn tag_name(&self) -> WebDriverResult<String> {
-        Ok(self.element.tag_name().await?)
+        self.handle.cmd(Command::GetElementTagName(self.element_id.clone())).await?.value()
     }
 
     /// Get the class name for this WebElement.
@@ -245,7 +242,7 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn text(&self) -> WebDriverResult<String> {
-        Ok(self.element.text().await?)
+        self.handle.cmd(Command::GetElementText(self.element_id.clone())).await?.value()
     }
 
     /// Convenience method for getting the (optional) value property of this element.
@@ -272,7 +269,7 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn click(&self) -> WebDriverResult<()> {
-        self.element.click().await?;
+        self.handle.cmd(Command::ElementClick(self.element_id.clone())).await?;
         Ok(())
     }
 
@@ -295,7 +292,8 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn clear(&self) -> WebDriverResult<()> {
-        Ok(self.element.clear().await?)
+        self.handle.cmd(Command::ElementClear(self.element_id.clone())).await?;
+        Ok(())
     }
 
     /// Get the specified property.
@@ -320,13 +318,16 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn prop(&self, name: &str) -> WebDriverResult<Option<String>> {
-        Ok(self.element.prop(name).await?)
+    pub async fn prop(&self, name: impl Into<String>) -> WebDriverResult<Option<String>> {
+        self.handle
+            .cmd(Command::GetElementProperty(self.element_id.clone(), name.into()))
+            .await?
+            .value()
     }
 
     /// Get the specified property.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to prop()")]
-    pub async fn get_property(&self, name: &str) -> WebDriverResult<Option<String>> {
+    pub async fn get_property(&self, name: impl Into<String>) -> WebDriverResult<Option<String>> {
         self.prop(name).await
     }
 
@@ -352,13 +353,16 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn attr(&self, name: &str) -> WebDriverResult<Option<String>> {
-        Ok(self.element.attr(name).await?)
+    pub async fn attr(&self, name: impl Into<String>) -> WebDriverResult<Option<String>> {
+        self.handle
+            .cmd(Command::GetElementAttribute(self.element_id.clone(), name.into()))
+            .await?
+            .value()
     }
 
     /// Get the specified attribute.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to attr()")]
-    pub async fn get_attribute(&self, name: &str) -> WebDriverResult<Option<String>> {
+    pub async fn get_attribute(&self, name: impl Into<String>) -> WebDriverResult<Option<String>> {
         self.attr(name).await
     }
 
@@ -384,19 +388,22 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn css_value(&self, name: &str) -> WebDriverResult<String> {
-        Ok(self.element.css_value(name).await?)
+    pub async fn css_value(&self, name: impl Into<String>) -> WebDriverResult<String> {
+        self.handle
+            .cmd(Command::GetElementCssValue(self.element_id.clone(), name.into()))
+            .await?
+            .value()
     }
 
     /// Get the specified CSS property.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to css_value()")]
-    pub async fn get_css_property(&self, name: &str) -> WebDriverResult<String> {
+    pub async fn get_css_property(&self, name: impl Into<String>) -> WebDriverResult<String> {
         self.css_value(name).await
     }
 
     /// Return true if the WebElement is currently selected, otherwise false.
     pub async fn is_selected(&self) -> WebDriverResult<bool> {
-        Ok(self.element.is_selected().await?)
+        self.handle.cmd(Command::IsElementSelected(self.element_id.clone())).await?.value()
     }
 
     /// Return true if the WebElement is currently displayed, otherwise false.
@@ -418,7 +425,7 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn is_displayed(&self) -> WebDriverResult<bool> {
-        Ok(self.element.is_displayed().await?)
+        self.handle.cmd(Command::IsElementDisplayed(self.element_id.clone())).await?.value()
     }
 
     /// Return true if the WebElement is currently enabled, otherwise false.
@@ -440,7 +447,7 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn is_enabled(&self) -> WebDriverResult<bool> {
-        Ok(self.element.is_enabled().await?)
+        self.handle.cmd(Command::IsElementEnabled(self.element_id.clone())).await?.value()
     }
 
     /// Return true if the WebElement is currently clickable (visible and enabled),
@@ -527,10 +534,12 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn find(&self, by: impl Into<By>) -> WebDriverResult<WebElement> {
-        let by = by.into();
-        let elem = self.element.find(by.locator()).await?;
-        Ok(self.handle.wrap_element(elem))
+    pub async fn find(&self, by: By) -> WebDriverResult<WebElement> {
+        let r = self
+            .handle
+            .cmd(Command::FindElementFromElement(self.element_id.clone(), by.into()))
+            .await?;
+        r.element(self.handle.clone())
     }
 
     /// Search for a child element of this WebElement using the specified selector.
@@ -565,10 +574,12 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn find_all(&self, by: impl Into<By>) -> WebDriverResult<Vec<WebElement>> {
-        let by = by.into();
-        let elems = self.element.find_all(by.locator()).await?;
-        Ok(elems.into_iter().map(|x| self.handle.wrap_element(x)).collect())
+    pub async fn find_all(&self, by: By) -> WebDriverResult<Vec<WebElement>> {
+        let r = self
+            .handle
+            .cmd(Command::FindElementsFromElement(self.element_id.clone(), by.into()))
+            .await?;
+        r.elements(self.handle.clone())
     }
 
     /// Search for all child elements of this WebElement that match the specified selector.
@@ -614,13 +625,14 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn send_keys(&self, keys: impl AsRef<str>) -> WebDriverResult<()> {
-        Ok(self.element.send_keys(keys.as_ref()).await?)
+    pub async fn send_keys(&self, keys: impl Into<TypingData>) -> WebDriverResult<()> {
+        self.handle.cmd(Command::ElementSendKeys(self.element_id.clone(), keys.into())).await?;
+        Ok(())
     }
 
     /// Take a screenshot of this WebElement and return it as PNG bytes.
     pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
-        Ok(self.element.screenshot().await?)
+        self.handle.cmd(Command::TakeElementScreenshot(self.element_id.clone())).await?.value()
     }
 
     /// Take a screenshot of this WebElement and write it to the specified filename.
@@ -758,7 +770,7 @@ impl WebElement {
     /// # }
     /// ```
     pub async fn enter_frame(self) -> WebDriverResult<()> {
-        self.element.enter_frame().await?;
+        self.handle.cmd(Command::SwitchToFrameElement(self.element_id.clone())).await?;
         Ok(())
     }
 
@@ -813,7 +825,7 @@ impl WebElement {
 
 impl fmt::Display for WebElement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self.element)
+        write!(f, "{:?}", self.element_id)
     }
 }
 
@@ -822,6 +834,6 @@ impl Serialize for WebElement {
     where
         S: Serializer,
     {
-        self.element.serialize(serializer)
+        self.element_id.serialize(serializer)
     }
 }

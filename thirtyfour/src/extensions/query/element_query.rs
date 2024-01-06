@@ -1,6 +1,6 @@
 use super::conditions::{handle_errors, negate};
 use super::{conditions, ElementPollerNoWait, ElementPollerWithTimeout, IntoElementPoller};
-use crate::error::{WebDriverError, WebDriverErrorDetails};
+use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
 use crate::{By, ElementPredicate, WebElement};
@@ -24,11 +24,11 @@ fn no_such_element(selectors: &[ElementSelector], description: &str) -> WebDrive
         format!("'{}' element(s)", description)
     };
 
-    WebDriverError::NoSuchElement(WebDriverErrorDetails::new(format!(
+    crate::error::no_such_element(format!(
         "no such element: {} not found using selectors: {}",
         element_description,
         get_selector_summary(selectors)
-    )))
+    ))
 }
 
 /// Filter the specified elements using the specified filters.

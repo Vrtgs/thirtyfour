@@ -63,7 +63,7 @@ impl ChromeDevTools {
 
     /// Launch the Chrome app with the specified id.
     pub async fn launch_app(&self, app_id: &str) -> WebDriverResult<()> {
-        self.handle.client.issue_cmd(ChromeCommand::LaunchApp(app_id.to_string())).await?;
+        self.handle.cmd(ChromeCommand::LaunchApp(app_id.to_string())).await?;
         Ok(())
     }
 
@@ -96,9 +96,8 @@ impl ChromeDevTools {
     /// # }
     /// ```
     pub async fn get_network_conditions(&self) -> WebDriverResult<NetworkConditions> {
-        let v = self.handle.client.issue_cmd(ChromeCommand::GetNetworkConditions).await?;
-        let conditions: NetworkConditions = serde_json::from_value(v)?;
-        Ok(conditions)
+        let v = self.handle.cmd(ChromeCommand::GetNetworkConditions).await?;
+        v.value()
     }
 
     /// Set the network conditions.
@@ -138,10 +137,7 @@ impl ChromeDevTools {
         &self,
         conditions: &NetworkConditions,
     ) -> WebDriverResult<()> {
-        self.handle
-            .client
-            .issue_cmd(ChromeCommand::SetNetworkConditions(conditions.clone()))
-            .await?;
+        self.handle.cmd(ChromeCommand::SetNetworkConditions(conditions.clone())).await?;
         Ok(())
     }
 
@@ -205,44 +201,38 @@ impl ChromeDevTools {
         cmd: &str,
         cmd_args: Value,
     ) -> WebDriverResult<Value> {
-        let v = self
-            .handle
-            .client
-            .issue_cmd(ChromeCommand::ExecuteCdpCommand(cmd.to_string(), cmd_args))
-            .await?;
-        Ok(v)
+        let v =
+            self.handle.cmd(ChromeCommand::ExecuteCdpCommand(cmd.to_string(), cmd_args)).await?;
+        v.value()
     }
 
     /// Get the list of sinks available for cast.
     pub async fn get_sinks(&self) -> WebDriverResult<Value> {
-        let v = self.handle.client.issue_cmd(ChromeCommand::GetSinks).await?;
-        Ok(v)
+        let v = self.handle.cmd(ChromeCommand::GetSinks).await?;
+        v.value()
     }
 
     /// Get the issue message for any issue in a cast session.
     pub async fn get_issue_message(&self) -> WebDriverResult<Value> {
-        let v = self.handle.client.issue_cmd(ChromeCommand::GetIssueMessage).await?;
-        Ok(v)
+        let v = self.handle.cmd(ChromeCommand::GetIssueMessage).await?;
+        v.value()
     }
 
     /// Set the specified sink as the cast session receiver target.
     pub async fn set_sink_to_use(&self, sink_name: &str) -> WebDriverResult<()> {
-        self.handle.client.issue_cmd(ChromeCommand::SetSinkToUse(sink_name.to_string())).await?;
+        self.handle.cmd(ChromeCommand::SetSinkToUse(sink_name.to_string())).await?;
         Ok(())
     }
 
     /// Start a tab mirroring session on the specified receiver target.
     pub async fn start_tab_mirroring(&self, sink_name: &str) -> WebDriverResult<()> {
-        self.handle
-            .client
-            .issue_cmd(ChromeCommand::StartTabMirroring(sink_name.to_string()))
-            .await?;
+        self.handle.cmd(ChromeCommand::StartTabMirroring(sink_name.to_string())).await?;
         Ok(())
     }
 
     /// Stop the existing cast session on the specified receiver target.
     pub async fn stop_casting(&self, sink_name: &str) -> WebDriverResult<()> {
-        self.handle.client.issue_cmd(ChromeCommand::StopCasting(sink_name.to_string())).await?;
+        self.handle.cmd(ChromeCommand::StopCasting(sink_name.to_string())).await?;
         Ok(())
     }
 }

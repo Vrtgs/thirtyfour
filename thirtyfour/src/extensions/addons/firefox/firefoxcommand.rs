@@ -1,7 +1,6 @@
-use crate::upstream::WebDriverCompatibleCommand;
-use http::Method;
 use serde_json::json;
-use url::{ParseError, Url};
+
+use crate::{common::command::FormatRequestData, RequestData, RequestMethod};
 
 /// Extra commands specific to Firefox.
 #[derive(Debug)]
@@ -17,24 +16,24 @@ pub enum FirefoxCommand {
     FullScreenshot {},
 }
 
-impl WebDriverCompatibleCommand for FirefoxCommand {
-    fn endpoint(&self, base_url: &Url, session_id: Option<&str>) -> Result<Url, ParseError> {
-        let base = { base_url.join(&format!("session/{}/", session_id.as_ref().unwrap()))? };
-        match &self {
-            FirefoxCommand::InstallAddon {
-                ..
-            } => base.join("moz/addon/install"),
-            FirefoxCommand::FullScreenshot {} => base.join("moz/screenshot/full"),
-        }
-    }
-
-    fn method_and_body(&self, _request_url: &Url) -> (Method, Option<String>) {
+impl FormatRequestData for FirefoxCommand {
+    fn format_request(&self, session_id: &crate::SessionId) -> crate::RequestData {
         match &self {
             FirefoxCommand::InstallAddon {
                 path,
                 temporary,
-            } => (Method::POST, Some(json!({"path": path, "temporary": temporary}).to_string())),
-            FirefoxCommand::FullScreenshot {} => (Method::GET, None),
+            } => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/moz/addon/install", session_id),
+            )
+            .add_body(json!({
+                "path": path,
+                "temporary": temporary
+            })),
+            FirefoxCommand::FullScreenshot {} => RequestData::new(
+                RequestMethod::Get,
+                format!("/session/{}/moz/screenshot/full", session_id),
+            ),
         }
     }
 }

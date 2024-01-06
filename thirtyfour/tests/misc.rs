@@ -118,7 +118,7 @@ async fn handle_cookies_test(c: WebDriver) -> Result<(), WebDriverError> {
     assert!(!cookies.is_empty());
 
     // Add a new cookie.
-    let mut cookie = Cookie::new("cookietest", "fantoccini");
+    let mut cookie = Cookie::new("cookietest", "thirtyfour");
     cookie.set_domain(".wikipedia.org");
     cookie.set_path("/");
     cookie.set_same_site(Some(SameSite::Lax));

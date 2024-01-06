@@ -1,8 +1,7 @@
+use crate::{common::command::FormatRequestData, RequestData, RequestMethod};
+
 use super::NetworkConditions;
-use crate::upstream::WebDriverCompatibleCommand;
-use http::Method;
 use serde_json::{json, Value};
-use url::{ParseError, Url};
 
 /// Extra commands specific to Chrome.
 #[derive(Debug)]
@@ -27,49 +26,50 @@ pub enum ChromeCommand {
     StopCasting(String),
 }
 
-impl WebDriverCompatibleCommand for ChromeCommand {
-    fn endpoint(&self, base_url: &Url, session_id: Option<&str>) -> Result<Url, ParseError> {
-        let base = { base_url.join(&format!("session/{}/", session_id.as_ref().unwrap()))? };
+impl FormatRequestData for ChromeCommand {
+    fn format_request(&self, session_id: &crate::SessionId) -> crate::RequestData {
         match &self {
-            ChromeCommand::LaunchApp(_) => base.join("chromium/launch_app"),
-            ChromeCommand::GetNetworkConditions | ChromeCommand::SetNetworkConditions(_) => {
-                base.join("chromium/network_conditions")
-            }
-            ChromeCommand::ExecuteCdpCommand(..) => base.join("goog/cdp/execute"),
-            ChromeCommand::GetSinks => base.join("goog/cast/get_sinks"),
-            ChromeCommand::GetIssueMessage => base.join("goog/cast/get_issue_message"),
-            ChromeCommand::SetSinkToUse(_) => base.join("goog/cast/set_sink_to_use"),
-            ChromeCommand::StartTabMirroring(_) => base.join("goog/cast/start_tab_mirroring"),
-            ChromeCommand::StopCasting(_) => base.join("goog/cast/stop_casting"),
+            ChromeCommand::LaunchApp(app_id) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/chromium/launch_app", session_id),
+            )
+            .add_body(json!({ "id": app_id })),
+            ChromeCommand::GetNetworkConditions => RequestData::new(
+                RequestMethod::Get,
+                format!("/session/{}/chromium/network_conditions", session_id),
+            ),
+            ChromeCommand::SetNetworkConditions(conditions) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/chromium/network_conditions", session_id),
+            )
+            .add_body(json!({ "network_conditions": conditions })),
+            ChromeCommand::ExecuteCdpCommand(..) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/goog/cdp/execute", session_id),
+            ),
+            ChromeCommand::GetSinks => RequestData::new(
+                RequestMethod::Get,
+                format!("/session/{}/goog/cast/get_sinks", session_id),
+            ),
+            ChromeCommand::GetIssueMessage => RequestData::new(
+                RequestMethod::Get,
+                format!("/session/{}/goog/cast/get_issue_message", session_id),
+            ),
+            ChromeCommand::SetSinkToUse(sink_name) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/goog/cast/set_sink_to_use", session_id),
+            )
+            .add_body(json!({ "sinkName": sink_name })),
+            ChromeCommand::StartTabMirroring(sink_name) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/goog/cast/start_tab_mirroring", session_id),
+            )
+            .add_body(json!({ "sinkName": sink_name })),
+            ChromeCommand::StopCasting(sink_name) => RequestData::new(
+                RequestMethod::Post,
+                format!("/session/{}/goog/cast/stop_casting", session_id),
+            )
+            .add_body(json!({ "sinkName": sink_name })),
         }
-    }
-
-    fn method_and_body(&self, _request_url: &Url) -> (Method, Option<String>) {
-        let mut method = Method::GET;
-        let mut body = None;
-
-        match &self {
-            ChromeCommand::LaunchApp(app_id) => {
-                method = Method::POST;
-                body = Some(json!({ "id": app_id }).to_string())
-            }
-            ChromeCommand::SetNetworkConditions(conditions) => {
-                method = Method::POST;
-                body = Some(json!({ "network_conditions": conditions }).to_string())
-            }
-            ChromeCommand::ExecuteCdpCommand(command, params) => {
-                method = Method::POST;
-                body = Some(json!({"cmd": command, "params": params }).to_string())
-            }
-            ChromeCommand::SetSinkToUse(sink_name)
-            | ChromeCommand::StartTabMirroring(sink_name)
-            | ChromeCommand::StopCasting(sink_name) => {
-                method = Method::POST;
-                body = Some(json!({ "sinkName": sink_name }).to_string())
-            }
-            _ => {}
-        }
-
-        (method, body)
     }
 }

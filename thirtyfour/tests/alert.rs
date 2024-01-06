@@ -45,10 +45,10 @@ async fn alert_text(c: WebDriver, port: u16) -> Result<(), WebDriverError> {
     c.goto(&sample_url).await?;
     c.find(By::Id("button-prompt")).await?.click().await?;
     assert_eq!(c.get_alert_text().await?, "What is your name?");
-    c.send_alert_text("Fantoccini").await?;
+    c.send_alert_text("Thirtyfour").await?;
     c.accept_alert().await?;
     assert!(matches!(c.get_alert_text().await, Err(WebDriverError::NoSuchAlert(..))));
-    assert_eq!(c.find(By::Id("alert-answer")).await?.text().await?, "Fantoccini");
+    assert_eq!(c.find(By::Id("alert-answer")).await?.text().await?, "Thirtyfour");
 
     Ok(())
 }
