@@ -31,19 +31,20 @@ http = "1"
 indexmap = "2"
 parking_lot = "0.12"
 paste = "1"
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1.0.195", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
-serde_repr = "0.1"
+serde_repr = "0.1.18"
 stringmatch = "0.4"
 strum = { version = "0.25", features = ["derive"] }
 thirtyfour-macros = { path = "../thirtyfour-macros", version = "0.1.1", optional = true }
-thiserror = "1"
+thiserror = "1.0.56"
 tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread", "io-util", "sync", "time"] }
 tracing = "0.1"
 url = "2"
 
 # Optional HTTP client. Not needed if you supply your own.
-reqwest = { version = "0.11", default-features = false, features = ["json"], optional = true }
+reqwest = { version = "0.11.23", default-features = false, features = ["json"], optional = true }
+log = { version = "0.4.20", optional = true }
 
 [dev-dependencies]
 assert_matches = "1"
