@@ -1,5 +1,7 @@
+use crate::common::command::Command;
 use crate::error::WebDriverResult;
 use crate::session::handle::SessionHandle;
+use crate::TypingData;
 use std::sync::Arc;
 
 /// Struct for managing alerts.
@@ -23,7 +25,7 @@ impl Alert {
         note = "This method has been moved to WebDriver::get_alert_text()"
     )]
     pub async fn text(&self) -> WebDriverResult<String> {
-        Ok(self.handle.client.get_alert_text().await?)
+        self.handle.get_alert_text().await
     }
 
     /// Dismiss the active alert, if there is one.
@@ -32,8 +34,7 @@ impl Alert {
         note = "This method has been moved to WebDriver::dismiss_alert()"
     )]
     pub async fn dismiss(&self) -> WebDriverResult<()> {
-        self.handle.client.dismiss_alert().await?;
-        Ok(())
+        self.handle.dismiss_alert().await
     }
 
     /// Accept the active alert, if there is one.
@@ -42,8 +43,7 @@ impl Alert {
         note = "This method has been moved to WebDriver::accept_alert()"
     )]
     pub async fn accept(&self) -> WebDriverResult<()> {
-        self.handle.client.accept_alert().await?;
-        Ok(())
+        self.handle.accept_alert().await
     }
 
     /// Send the specified text to the active alert, if there is one.
@@ -51,9 +51,8 @@ impl Alert {
         since = "0.30.0",
         note = "This method has been moved to WebDriver::send_alert_text()"
     )]
-    pub async fn send_keys(&self, keys: impl AsRef<str>) -> WebDriverResult<()> {
-        self.handle.client.send_alert_text(keys.as_ref()).await?;
-        Ok(())
+    pub async fn send_keys(&self, keys: impl Into<TypingData>) -> WebDriverResult<()> {
+        self.handle.send_alert_text(keys.into()).await
     }
 }
 
@@ -76,7 +75,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn get_alert_text(&self) -> WebDriverResult<String> {
-        Ok(self.client.get_alert_text().await?)
+        self.cmd(Command::GetAlertText).await?.value::<String>()
     }
 
     /// Dismiss the active alert.
@@ -97,7 +96,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn dismiss_alert(&self) -> WebDriverResult<()> {
-        self.client.dismiss_alert().await?;
+        self.cmd(Command::DismissAlert).await?;
         Ok(())
     }
 
@@ -119,7 +118,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn accept_alert(&self) -> WebDriverResult<()> {
-        self.client.accept_alert().await?;
+        self.cmd(Command::AcceptAlert).await?;
         Ok(())
     }
 
@@ -160,8 +159,8 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn send_alert_text(&self, keys: impl AsRef<str>) -> WebDriverResult<()> {
-        self.client.send_alert_text(keys.as_ref()).await?;
+    pub async fn send_alert_text(&self, keys: impl Into<TypingData>) -> WebDriverResult<()> {
+        self.cmd(Command::SendAlertText(keys.into())).await?;
         Ok(())
     }
 }

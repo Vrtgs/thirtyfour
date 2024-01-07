@@ -19,7 +19,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::error::{WebDriverError, WebDriverErrorDetails, WebDriverResult};
+use crate::error::{no_such_element, WebDriverError, WebDriverResult};
 use crate::{By, WebElement};
 
 /// Set the selection state of the specified element.
@@ -106,7 +106,7 @@ impl SelectElement {
                 return Ok(option);
             }
         }
-        Err(WebDriverError::NoSuchElement(WebDriverErrorDetails::new("No options are selected")))
+        Err(no_such_element("No options are selected".to_string()))
     }
 
     /// Set selection state for all options.
@@ -185,10 +185,7 @@ impl SelectElement {
         }
 
         if !matched {
-            Err(WebDriverError::NoSuchElement(WebDriverErrorDetails::new(format!(
-                "Could not locate element with visible text: {}",
-                text
-            ))))
+            Err(no_such_element(format!("Could not locate element with visible text: {}", text)))
         } else {
             Ok(())
         }
@@ -203,10 +200,10 @@ impl SelectElement {
         let xpath = format!(".//option[{}]", condition);
         let options = self.element.find_all(By::XPath(&xpath)).await?;
         if options.is_empty() {
-            return Err(WebDriverError::NoSuchElement(WebDriverErrorDetails::new(format!(
+            return Err(no_such_element(format!(
                 "Could not locate element matching XPath condition: {:?}",
                 xpath
-            ))));
+            )));
         }
 
         for option in &options {

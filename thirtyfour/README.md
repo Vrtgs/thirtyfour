@@ -7,19 +7,11 @@
 
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 
-It supports the full [W3C WebDriver spec](https://www.w3.org/TR/webdriver1/). Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
+It supports the [W3C WebDriver v1 spec](https://www.w3.org/TR/webdriver1/). Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
 
 ## Why "thirtyfour" ?
 
 34 is the atomic number for the Selenium chemical element (Se).
-
-## Built on top of fantoccini
-
-The thirtyfour crate uses [fantoccini](https://docs.rs/fantoccini/latest/fantoccini/) as the backend
-for interacting with the underlying WebDriver (chromedriver, geckodriver, etc). `Fantoccini` aims 
-to stick fairly close to the WebDriver specification, whereas `thirtyfour` builds on top of that
-foundation and adds several high-level features as well as exploring ways to improve the 
-ergonomics of browser automation in Rust.
 
 ## Features
 
@@ -41,8 +33,8 @@ ergonomics of browser automation in Rust.
 
 ## Feature Flags
 
-- `rustls-tls`: (Default) Use rustls to provide TLS support (via fantoccini/hyper).
-- `native-tls`: Use native TLS (via fantoccini/hyper).
+- `rustls-tls`: (Default) Use rustls to provide TLS support (via reqwest).
+- `native-tls`: Use native TLS (via reqwest).
 - `component`: (Default) Enable the `Component` derive macro (via thirtyfour_macros).
 
 ## Examples
@@ -311,6 +303,33 @@ In separate terminal tabs, run the following:
 * Tab 3 (navigate to the root of this repository):
 
       cargo test
+
+  **NOTE:** By default the tests will run in chrome only. If you want to run in firefox, do:
+      
+      THIRTYFOUR_BROWSER=firefox cargo test
+
+## Compared to Fantoccini
+
+The [fantoccini](https://github.com/jonhoo/fantoccini) crate offers a more lightweight 
+browser automation experience and (so far) seems to stick closer to the WebDriver specification.
+
+Thirtyfour aims to provide a more "batteries-included" automated testing experience,
+with more advanced element queries and Page Object Model support.
+
+Support for newer specs like [Selenium 4.x](https://www.selenium.dev/), 
+[Chrome DevTools Protocol (CDP)](https://chromedevtools.github.io/devtools-protocol/), 
+[WebDriver V2](https://www.w3.org/TR/webdriver2/) and 
+[WebDriver BIDI](https://w3c.github.io/webdriver-bidi/) are planned.
+
+## Compared to tools like Cypress, Playwright, etc.
+
+Most browser automation tools other than Selenium tend to be (very polished) wrappers around 
+Chrome DevTools Protocol and as such they actually only provide a subset of the 
+functionality that Selenium can provide. This is often not a significant limitation, however.
+It really depends on what you want to achieve, and which framework you prefer to work with.
+
+Thirtyfour aims to provide a Selenium-based experience on par with any other tool.
+There's still a long way to go. If you'd like to contribute, please get in touch!
 
 ## Minimum Supported Rust Version
 

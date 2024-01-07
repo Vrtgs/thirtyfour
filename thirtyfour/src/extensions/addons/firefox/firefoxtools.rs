@@ -7,9 +7,8 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 use super::FirefoxCommand;
-use crate::error::{WebDriverError, WebDriverResult};
+use crate::error::WebDriverResult;
 use crate::session::handle::SessionHandle;
-use crate::upstream::CmdError;
 
 /// Provider of Firefox-specific commands.
 #[derive(Debug, Clone)]
@@ -48,8 +47,7 @@ impl FirefoxTools {
     /// Install the specified firefox add-on.
     pub async fn install_addon(&self, path: &str, temporary: Option<bool>) -> WebDriverResult<()> {
         self.handle
-            .client
-            .issue_cmd(FirefoxCommand::InstallAddon {
+            .cmd(FirefoxCommand::InstallAddon {
                 path: path.to_string(),
                 temporary,
             })
@@ -59,13 +57,9 @@ impl FirefoxTools {
 
     /// Take a full-page screenshot of the current window and return it as PNG bytes.
     pub async fn full_screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
-        let src = self.handle.client.issue_cmd(FirefoxCommand::FullScreenshot {}).await?;
-        if let Some(src) = src.as_str() {
-            let decoded = BASE64_STANDARD.decode(src)?;
-            Ok(decoded)
-        } else {
-            Err(WebDriverError::Cmd(CmdError::NotW3C(src)))
-        }
+        let r = self.handle.cmd(FirefoxCommand::FullScreenshot {}).await?;
+        let encoded: String = r.value()?;
+        Ok(BASE64_STANDARD.decode(encoded)?)
     }
 
     /// Take a full-page screenshot of the current window and write it to the specified filename.

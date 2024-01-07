@@ -1,4 +1,5 @@
-use crate::error::WebDriverErrorDetails;
+use crate::common::command::Command;
+use crate::error::WebDriverErrorInfo;
 use crate::session::handle::SessionHandle;
 use crate::WindowHandle;
 use crate::{
@@ -28,8 +29,7 @@ impl SwitchTo {
         note = "This method has been moved to WebDriver::active_element()"
     )]
     pub async fn active_element(self) -> WebDriverResult<WebElement> {
-        let elem = self.handle.client.active_element().await?;
-        Ok(self.handle.wrap_element(elem))
+        self.handle.active_element().await
     }
 
     /// Switch to the specified alert.
@@ -47,15 +47,13 @@ impl SwitchTo {
         note = "This method has been moved to WebDriver::enter_default_frame()"
     )]
     pub async fn default_content(self) -> WebDriverResult<()> {
-        self.handle.client.enter_frame(None).await?;
-        Ok(())
+        self.handle.enter_default_frame().await
     }
 
     /// Switch to the frame specified at the index.
     #[deprecated(since = "0.30.0", note = "This method has been moved to WebDriver::enter_frame()")]
     pub async fn frame_number(self, frame_number: u16) -> WebDriverResult<()> {
-        self.handle.client.enter_frame(Some(frame_number)).await?;
-        Ok(())
+        self.handle.enter_frame(frame_number).await
     }
 
     /// Switch to the frame contained within the element.
@@ -64,12 +62,7 @@ impl SwitchTo {
         note = "This method has been moved to WebElement::enter_frame()"
     )]
     pub async fn frame_element(self, frame_element: &WebElement) -> WebDriverResult<()> {
-        let frame = fantoccini::elements::Element::from_element_id(
-            self.handle.client.clone(),
-            frame_element.element_id(),
-        );
-        frame.enter_frame().await?;
-        Ok(())
+        frame_element.clone().enter_frame().await
     }
 
     /// Switch to the parent of the frame the client is currently contained within.
@@ -78,22 +71,20 @@ impl SwitchTo {
         note = "This method has been moved to WebDriver::enter_parent_frame()"
     )]
     pub async fn parent_frame(self) -> WebDriverResult<()> {
-        self.handle.client.enter_parent_frame().await?;
+        self.handle.enter_parent_frame().await?;
         Ok(())
     }
 
     /// Create a new window.
     #[deprecated(since = "0.30.0", note = "This method has been moved to WebDriver::new_window()")]
     pub async fn new_window(self) -> WebDriverResult<WindowHandle> {
-        let response = self.handle.client.new_window(false).await?;
-        Ok(response.handle)
+        self.handle.new_window().await
     }
 
     /// Create a new tab.
     #[deprecated(since = "0.30.0", note = "This method has been moved to WebDriver::new_tab()")]
     pub async fn new_tab(self) -> WebDriverResult<WindowHandle> {
-        let response = self.handle.client.new_window(true).await?;
-        Ok(response.handle)
+        self.handle.new_tab().await
     }
 
     /// Switch to the specified window.
@@ -102,8 +93,7 @@ impl SwitchTo {
         note = "This method has been moved to WebDriver::switch_to_window()"
     )]
     pub async fn window(self, handle: WindowHandle) -> WebDriverResult<()> {
-        self.handle.client.switch_to_window(handle).await?;
-        Ok(())
+        self.handle.switch_to_window(handle).await
     }
 
     /// Switch to the specified named window.
@@ -124,7 +114,7 @@ impl SwitchTo {
         }
 
         self.handle.switch_to_window(original_handle).await?;
-        Err(WebDriverError::NoSuchWindow(WebDriverErrorDetails::new(format!(
+        Err(WebDriverError::NoSuchWindow(WebDriverErrorInfo::new(format!(
             "unable to find named window: {name}"
         ))))
     }
@@ -159,8 +149,8 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn active_element(self: &Arc<SessionHandle>) -> WebDriverResult<WebElement> {
-        let elem = self.client.active_element().await?;
-        Ok(self.wrap_element(elem))
+        let r = self.cmd(Command::GetActiveElement).await?;
+        r.element(self.clone())
     }
 
     /// Switch to the default frame.
@@ -186,7 +176,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn enter_default_frame(&self) -> WebDriverResult<()> {
-        self.client.enter_frame(None).await?;
+        self.cmd(Command::SwitchToFrameDefault).await?;
         Ok(())
     }
 
@@ -212,7 +202,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn enter_frame(&self, frame_number: u16) -> WebDriverResult<()> {
-        self.client.enter_frame(Some(frame_number)).await?;
+        self.cmd(Command::SwitchToFrameNumber(frame_number)).await?;
         Ok(())
     }
 
@@ -242,7 +232,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn enter_parent_frame(&self) -> WebDriverResult<()> {
-        self.client.enter_parent_frame().await?;
+        self.cmd(Command::SwitchToParentFrame).await?;
         Ok(())
     }
 
@@ -272,7 +262,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn switch_to_window(&self, handle: WindowHandle) -> WebDriverResult<()> {
-        self.client.switch_to_window(handle).await?;
+        self.cmd(Command::SwitchToWindow(handle)).await?;
         Ok(())
     }
 
@@ -324,7 +314,7 @@ impl SessionHandle {
         }
 
         self.switch_to_window(original_handle).await?;
-        Err(WebDriverError::NoSuchWindow(WebDriverErrorDetails::new(format!(
+        Err(WebDriverError::NoSuchWindow(WebDriverErrorInfo::new(format!(
             "unable to find named window: {name}"
         ))))
     }
@@ -348,8 +338,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn new_window(&self) -> WebDriverResult<WindowHandle> {
-        let response = self.client.new_window(false).await?;
-        Ok(response.handle)
+        self.cmd(Command::NewWindow).await?.value()
     }
 
     /// Switch to a new tab.
@@ -371,7 +360,6 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn new_tab(&self) -> WebDriverResult<WindowHandle> {
-        let response = self.client.new_window(true).await?;
-        Ok(response.handle)
+        self.cmd(Command::NewTab).await?.value()
     }
 }

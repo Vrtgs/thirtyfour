@@ -1,15 +1,21 @@
 #![allow(dead_code)]
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server, StatusCode};
-use std::convert::Infallible;
-use std::future::Future;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::path::Path;
+
+use rstest::fixture;
+use std::{
+    net::SocketAddr,
+    sync::{Arc, Mutex, MutexGuard, OnceLock},
+    thread::JoinHandle,
+};
 use thirtyfour::prelude::*;
-use tokio::fs::read_to_string;
+
+static SERVER: OnceLock<Arc<JoinHandle<()>>> = OnceLock::new();
+static LIMITER: OnceLock<Arc<Mutex<()>>> = OnceLock::new();
+static LOGINIT: OnceLock<()> = OnceLock::new();
 
 const ASSETS_DIR: &str = "tests/test_html";
+const PORT: u16 = 8081;
 
+/// Create the Capabilities struct for the specified browser.
 pub fn make_capabilities(s: &str) -> Capabilities {
     match s {
         "firefox" => {
@@ -23,167 +29,147 @@ pub fn make_capabilities(s: &str) -> Capabilities {
             caps.set_no_sandbox().unwrap();
             caps.set_disable_gpu().unwrap();
             caps.set_disable_dev_shm_usage().unwrap();
+            caps.add_arg("--no-sandbox").unwrap();
             caps.into()
         }
         browser => unimplemented!("unsupported browser backend {}", browser),
     }
 }
 
-pub fn make_url(s: &str) -> &'static str {
+/// Get the WebDriver URL for the specified browser.
+pub fn webdriver_url(s: &str) -> String {
     match s {
-        "firefox" => "http://localhost:4444",
-        "chrome" => "http://localhost:9515",
+        "firefox" => "http://localhost:4444/wd/hub".to_string(),
+        "chrome" => "http://localhost:9515/wd/hub".to_string(),
         browser => unimplemented!("unsupported browser backend {}", browser),
     }
 }
 
-pub fn handle_test_error(
-    res: Result<Result<(), WebDriverError>, Box<dyn std::any::Any + Send>>,
-) -> bool {
-    match res {
-        Ok(Ok(_)) => true,
-        Ok(Err(e)) => {
-            eprintln!("test future failed to resolve: {:?}", e);
-            false
-        }
-        Err(e) => {
-            if let Some(e) = e.downcast_ref::<WebDriverError>() {
-                eprintln!("test future panicked: {:?}", e);
-            } else {
-                eprintln!("test future panicked; an assertion probably failed");
-            }
-            false
-        }
-    }
-}
-
-#[macro_export]
-macro_rules! tester {
-    ($f:ident, $endpoint:expr) => {{
-        use common::{make_capabilities, make_url};
-        let url = make_url($endpoint);
-        let caps = make_capabilities($endpoint);
-        tester_inner!($f, WebDriver::new(url, caps));
-    }};
-}
-
-#[macro_export]
-macro_rules! tester_inner {
-    ($f:ident, $connector:expr) => {{
-        use std::sync::{Arc, Mutex};
-        use std::thread;
-
-        let c = $connector;
-
-        // we'll need the session_id from the thread
-        // NOTE: even if it panics, so can't just return it
-        let session_id = Arc::new(Mutex::new(None));
-
-        // run test in its own thread to catch panics
-        let sid = session_id.clone();
-        let res = thread::spawn(move || {
-            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-            let c = rt.block_on(c).expect("failed to construct test WebDriver");
-            let _sid = c.session_id().clone();
-            *sid.lock().unwrap() = Some(_sid);
-            // make sure we close, even if an assertion fails
-            let client = c.clone();
-            let x = rt.block_on(async move {
-                let r = tokio::spawn($f(c)).await;
-                let _ = client.quit().await;
-                r
+/// Starts the web server.
+pub fn start_server() -> Arc<JoinHandle<()>> {
+    SERVER
+        .get_or_init(|| {
+            let handle = std::thread::spawn(move || {
+                let rt =
+                    tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+                rt.block_on(async {
+                    tracing::debug!("starting web server on http://localhost:{PORT}");
+                    let addr = SocketAddr::from(([127, 0, 0, 1], PORT));
+                    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+                    let app = axum::Router::new()
+                        .nest_service("/", tower_http::services::ServeDir::new(ASSETS_DIR));
+                    axum::serve(listener, app).await.unwrap();
+                });
             });
-            drop(rt);
-            x.expect("test panicked")
+            Arc::new(handle)
         })
-        .join();
-        let success = common::handle_test_error(res);
-        assert!(success);
-    }};
+        .clone()
 }
 
-#[macro_export]
-macro_rules! local_tester {
-    ($f:ident, $endpoint:expr) => {{
-        use thirtyfour::prelude::*;
-
-        let port = common::setup_server();
-        let url = common::make_url($endpoint);
-        let caps = common::make_capabilities($endpoint);
-        let f = move |c: WebDriver| async move { $f(c, port).await };
-        tester_inner!(f, WebDriver::new(url, caps));
-    }};
-}
-
-/// Sets up the server and returns the port it bound to.
-pub fn setup_server() -> u16 {
-    let (tx, rx) = std::sync::mpsc::channel();
-
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-        rt.block_on(async {
-            let (socket_addr, server) = start_server();
-            tx.send(socket_addr.port()).expect("To be able to send port");
-            server.await.expect("To start the server")
-        });
+pub fn init_logging() {
+    LOGINIT.get_or_init(|| {
+        use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+        tracing_subscriber::registry()
+            .with(fmt::layer())
+            .with(EnvFilter::from_default_env())
+            .init();
     });
-
-    rx.recv().expect("To get the bound port.")
 }
 
-/// Configures and starts the server
-fn start_server() -> (SocketAddr, impl Future<Output = hyper::Result<()>> + 'static) {
-    let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
-
-    let server = Server::bind(&socket_addr).serve(make_service_fn(move |_| async {
-        Ok::<_, Infallible>(service_fn(handle_file_request))
-    }));
-
-    let addr = server.local_addr();
-    (addr, server)
+/// Get the global limiter mutex.
+pub fn get_limiter<'a>() -> &'a Arc<Mutex<()>> {
+    LIMITER.get_or_init(|| Arc::new(Mutex::new(())))
 }
 
-/// Tries to return the requested html file
-async fn handle_file_request(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let uri_path = req.uri().path().trim_matches(&['/', '\\'][..]);
+/// Locks the Firefox browser for exclusive use.
+///
+/// This ensures there is only ever one Firefox browser running at a time.
+pub fn lock_firefox<'a>(browser: &str) -> Option<MutexGuard<'a, ()>> {
+    if browser == "firefox" {
+        Some(get_limiter().lock().unwrap())
+    } else {
+        None
+    }
+}
 
-    // tests only contain html files
-    // needed because the content-type: text/html is returned
-    if !uri_path.ends_with(".html") {
-        return Ok(file_not_found());
+/// Launch the specified browser.
+pub fn launch_browser(browser: &str) -> WebDriver {
+    tracing::debug!("launching browser {browser}");
+    let caps = make_capabilities(browser);
+    let webdriver_url = webdriver_url(browser);
+    let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+    let driver = rt.block_on(async {
+        WebDriver::new(webdriver_url, caps).await.expect("Failed to create WebDriver")
+    });
+    driver
+}
+
+/// Helper struct for running tests.
+pub struct TestHarness<'a> {
+    browser: String,
+    server: Arc<JoinHandle<()>>,
+    driver: Option<WebDriver>,
+    guard: Option<MutexGuard<'a, ()>>,
+}
+
+impl<'a> TestHarness<'a> {
+    /// Create a new TestHarness instance.
+    pub fn new(browser: &str) -> Self {
+        init_logging();
+        let server = start_server();
+        let guard = lock_firefox(browser);
+        let driver = Some(launch_browser(browser));
+        Self {
+            browser: browser.to_string(),
+            server,
+            driver,
+            guard,
+        }
     }
 
-    // this does not protect against a directory traversal attack
-    // but in this case it's not a risk
-    let asset_file = Path::new(ASSETS_DIR).join(uri_path);
+    /// Get the browser name.
+    pub fn browser(&self) -> &str {
+        &self.browser
+    }
 
-    let ctn = match read_to_string(asset_file).await {
-        Ok(ctn) => ctn,
-        Err(_) => return Ok(file_not_found()),
-    };
+    /// Get the WebDriver instance.
+    pub fn driver(&self) -> &WebDriver {
+        self.driver.as_ref().expect("the driver to still be active")
+    }
 
-    let res = Response::builder()
-        .header("content-type", "text/html")
-        .header("content-length", ctn.len())
-        .body(ctn.into())
-        .unwrap();
-
-    Ok(res)
+    /// Disable auto-closing the browser when the TestHarness is dropped.
+    pub fn disable_auto_close(mut self) -> Self {
+        self.driver = None;
+        self
+    }
 }
 
-/// Response returned when a file is not found or could not be read
-fn file_not_found() -> Response<Body> {
-    Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty()).unwrap()
+impl<'a> Drop for TestHarness<'a> {
+    fn drop(&mut self) {
+        if let Some(driver) = self.driver.take() {
+            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+            rt.block_on(async {
+                driver.quit().await.expect("Failed to quit");
+            });
+        }
+    }
 }
 
-pub fn sample_page_url(port: u16) -> String {
-    format!("http://localhost:{}/sample_page.html", port)
+/// Fixture for running tests.
+#[fixture]
+pub fn test_harness<'a>() -> TestHarness<'a> {
+    let browser = std::env::var("THIRTYFOUR_BROWSER").unwrap_or_else(|_| "chrome".to_string());
+    TestHarness::new(&browser)
 }
 
-pub fn other_page_url(port: u16) -> String {
-    format!("http://localhost:{}/other_page.html", port)
+pub fn sample_page_url() -> String {
+    format!("http://localhost:{PORT}/sample_page.html")
 }
 
-pub fn drag_to_url(port: u16) -> String {
-    format!("http://localhost:{}/drag_to.html", port)
+pub fn other_page_url() -> String {
+    format!("http://localhost:{PORT}/other_page.html")
+}
+
+pub fn drag_to_url() -> String {
+    format!("http://localhost:{PORT}/drag_to.html")
 }

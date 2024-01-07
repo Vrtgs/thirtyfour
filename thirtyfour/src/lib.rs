@@ -1,6 +1,6 @@
 //! Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 //!
-//! It supports the full W3C WebDriver spec.
+//! It supports the W3C WebDriver v1 spec.
 //! Tested with Chrome and Firefox although any W3C-compatible WebDriver
 //! should work.
 //!
@@ -25,8 +25,8 @@
 //!
 //! ## Feature Flags
 //!
-//! * `rustls-tls`: (Default) Use rustls to provide TLS support (via fantoccini/hyper).
-//! * `native-tls`: Use native TLS (via fantoccini/hyper).
+//! * `rustls-tls`: (Default) Use rustls to provide TLS support (via reqwest).
+//! * `native-tls`: Use native TLS (via reqwest).
 //! * `component`: (Default) Enable the `Component` derive macro (via thirtyfour-macros).
 //!
 //! ## Example
@@ -132,14 +132,7 @@
 //!
 //! See the [`components`] documentation for more details.
 //!
-//! ### See Also
-//!
-//! This crate uses [`fantoccini`] to communicate with the underlying `WebDriver`
-//! server, and provides high-level features to extend the capabilities of
-//! `fantoccini`. If you want a more lightweight solution and don't need the
-//! extra features that `thirtyfour` provides, consider using `fantoccini`
-//! directly.
-//!
+
 #![deny(missing_docs)]
 #![allow(unknown_lints)]
 #![warn(missing_debug_implementations, rustdoc::all)]
@@ -148,6 +141,7 @@
 
 // Export types at root level.
 pub use alert::Alert;
+pub use common::cookie;
 pub use common::{
     capabilities::{
         chrome::ChromeCapabilities,
@@ -160,6 +154,9 @@ pub use common::{
         safari::SafariCapabilities,
     },
     command::By,
+    cookie::*,
+    keys::*,
+    requestdata::*,
     types::*,
 };
 pub use switch_to::SwitchTo;
@@ -179,7 +176,7 @@ pub mod prelude {
         BrowserCapabilitiesHelper, By, Capabilities, CapabilitiesHelper, ChromiumLikeCapabilities,
         DesiredCapabilities,
     };
-    pub use crate::{Cookie, Key, TimeoutConfiguration, WindowHandle};
+    pub use crate::{Cookie, Key, SameSite, TimeoutConfiguration, TypingData, WindowHandle};
 }
 
 /// Action chains allow for more complex user interactions with the keyboard and mouse.
@@ -201,15 +198,10 @@ pub mod support;
 
 mod js;
 mod switch_to;
-mod upstream;
 mod webdriver;
 mod webelement;
 
 // Re-export StringMatch if needed.
 pub use stringmatch;
 
-// Re-export common fantoccini types at the root level.
-pub use crate::upstream::*;
-
-// Re-export cookie crate.
-pub use cookie;
+const VERSION: &str = env!("CARGO_PKG_VERSION");
