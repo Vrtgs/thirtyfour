@@ -13,8 +13,6 @@ It supports the [W3C WebDriver v1 spec](https://www.w3.org/TR/webdriver1/). Test
 
 34 is the atomic number for the Selenium chemical element (Se).
 
-
-
 ## Features
 
 - All W3C WebDriver and WebElement methods supported
