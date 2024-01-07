@@ -148,7 +148,7 @@ fn test_cookies(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 
         c.delete_all_cookies().await?;
         let cookies = c.get_all_cookies().await?;
-        assert!(dbg!(cookies).is_empty());
+        assert!(cookies.is_empty());
 
         Ok(())
     })

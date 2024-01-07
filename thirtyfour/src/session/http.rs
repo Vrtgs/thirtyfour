@@ -98,12 +98,14 @@ pub(crate) fn create_reqwest_client(timeout: Duration) -> reqwest::Client {
     reqwest::Client::builder().timeout(timeout).build().expect("Failed to create reqwest client")
 }
 
+#[tracing::instrument(skip_all)]
 pub(crate) async fn run_webdriver_cmd(
     client: &(dyn HttpClient + Send + Sync),
     request_data: RequestData,
     server_url: &Url,
     config: &WebDriverConfig,
 ) -> WebDriverResult<CmdResponse> {
+    tracing::debug!("webdriver request: {request_data}");
     let uri: String = server_url
         .join(&request_data.uri)
         .map_err(|e| WebDriverError::ParseError(format!("invalid url: {e}")))?
@@ -142,6 +144,7 @@ pub(crate) async fn run_webdriver_cmd(
         .map_err(|e| WebDriverError::RequestFailed(format!("invalid request body: {e}")))?;
     let response = client.send(request).await?;
     let status = response.status().as_u16();
+    tracing::debug!("webdriver response: {status} {}", String::from_utf8_lossy(&response.body()));
     match status {
         200..=399 => {
             match serde_json::from_slice(&response.body()) {

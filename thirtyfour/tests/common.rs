@@ -20,12 +20,12 @@ pub fn make_capabilities(s: &str) -> Capabilities {
     match s {
         "firefox" => {
             let mut caps = DesiredCapabilities::firefox();
-            // caps.set_headless().unwrap();
+            caps.set_headless().unwrap();
             caps.into()
         }
         "chrome" => {
             let mut caps = DesiredCapabilities::chrome();
-            // caps.set_headless().unwrap();
+            caps.set_headless().unwrap();
             caps.set_no_sandbox().unwrap();
             caps.set_disable_gpu().unwrap();
             caps.set_disable_dev_shm_usage().unwrap();
@@ -135,6 +135,12 @@ impl<'a> TestHarness<'a> {
     /// Get the WebDriver instance.
     pub fn driver(&self) -> &WebDriver {
         self.driver.as_ref().expect("the driver to still be active")
+    }
+
+    /// Disable auto-closing the browser when the TestHarness is dropped.
+    pub fn disable_auto_close(mut self) -> Self {
+        self.driver = None;
+        self
     }
 }
 

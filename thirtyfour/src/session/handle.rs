@@ -614,8 +614,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn get_window_rect(&self) -> WebDriverResult<Rect> {
-        let r = self.cmd(Command::GetWindowRect).await?;
-        r.value()
+        self.cmd(Command::GetWindowRect).await?.value()
     }
 
     /// Set the current window rectangle, in pixels.

@@ -115,6 +115,7 @@ fn actions_release(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 
 #[rstest]
 fn actions_drag_and_drop(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+    let browser = test_harness.browser().to_string();
     let c = test_harness.driver();
     block_on(async {
         let drag_to_url = drag_to_url();
@@ -128,7 +129,14 @@ fn actions_drag_and_drop(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
         let target = c.find(By::Id("target")).await?;
         c.action_chain().drag_and_drop_element(&elem, &target).perform().await?;
 
-        c.find(By::XPath("//div[@id='target']/img[@id='draggable']")).await?;
+        let result = c.find(By::XPath("//div[@id='target']/img[@id='draggable']")).await;
+        if browser == "firefox" {
+            // Firefox does not support drag and drop.
+            assert_matches!(result, Err(WebDriverError::NoSuchElement(..)));
+        } else {
+            // Validate that the image is now inside the target div.
+            result?;
+        }
 
         Ok(())
     })

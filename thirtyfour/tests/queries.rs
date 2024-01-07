@@ -19,8 +19,7 @@ fn get_active_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 
         let active = c.active_element().await?;
         assert_eq!(active.attr("id").await?, Some(String::from("select1")));
-
-        c.close_window().await
+        Ok(())
     })
 }
 

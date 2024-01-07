@@ -199,8 +199,7 @@ fn serialize_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
         let ret = c.execute(r#"return document.getElementById("select1");"#, vec![]).await?;
         let elem = ret.element()?;
         assert_eq!(elem.tag_name().await?, "select");
-
-        c.close_window().await
+        Ok(())
     })
 }
 
