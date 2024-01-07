@@ -10,6 +10,7 @@ use crate::common::command::Command;
 use crate::error::WebDriverError;
 use crate::js::SIMULATE_DRAG_AND_DROP;
 use crate::session::handle::SessionHandle;
+use crate::support::base64_decode;
 use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRef};
 use crate::{ElementId, TypingData};
 
@@ -116,7 +117,9 @@ impl WebElement {
     ///
     /// See the documentation for [`SessionHandle::execute`] for more details.
     pub fn to_json(&self) -> WebDriverResult<Value> {
-        Ok(serde_json::to_value(self.element_id.clone())?)
+        Ok(serde_json::to_value(&ElementRef::Element {
+            id: self.element_id.to_string(),
+        })?)
     }
 
     /// Get the internal element id for this element.
@@ -625,20 +628,25 @@ impl WebElement {
     /// let elem = driver.find(By::Name("input1")).await?;
     /// elem.send_keys("selenium").await?;
     /// elem.send_keys(Key::Control + "a").await?;
-    /// elem.send_keys("thirtyfour" + &Key::Enter).await?;
+    /// elem.send_keys("thirtyfour" + Key::Enter).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
     /// # }
     /// ```
-    pub async fn send_keys(&self, keys: impl Into<TypingData>) -> WebDriverResult<()> {
-        self.handle.cmd(Command::ElementSendKeys(self.element_id.clone(), keys.into())).await?;
+    pub async fn send_keys(&self, key: impl Into<TypingData>) -> WebDriverResult<()> {
+        self.handle.cmd(Command::ElementSendKeys(self.element_id.clone(), key.into())).await?;
         Ok(())
+    }
+
+    /// Take a screenshot of this WebElement and return it as PNG, base64 encoded.
+    pub async fn screenshot_as_png_base64(&self) -> WebDriverResult<String> {
+        self.handle.cmd(Command::TakeElementScreenshot(self.element_id.clone())).await?.value()
     }
 
     /// Take a screenshot of this WebElement and return it as PNG bytes.
     pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
-        self.handle.cmd(Command::TakeElementScreenshot(self.element_id.clone())).await?.value()
+        base64_decode(&self.screenshot_as_png_base64().await?)
     }
 
     /// Take a screenshot of this WebElement and write it to the specified filename.

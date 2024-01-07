@@ -18,6 +18,7 @@ use crate::common::cookie::Cookie;
 use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
 use crate::session::scriptret::ScriptRet;
+use crate::support::base64_decode;
 use crate::{By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
 use crate::{TimeoutConfiguration, WindowHandle};
 
@@ -911,7 +912,6 @@ impl SessionHandle {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -919,7 +919,7 @@ impl SessionHandle {
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// let cookies = driver.get_all_cookies().await?;
     /// for cookie in &cookies {
-    ///     println!("Got cookie: {}", cookie.value());
+    ///     println!("Got cookie: {}", cookie.value);
     /// }
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -943,14 +943,13 @@ impl SessionHandle {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
     /// #         let driver = WebDriver::new("http://localhost:4444", caps).await?;
     /// let cookie = driver.get_named_cookie("key").await?;
-    /// println!("Got cookie: {}", cookie.value());
+    /// println!("Got cookie: {}", cookie.value);
     /// #         driver.quit().await?;
     /// #         Ok(())
     /// #     })
@@ -973,7 +972,6 @@ impl SessionHandle {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -996,7 +994,6 @@ impl SessionHandle {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -1019,7 +1016,6 @@ impl SessionHandle {
     /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
-    /// use thirtyfour::cookie::SameSite;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
@@ -1029,7 +1025,7 @@ impl SessionHandle {
     /// let mut cookie = Cookie::new("key", "value");
     /// cookie.set_domain("wikipedia.org");
     /// cookie.set_path("/");
-    /// cookie.set_same_site(Some(SameSite::Lax));
+    /// cookie.set_same_site(SameSite::Lax);
     /// driver.add_cookie(cookie.clone()).await?;
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -1041,10 +1037,15 @@ impl SessionHandle {
         Ok(())
     }
 
-    /// Take a screenshot of the current window and return it as PNG bytes.
-    pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
+    /// Take a screenshot of the current window and return it as PNG, base64 encoded.
+    pub async fn screenshot_as_png_base64(&self) -> WebDriverResult<String> {
         let r = self.cmd(Command::TakeScreenshot).await?;
         r.value()
+    }
+
+    /// Take a screenshot of the current window and return it as PNG bytes.
+    pub async fn screenshot_as_png(&self) -> WebDriverResult<Vec<u8>> {
+        base64_decode(&self.screenshot_as_png_base64().await?)
     }
 
     /// Take a screenshot of the current window and write it to the specified filename.

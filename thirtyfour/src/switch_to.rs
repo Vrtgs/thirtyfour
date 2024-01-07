@@ -338,8 +338,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn new_window(&self) -> WebDriverResult<WindowHandle> {
-        let r = self.cmd(Command::NewWindow).await?;
-        Ok(WindowHandle::from(r.value::<String>()?))
+        self.cmd(Command::NewWindow).await?.value()
     }
 
     /// Switch to a new tab.
@@ -361,7 +360,6 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn new_tab(&self) -> WebDriverResult<WindowHandle> {
-        let r = self.cmd(Command::NewTab).await?;
-        Ok(WindowHandle::from(r.value::<String>()?))
+        self.cmd(Command::NewTab).await?.value()
     }
 }

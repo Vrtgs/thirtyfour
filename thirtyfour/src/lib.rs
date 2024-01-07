@@ -141,6 +141,7 @@
 
 // Export types at root level.
 pub use alert::Alert;
+pub use common::cookie;
 pub use common::{
     capabilities::{
         chrome::ChromeCapabilities,
@@ -175,7 +176,7 @@ pub mod prelude {
         BrowserCapabilitiesHelper, By, Capabilities, CapabilitiesHelper, ChromiumLikeCapabilities,
         DesiredCapabilities,
     };
-    pub use crate::{Cookie, Key, TimeoutConfiguration, TypingData, WindowHandle};
+    pub use crate::{Cookie, Key, SameSite, TimeoutConfiguration, TypingData, WindowHandle};
 }
 
 /// Action chains allow for more complex user interactions with the keyboard and mouse.

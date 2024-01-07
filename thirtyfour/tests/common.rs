@@ -1,15 +1,21 @@
+#![allow(dead_code)]
+
+use rstest::fixture;
 use std::{
     net::SocketAddr,
     sync::{Arc, Mutex, MutexGuard, OnceLock},
+    thread::JoinHandle,
 };
 use thirtyfour::prelude::*;
 
-static SERVER: OnceLock<Server> = OnceLock::new();
+static SERVER: OnceLock<Arc<JoinHandle<()>>> = OnceLock::new();
 static LIMITER: OnceLock<Arc<Mutex<()>>> = OnceLock::new();
+static LOGINIT: OnceLock<()> = OnceLock::new();
 
 const ASSETS_DIR: &str = "tests/test_html";
 const PORT: u16 = 8081;
 
+/// Create the Capabilities struct for the specified browser.
 pub fn make_capabilities(s: &str) -> Capabilities {
     match s {
         "firefox" => {
@@ -30,6 +36,7 @@ pub fn make_capabilities(s: &str) -> Capabilities {
     }
 }
 
+/// Get the WebDriver URL for the specified browser.
 pub fn webdriver_url(s: &str) -> String {
     match s {
         "firefox" => "http://localhost:4444/wd/hub".to_string(),
@@ -38,31 +45,45 @@ pub fn webdriver_url(s: &str) -> String {
     }
 }
 
-pub struct Server;
-
 /// Starts the web server.
-pub fn start_server() {
-    SERVER.get_or_init(|| {
-        std::thread::spawn(move || {
-            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-            rt.block_on(async {
-                println!("SERVER STARTING");
-                let addr = SocketAddr::from(([127, 0, 0, 1], PORT));
-                let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-                let app = axum::Router::new()
-                    .nest_service("/", tower_http::services::ServeDir::new(ASSETS_DIR));
-                axum::serve(listener, app).await.unwrap();
+pub fn start_server() -> Arc<JoinHandle<()>> {
+    SERVER
+        .get_or_init(|| {
+            let handle = std::thread::spawn(move || {
+                let rt =
+                    tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+                rt.block_on(async {
+                    tracing::debug!("starting web server on http://localhost:{PORT}");
+                    let addr = SocketAddr::from(([127, 0, 0, 1], PORT));
+                    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+                    let app = axum::Router::new()
+                        .nest_service("/", tower_http::services::ServeDir::new(ASSETS_DIR));
+                    axum::serve(listener, app).await.unwrap();
+                });
             });
-        });
-        Server
+            Arc::new(handle)
+        })
+        .clone()
+}
+
+pub fn init_logging() {
+    LOGINIT.get_or_init(|| {
+        use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+        tracing_subscriber::registry()
+            .with(fmt::layer())
+            .with(EnvFilter::from_default_env())
+            .init();
     });
 }
 
+/// Get the global limiter mutex.
 pub fn get_limiter<'a>() -> &'a Arc<Mutex<()>> {
     LIMITER.get_or_init(|| Arc::new(Mutex::new(())))
 }
 
 /// Locks the Firefox browser for exclusive use.
+///
+/// This ensures there is only ever one Firefox browser running at a time.
 pub fn lock_firefox<'a>(browser: &str) -> Option<MutexGuard<'a, ()>> {
     if browser == "firefox" {
         Some(get_limiter().lock().unwrap())
@@ -71,42 +92,68 @@ pub fn lock_firefox<'a>(browser: &str) -> Option<MutexGuard<'a, ()>> {
     }
 }
 
-#[macro_export]
-macro_rules! test_inner {
-    ($fn:ident, $browser:literal) => {
-        common::start_server();
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-        rt.block_on(async {
-            let _lock = common::lock_firefox($browser);
-            let caps = common::make_capabilities($browser);
-            let webdriver_url = common::webdriver_url($browser);
-            let driver =
-                WebDriver::new(webdriver_url, caps).await.expect("Failed to create WebDriver");
-
-            let result = $fn(driver.clone()).await;
-            driver.quit().await.expect("Failed to quit");
-            result.expect("test failed");
-        });
-    };
+/// Launch the specified browser.
+pub fn launch_browser(browser: &str) -> WebDriver {
+    tracing::debug!("launching browser {browser}");
+    let caps = make_capabilities(browser);
+    let webdriver_url = webdriver_url(browser);
+    let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+    let driver = rt.block_on(async {
+        WebDriver::new(webdriver_url, caps).await.expect("Failed to create WebDriver")
+    });
+    driver
 }
 
-#[macro_export]
-macro_rules! local_tester {
-    ($($fn:ident),+) => {
-        paste::paste! {
-            $(
-                // #[test]
-                // fn [<firefox_ $fn>]() {
-                //     $crate::test_inner!($fn, "firefix");
-                // }
+/// Helper struct for running tests.
+pub struct TestHarness<'a> {
+    browser: String,
+    server: Arc<JoinHandle<()>>,
+    driver: Option<WebDriver>,
+    guard: Option<MutexGuard<'a, ()>>,
+}
 
-                #[test]
-                fn [<chrome_ $fn>]() {
-                    $crate::test_inner!($fn, "chrome");
-                }
-            )+
+impl<'a> TestHarness<'a> {
+    /// Create a new TestHarness instance.
+    pub fn new(browser: &str) -> Self {
+        init_logging();
+        let server = start_server();
+        let guard = lock_firefox(browser);
+        let driver = Some(launch_browser(browser));
+        Self {
+            browser: browser.to_string(),
+            server,
+            driver,
+            guard,
         }
-    };
+    }
+
+    /// Get the browser name.
+    pub fn browser(&self) -> &str {
+        &self.browser
+    }
+
+    /// Get the WebDriver instance.
+    pub fn driver(&self) -> &WebDriver {
+        self.driver.as_ref().expect("the driver to still be active")
+    }
+}
+
+impl<'a> Drop for TestHarness<'a> {
+    fn drop(&mut self) {
+        if let Some(driver) = self.driver.take() {
+            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+            rt.block_on(async {
+                driver.quit().await.expect("Failed to quit");
+            });
+        }
+    }
+}
+
+/// Fixture for running tests.
+#[fixture]
+pub fn test_harness<'a>() -> TestHarness<'a> {
+    let browser = std::env::var("THIRTYFOUR_BROWSER").unwrap_or_else(|_| "chrome".to_string());
+    TestHarness::new(&browser)
 }
 
 pub fn sample_page_url() -> String {

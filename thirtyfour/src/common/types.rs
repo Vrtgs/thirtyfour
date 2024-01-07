@@ -32,20 +32,20 @@ impl ElementRect {
     }
 }
 
-/// Helper to Deserialize ElementRef from JSON Value.
-#[derive(Debug, Deserialize)]
+/// Helper to Serialize/Deserialize ElementRef from JSON Value.
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ElementRef {
     /// Reference for a regular element.
     Element {
         /// Element id, as returned by the webdriver.
-        #[serde(rename(deserialize = "element-6066-11e4-a52e-4f735466cecf"))]
+        #[serde(rename = "element-6066-11e4-a52e-4f735466cecf")]
         id: String,
     },
     /// Reference for a shadow element.
     ShadowElement {
         /// Element id, as returned by the webdriver.
-        #[serde(rename(deserialize = "shadow-6066-11e4-a52e-4f735466cecf"))]
+        #[serde(rename = "shadow-6066-11e4-a52e-4f735466cecf")]
         id: String,
     },
 }

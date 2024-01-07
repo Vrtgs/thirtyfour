@@ -40,6 +40,7 @@ stringmatch = "0.4.0"
 thirtyfour-macros = { path = "../thirtyfour-macros", version = "0.1.1", optional = true }
 thiserror = "1.0.31"
 tokio = { version = "1.20", features = ["fs", "macros", "rt-multi-thread", "io-util", "sync"] }
+tracing = "0.1"
 url = "2.2.2"
 
 # Optional HTTP client. Not needed if you supply your own.
@@ -49,8 +50,10 @@ reqwest = { version = "0.11", default-features = false, features = ["json"], opt
 assert_matches = "1.5.0"
 axum = "0.7"
 color-eyre = "0.6.2"
-serial_test = "2.0.0"
+rstest = "0.18"
+serial_test = "3"
 tower-http = { version = "0.5", features = ["fs"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 
 [[example]]

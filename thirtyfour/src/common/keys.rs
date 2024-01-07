@@ -200,3 +200,35 @@ where
         }
     }
 }
+
+impl Add<Key> for &str {
+    type Output = TypingData;
+
+    fn add(self, rhs: Key) -> Self::Output {
+        TypingData::from(self) + rhs
+    }
+}
+
+impl Add<Key> for String {
+    type Output = TypingData;
+
+    fn add(self, rhs: Key) -> Self::Output {
+        TypingData::from(self) + rhs
+    }
+}
+
+impl Add<TypingData> for &str {
+    type Output = TypingData;
+
+    fn add(self, rhs: TypingData) -> Self::Output {
+        TypingData::from(self) + rhs
+    }
+}
+
+impl Add<TypingData> for String {
+    type Output = TypingData;
+
+    fn add(self, rhs: TypingData) -> Self::Output {
+        TypingData::from(self) + rhs
+    }
+}

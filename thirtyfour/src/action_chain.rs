@@ -48,19 +48,19 @@ impl ActionChain {
     /// Reset all actions, reverting all input devices back to default states.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
     /// // Hold mouse button down on element.
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain().click_and_hold_element(&elem).perform().await?;
-    /// let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// let elem_result = driver.find(By::Id("button-result")).await?;
     /// assert_eq!(elem_result.text().await?, "Button 1 down");
     /// // Now reset all actions.
     /// driver.action_chain().reset_actions().await?;
@@ -87,18 +87,18 @@ impl ActionChain {
     /// Click and release the left mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain().move_to_element_center(&elem).click().perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -116,18 +116,18 @@ impl ActionChain {
     /// Click on the specified element using the left mouse button and release.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain().click_element(&elem).perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -141,18 +141,18 @@ impl ActionChain {
     /// Click the left mouse button and hold it down.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "None");
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain().move_to_element_center(&elem).click_and_hold().perform().await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 down");
     /// #         driver.action_chain().release().perform().await?;
@@ -172,18 +172,18 @@ impl ActionChain {
     /// hold the button down.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "None");
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain().click_and_hold_element(&elem).perform().await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 down");
     /// #         driver.action_chain().release().perform().await?;
@@ -200,18 +200,18 @@ impl ActionChain {
     /// Click and release the right mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain().move_to_element_center(&elem).context_click().perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 right-clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -229,18 +229,18 @@ impl ActionChain {
     /// Click on the specified element using the right mouse button and release.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain().context_click_element(&elem).perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 right-clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -254,18 +254,18 @@ impl ActionChain {
     /// Double-click the left mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain().move_to_element_center(&elem).double_click().perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 double-clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -284,18 +284,18 @@ impl ActionChain {
     /// Double-click on the specified element.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain().double_click_element(&elem).perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 double-clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -308,44 +308,17 @@ impl ActionChain {
 
     /// Drag the mouse cursor from the center of the source element to the
     /// center of the target element.
-    ///
-    /// ## This method is not working correctly due to a selenium bug.
-    /// It appears selenium has a bug in the drag and drop feature
-    /// causing it to start the drag but not perform the drop.
-    /// See [https://github.com/SeleniumHQ/selenium/issues/8003](https://github.com/SeleniumHQ/selenium/issues/8003)
-    ///
-    /// This method has been confirmed to produce identical JSON output
-    /// compared to the python selenium library (which also fails due to
-    /// the same bug).
     pub fn drag_and_drop_element(self, source: &WebElement, target: &WebElement) -> Self {
         self.click_and_hold_element(source).release_on_element(target)
     }
 
     /// Drag the mouse cursor by the specified X and Y offsets.
-    ///
-    /// ## This method is not working correctly due to a selenium bug.
-    /// It appears selenium has a bug in the drag and drop feature
-    /// causing it to start the drag but not perform the drop.
-    /// See [https://github.com/SeleniumHQ/selenium/issues/8003](https://github.com/SeleniumHQ/selenium/issues/8003)
-    ///
-    /// This method has been confirmed to produce identical JSON output
-    /// compared to the python selenium library (which also fails due to
-    /// the same bug).
     pub fn drag_and_drop_by_offset(self, x_offset: i64, y_offset: i64) -> Self {
         self.click_and_hold().move_by_offset(x_offset, y_offset)
     }
 
     /// Drag the mouse cursor by the specified X and Y offsets, starting
     /// from the center of the specified element.
-    ///
-    /// ## This method is not working correctly due to a selenium bug.
-    /// It appears selenium has a bug in the drag and drop feature
-    /// causing it to start the drag but not perform the drop.
-    /// See [https://github.com/SeleniumHQ/selenium/issues/8003](https://github.com/SeleniumHQ/selenium/issues/8003)
-    ///
-    /// This method has been confirmed to produce identical JSON output
-    /// compared to the python selenium library (which also fails due to
-    /// the same bug).
     pub fn drag_and_drop_element_by_offset(
         self,
         element: &WebElement,
@@ -358,17 +331,17 @@ impl ActionChain {
     /// Press the specified key down.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// let elem = driver.find_element(By::Name("input1")).await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
+    /// let elem = driver.find(By::Name("input1")).await?;
     /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain().click_element(&elem).key_down('a').perform().await?;
     /// #         assert_eq!(elem.value().await?, Some("a".to_string()));
@@ -389,17 +362,17 @@ impl ActionChain {
     /// Click the specified element and then press the specified key down.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// let elem = driver.find_element(By::Name("input1")).await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
+    /// let elem = driver.find(By::Name("input1")).await?;
     /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain().key_down_on_element(&elem, 'a').perform().await?;
     /// #         assert_eq!(elem.value().await?, Some("a".to_string()));
@@ -418,23 +391,23 @@ impl ActionChain {
     /// Release the specified key. This usually follows a `key_down()` action.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// let elem = driver.find_element(By::Name("input1")).await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
+    /// let elem = driver.find(By::Name("input1")).await?;
     /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// elem.send_keys("selenium").await?;
     /// assert_eq!(elem.value().await?, Some("selenium".to_string()));
     /// driver.action_chain()
-    ///     .key_down_on_element(&elem, Keys::Control).key_down('a')
-    ///     .key_up(Keys::Control).key_up('a')
+    ///     .key_down_on_element(&elem, Key::Control).key_down('a')
+    ///     .key_up(Key::Control).key_up('a')
     ///     .key_down('b')
     ///     .perform().await?;
     /// assert_eq!(elem.value().await?, Some("b".to_string()));
@@ -455,23 +428,23 @@ impl ActionChain {
     /// Click the specified element and release the specified key.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// let elem = driver.find_element(By::Name("input1")).await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
+    /// let elem = driver.find(By::Name("input1")).await?;
     /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// elem.send_keys("selenium").await?;
     /// assert_eq!(elem.value().await?, Some("selenium".to_string()));
     /// driver.action_chain()
-    ///     .key_down_on_element(&elem, Keys::Control).key_down('a')
-    ///     .key_up_on_element(&elem, 'a').key_up_on_element(&elem, Keys::Control)
+    ///     .key_down_on_element(&elem, Key::Control).key_down('a')
+    ///     .key_up_on_element(&elem, 'a').key_up_on_element(&elem, Key::Control)
     ///     .key_down('b')
     ///     .perform().await?;
     /// assert_eq!(elem.value().await?, Some("b".to_string()));
@@ -490,22 +463,22 @@ impl ActionChain {
     /// Move the mouse cursor to the specified X and Y coordinates.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// let center = elem.rect().await?.icenter();
     /// driver.action_chain()
     ///     .move_to(center.0, center.1)
     ///     .click()
     ///     .perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -521,17 +494,17 @@ impl ActionChain {
     /// Move the mouse cursor by the specified X and Y offsets.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let elem1 = driver.find_element(By::Id("button1")).await?;
-    /// let elem2 = driver.find_element(By::Id("button2")).await?;
+    /// let elem1 = driver.find(By::Id("button1")).await?;
+    /// let elem2 = driver.find(By::Id("button2")).await?;
     /// // We will calculate the distance between the two center points and then
     /// // use action_chain() to move to the second button before clicking.
     /// let offset = elem2.rect().await?.center().0 as i64 - elem1.rect().await?.center().0 as i64;
@@ -540,7 +513,7 @@ impl ActionChain {
     ///     .move_by_offset(offset, 0)
     ///     .click()
     ///     .perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 2 clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -556,21 +529,21 @@ impl ActionChain {
     /// Move the mouse cursor to the center of the specified element.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// let elem = driver.find_element(By::Id("button1")).await?;
+    /// let elem = driver.find(By::Id("button1")).await?;
     /// driver.action_chain()
     ///     .move_to_element_center(&elem)
     ///     .click()
     ///     .perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -588,31 +561,31 @@ impl ActionChain {
     ///
     /// # Example:
     ///
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("button1")).await?.click().await?;
+    /// #         driver.find(By::Id("button1")).await?.click().await?;
     /// // Select the text in the source element and copy it to the clipboard.
-    /// let elem = driver.find_element(By::Id("button-result")).await?;
+    /// let elem = driver.find(By::Id("button-result")).await?;
     /// let width = elem.rect().await?.width;
     /// driver.action_chain()
     ///     .move_to_element_with_offset(&elem, (-width / 2.0) as i64, 0)
     ///     .drag_and_drop_by_offset(width as i64, 0)
-    ///     .key_down(Keys::Control)
+    ///     .key_down(Key::Control)
     ///     .key_down('c').key_up('c')
-    ///     .key_up(Keys::Control)
+    ///     .key_up(Key::Control)
     ///     .perform().await?;
     ///
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
     /// // Now paste the text into the input field.
-    /// let elem_tgt = driver.find_element(By::Name("input1")).await?;
-    /// elem_tgt.send_keys(Keys::Control + "v").await?;
+    /// let elem_tgt = driver.find(By::Name("input1")).await?;
+    /// elem_tgt.send_keys(Key::Control + "v").await?;
     /// #         assert_eq!(elem_tgt.value().await?, Some("Button 1 clicked".to_string()));
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -633,18 +606,18 @@ impl ActionChain {
     /// Release the left mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         let elem = driver.find_element(By::Id("button1")).await?;
+    /// #         let elem = driver.find(By::Id("button1")).await?;
     /// #         driver.action_chain().click_and_hold_element(&elem).perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 down");
     /// driver.action_chain().release().perform().await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
@@ -662,18 +635,18 @@ impl ActionChain {
     /// Move the mouse to the specified element and release the mouse button.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         let elem = driver.find_element(By::Id("button1")).await?;
+    /// #         let elem = driver.find(By::Id("button1")).await?;
     /// #         driver.action_chain().click_and_hold_element(&elem).perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("button-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("button-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 down");
     /// driver.action_chain().release_on_element(&elem).perform().await?;
     /// #         assert_eq!(elem_result.text().await?, "Button 1 clicked");
@@ -689,26 +662,26 @@ impl ActionChain {
     /// Send the specified keystrokes to the active element.
     ///
     /// # Example:
-    /// ```rust
-    /// use thirtyfour::Keys;
+    /// ```no_run
+    /// use thirtyfour::Key;
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// let elem = driver.find_element(By::Name("input1")).await?;
-    /// let button = driver.find_element(By::Id("button-set")).await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
+    /// let elem = driver.find(By::Name("input1")).await?;
+    /// let button = driver.find(By::Id("button-set")).await?;
     /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain()
     ///     .click_element(&elem)
     ///     .send_keys("selenium")
     ///     .click_element(&button)
     ///     .perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("input-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("input-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "selenium");
     /// #         driver.quit().await?;
     /// #         Ok(())
@@ -729,24 +702,24 @@ impl ActionChain {
     /// Click on the specified element and send the specified keystrokes.
     ///
     /// # Example:
-    /// ```rust
+    /// ```no_run
     /// # use thirtyfour::prelude::*;
     /// # use thirtyfour::support::block_on;
     /// #
     /// # fn main() -> WebDriverResult<()> {
     /// #     block_on(async {
     /// #         let caps = DesiredCapabilities::chrome();
-    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", &caps).await?;
+    /// #         let driver = WebDriver::new("http://localhost:4444/wd/hub", caps).await?;
     /// #         driver.get("http://webappdemo").await?;
-    /// #         driver.find_element(By::Id("pagetextinput")).await?.click().await?;
-    /// let elem = driver.find_element(By::Name("input1")).await?;
-    /// let button = driver.find_element(By::Id("button-set")).await?;
+    /// #         driver.find(By::Id("pagetextinput")).await?.click().await?;
+    /// let elem = driver.find(By::Name("input1")).await?;
+    /// let button = driver.find(By::Id("button-set")).await?;
     /// #         assert_eq!(elem.value().await?, Some("".to_string()));
     /// driver.action_chain()
     ///     .send_keys_to_element(&elem, "selenium")
     ///     .click_element(&button)
     ///     .perform().await?;
-    /// #         let elem_result = driver.find_element(By::Id("input-result")).await?;
+    /// #         let elem_result = driver.find(By::Id("input-result")).await?;
     /// #         assert_eq!(elem_result.text().await?, "selenium");
     /// #         driver.quit().await?;
     /// #         Ok(())
