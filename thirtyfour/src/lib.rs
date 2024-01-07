@@ -1,6 +1,6 @@
 //! Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 //!
-//! It supports the full W3C WebDriver spec.
+//! It supports the W3C WebDriver v1 spec.
 //! Tested with Chrome and Firefox although any W3C-compatible WebDriver
 //! should work.
 //!

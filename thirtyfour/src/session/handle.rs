@@ -926,8 +926,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn get_all_cookies(&self) -> WebDriverResult<Vec<Cookie>> {
-        let r = self.cmd(Command::GetAllCookies).await?;
-        r.value()
+        self.cmd(Command::GetAllCookies).await?.value()
     }
 
     /// Get all cookies.
@@ -955,8 +954,7 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn get_named_cookie(&self, name: impl Into<String>) -> WebDriverResult<Cookie> {
-        let r = self.cmd(Command::GetNamedCookie(name.into())).await?;
-        r.value()
+        self.cmd(Command::GetNamedCookie(name.into())).await?.value()
     }
 
     /// Get the specified cookie.
@@ -1038,8 +1036,7 @@ impl SessionHandle {
 
     /// Take a screenshot of the current window and return it as PNG, base64 encoded.
     pub async fn screenshot_as_png_base64(&self) -> WebDriverResult<String> {
-        let r = self.cmd(Command::TakeScreenshot).await?;
-        r.value()
+        self.cmd(Command::TakeScreenshot).await?.value()
     }
 
     /// Take a screenshot of the current window and return it as PNG bytes.
