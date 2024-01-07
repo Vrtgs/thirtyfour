@@ -1,0 +1,6 @@
+[book]
+authors = ["Steve Pryde"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Thirtyfour"
