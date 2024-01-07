@@ -31,6 +31,8 @@ jobs:
           ./ci/${{ matrix.os }}-${{ matrix.browser }}
       - name: cargo test -- --test-threads=1
         uses: actions-rs/cargo@v1
+        env:
+          THIRTYFOUR_BROWSER: ${{ matrix.browser }}
         with:
           command: test
           args: ${{ matrix.browser }}
