@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy MdBook
 on:
   push:
     branches:
@@ -26,6 +26,7 @@ jobs:
         run: |
           # This assumes your book is in the root of your repository.
           # Just add a `cd` here if you need to change to another directory.
+          cd docs
           mdbook build
       - name: Setup Pages
         uses: actions/configure-pages@v2

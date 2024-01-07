@@ -333,7 +333,7 @@ There's still a long way to go. If you'd like to contribute, please get in touch
 
 ## Minimum Supported Rust Version
 
-The MSRV for `thirtyfour` is currently 1.59 and will be updated as needed by dependencies.
+The MSRV for `thirtyfour` is currently 1.66 and will be updated as needed by dependencies.
 
 ## LICENSE
 

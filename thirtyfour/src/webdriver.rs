@@ -1,14 +1,15 @@
+use std::ops::Deref;
+use std::sync::Arc;
+
 use crate::common::command::Command;
 use crate::common::config::WebDriverConfig;
 use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
 use crate::session::create::start_session;
 use crate::session::handle::SessionHandle;
+#[cfg(feature = "reqwest")]
 use crate::session::http::create_reqwest_client;
 use crate::Capabilities;
-use std::ops::Deref;
-use std::sync::Arc;
-use std::time::Duration;
 
 /// The `WebDriver` struct encapsulates an async Selenium WebDriver browser
 /// session.
@@ -97,7 +98,10 @@ impl WebDriver {
             .map_err(|e| WebDriverError::ParseError(format!("invalid url: {e}")))?;
 
         // TODO: create builder and make timeout configurable.
-        let client = Arc::new(create_reqwest_client(Duration::from_secs(120)));
+        #[cfg(feature = "reqwest")]
+        let client = Arc::new(create_reqwest_client(std::time::Duration::from_secs(120)));
+        #[cfg(not(feature = "reqwest"))]
+        let client = Arc::new(crate::session::http::null_client::create_null_client());
         let session_id = start_session(client.as_ref(), &server_url, &config, capabilities).await?;
 
         let handle = SessionHandle::new_with_config(client, server_url, session_id, config)?;

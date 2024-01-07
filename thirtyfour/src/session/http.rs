@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use base64::Engine;
 use http::{
@@ -94,8 +94,31 @@ impl HttpClient for reqwest::Client {
     }
 }
 
-pub(crate) fn create_reqwest_client(timeout: Duration) -> reqwest::Client {
+#[cfg(feature = "reqwest")]
+pub(crate) fn create_reqwest_client(timeout: std::time::Duration) -> reqwest::Client {
     reqwest::Client::builder().timeout(timeout).build().expect("Failed to create reqwest client")
+}
+
+// Null client so that we can compile without the `reqwest` feature.
+#[cfg(not(feature = "reqwest"))]
+pub(crate) mod null_client {
+    use super::*;
+
+    pub struct NullHttpClient;
+
+    #[async_trait::async_trait]
+    impl HttpClient for NullHttpClient {
+        async fn send(
+            &self,
+            _: http::Request<super::Body>,
+        ) -> super::WebDriverResult<http::Response<Vec<u8>>> {
+            panic!("Either enable the `reqwest` feature or implement your own `HttpClient`")
+        }
+    }
+
+    pub(crate) fn create_null_client() -> NullHttpClient {
+        NullHttpClient
+    }
 }
 
 #[tracing::instrument(skip_all)]
