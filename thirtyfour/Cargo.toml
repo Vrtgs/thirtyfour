@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 description = """
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 
-It supports the full W3C WebDriver spec.
+Tested on Chrome and Firefox, but any webdriver-capable browser should work.
 """
 homepage = "https://github.com/stevepryde/thirtyfour"
 repository = "https://github.com/stevepryde/thirtyfour"
