@@ -28,30 +28,28 @@ async-trait = "0.1"
 base64 = "0.21"
 futures = "0.3"
 http = "1"
-indexmap = "2"
+indexmap = "2.1"
 parking_lot = "0.12"
 paste = "1"
-serde = { version = "1.0.195", features = ["derive"] }
+serde = { version = "1.0.111", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 serde_repr = "0.1.18"
 stringmatch = "0.4"
 strum = { version = "0.25", features = ["derive"] }
 thirtyfour-macros = { path = "../thirtyfour-macros", version = "0.1.1", optional = true }
-thiserror = "1.0.56"
+thiserror = "1"
 tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread", "io-util", "sync", "time"] }
 tracing = "0.1"
-url = "2"
+url = "2.5"
 
 # Optional HTTP client. Not needed if you supply your own.
-reqwest = { version = "0.11.23", default-features = false, features = ["json"], optional = true }
-log = { version = "0.4.20", optional = true }
+reqwest = { version = "0.11", default-features = false, features = ["json"], optional = true }
 
 [dev-dependencies]
-assert_matches = "1"
+assert_matches = "1.5"
 axum = "0.7"
 color-eyre = "0.6"
 rstest = "0.18"
-serial_test = "3"
 tower-http = { version = "0.5", features = ["fs"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
