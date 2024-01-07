@@ -4,6 +4,10 @@
 //! Tested with Chrome and Firefox although any W3C-compatible WebDriver
 //! should work.
 //!
+//! ## Getting Started
+//!
+//! Check out [The Book](https://stevepryde.github.io/thirtyfour/) 📚!
+//!
 //! ## Features
 //!
 //! - All W3C WebDriver and WebElement methods supported

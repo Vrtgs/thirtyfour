@@ -3,4 +3,4 @@ authors = ["Steve Pryde"]
 language = "en"
 multilingual = false
 src = "src"
-title = "Thirtyfour"
+title = "Thirtyfour: Web Browser Automation In Rust"
