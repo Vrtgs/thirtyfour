@@ -351,20 +351,15 @@ pub enum ScrollBehaviour {
 }
 
 /// The page load strategy for this session.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PageLoadStrategy {
     /// Wait for full page loading (the default).
+    #[default]
     Normal,
     /// Wait for the DOMContentLoaded event (html content downloaded and parsed only).
     Eager,
     /// Return immediately after the initial page content is fully received
     /// (html content downloaded).
     None,
-}
-
-impl Default for PageLoadStrategy {
-    fn default() -> Self {
-        PageLoadStrategy::Normal
-    }
 }

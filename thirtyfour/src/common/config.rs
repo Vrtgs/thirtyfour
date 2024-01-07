@@ -88,6 +88,7 @@ impl WebDriverConfigBuilder {
         Ok(WebDriverConfig {
             keep_alive: self.keep_alive,
             poller: self.poller.unwrap_or_else(|| Arc::new(ElementPollerWithTimeout::default())),
+            #[allow(clippy::redundant_closure)]
             user_agent: self.user_agent.unwrap_or_else(|| WebDriverConfig::default_user_agent()),
         })
     }

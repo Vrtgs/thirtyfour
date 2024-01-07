@@ -207,8 +207,8 @@ impl SessionHandle {
     pub async fn current_url(&self) -> WebDriverResult<url::Url> {
         let r = self.cmd(Command::GetCurrentUrl).await?;
         let s: String = r.value()?;
-        Ok(url::Url::parse(&s)
-            .map_err(|e| WebDriverError::ParseError(format!("invalid url: {s}: {e}")))?)
+        url::Url::parse(&s)
+            .map_err(|e| WebDriverError::ParseError(format!("invalid url: {s}: {e}")))
     }
 
     /// Get the page source as a String.

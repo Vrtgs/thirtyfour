@@ -117,7 +117,7 @@ impl WebElement {
     ///
     /// See the documentation for [`SessionHandle::execute`] for more details.
     pub fn to_json(&self) -> WebDriverResult<Value> {
-        Ok(serde_json::to_value(&ElementRef::Element {
+        Ok(serde_json::to_value(ElementRef::Element {
             id: self.element_id.to_string(),
         })?)
     }

@@ -98,10 +98,9 @@ pub fn launch_browser(browser: &str) -> WebDriver {
     let caps = make_capabilities(browser);
     let webdriver_url = webdriver_url(browser);
     let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-    let driver = rt.block_on(async {
+    rt.block_on(async {
         WebDriver::new(webdriver_url, caps).await.expect("Failed to create WebDriver")
-    });
-    driver
+    })
 }
 
 /// Helper struct for running tests.

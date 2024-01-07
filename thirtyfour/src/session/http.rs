@@ -144,7 +144,7 @@ pub(crate) async fn run_webdriver_cmd(
     let url_username = server_url.username();
     let url_password = server_url.password();
     if !url_username.is_empty() || url_password.is_some() {
-        let base64_string = base64::prelude::BASE64_STANDARD.encode(&format!(
+        let base64_string = base64::prelude::BASE64_STANDARD.encode(format!(
             "{}:{}",
             url_username,
             url_password.unwrap_or_default()
@@ -167,23 +167,23 @@ pub(crate) async fn run_webdriver_cmd(
         .map_err(|e| WebDriverError::RequestFailed(format!("invalid request body: {e}")))?;
     let response = client.send(request).await?;
     let status = response.status().as_u16();
-    tracing::debug!("webdriver response: {status} {}", String::from_utf8_lossy(&response.body()));
+    tracing::debug!("webdriver response: {status} {}", String::from_utf8_lossy(response.body()));
     match status {
         200..=399 => {
-            match serde_json::from_slice(&response.body()) {
+            match serde_json::from_slice(response.body()) {
                 Ok(v) => Ok(CmdResponse {
                     body: v,
                     status,
                 }),
                 Err(_) => {
                     // Try to parse the response as a string.
-                    let body = String::from_utf8_lossy(&response.body()).to_string();
+                    let body = String::from_utf8_lossy(response.body()).to_string();
                     Err(WebDriverError::parse(status, body))
                 }
             }
         }
         _ => {
-            let body = String::from_utf8_lossy(&response.body()).to_string();
+            let body = String::from_utf8_lossy(response.body()).to_string();
             Err(WebDriverError::parse(status, body))
         }
     }

@@ -145,13 +145,13 @@ impl fmt::Display for By {
 impl From<BySelector> for Selector {
     fn from(by: BySelector) -> Self {
         match by {
-            BySelector::Id(x) => Selector::new("css selector", &format!("[id=\"{}\"]", x)),
+            BySelector::Id(x) => Selector::new("css selector", format!("[id=\"{}\"]", x)),
             BySelector::XPath(x) => Selector::new("xpath", x),
             BySelector::LinkText(x) => Selector::new("link text", x),
             BySelector::PartialLinkText(x) => Selector::new("partial link text", x),
-            BySelector::Name(x) => Selector::new("css selector", &format!("[name=\"{}\"]", x)),
+            BySelector::Name(x) => Selector::new("css selector", format!("[name=\"{}\"]", x)),
             BySelector::Tag(x) => Selector::new("css selector", x),
-            BySelector::ClassName(x) => Selector::new("css selector", &format!(".{}", x)),
+            BySelector::ClassName(x) => Selector::new("css selector", format!(".{}", x)),
             BySelector::Css(x) => Selector::new("css selector", x),
         }
     }
