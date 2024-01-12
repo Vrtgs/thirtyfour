@@ -35,4 +35,3 @@ jobs:
           THIRTYFOUR_BROWSER: ${{ matrix.browser }}
         with:
           command: test
-          args: ${{ matrix.browser }}
