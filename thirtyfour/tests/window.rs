@@ -216,7 +216,7 @@ fn window_rect(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
         c.set_window_rect(20, 20, 1900, 1000).await?;
         let r = c.get_window_rect().await?;
 
-        if test_harness.browser() == "firefox" || cfg!(os = "macos") {
+        if test_harness.browser() == "firefox" || cfg!(target_os = "macos") {
             // Firefox driver seems to have a bug where it doesn't get the window size correctly.
             // The x coordinate can be completely wrong.
             // Also noticed the same with both firefox and chrome on Mac OS.
