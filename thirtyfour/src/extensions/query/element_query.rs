@@ -333,6 +333,13 @@ impl ElementQuery {
     /// This method requires that only one element was found, and will return
     /// Err(WebDriverError::NoSuchElement) if the number of elements found after processing
     /// all selectors was not equal to 1.
+    ///
+    /// This is useful because sometimes your element query is not specific enough and
+    /// might accidentally match multiple elements. This is a common source of bugs in
+    /// automated tests, because the first element might not actually be the one you expect.
+    ///
+    /// By requiring that only one element is matched, you can be more sure that it is the
+    /// one you intended.
     pub async fn single(&self) -> WebDriverResult<WebElement> {
         let mut elements = self.run_poller(false, false).await?;
 
@@ -376,7 +383,7 @@ impl ElementQuery {
         self.all_from_selector().await
     }
 
-    /// Return all WebElements that match any single selector (including filters).
+    /// Return all WebElements that match a single selector (including filters).
     ///
     /// This will return when at least one element is found from any selector, without
     /// processing other selectors afterwards.
