@@ -43,10 +43,11 @@ impl FormatRequestData for ChromeCommand {
                 format!("/session/{}/chromium/network_conditions", session_id),
             )
             .add_body(json!({ "network_conditions": conditions })),
-            ChromeCommand::ExecuteCdpCommand(..) => RequestData::new(
+            ChromeCommand::ExecuteCdpCommand(command, params) => RequestData::new(
                 RequestMethod::Post,
                 format!("/session/{}/goog/cdp/execute", session_id),
-            ),
+            )
+            .add_body(json!({ "cmd": command, "params": params })),
             ChromeCommand::GetSinks => RequestData::new(
                 RequestMethod::Get,
                 format!("/session/{}/goog/cast/get_sinks", session_id),
