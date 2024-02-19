@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.32.0-rc.9"
+version = "0.32.0-rc.10"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -14,8 +14,18 @@ repository = "https://github.com/stevepryde/thirtyfour"
 documentation = "https://docs.rs/thirtyfour"
 
 readme = "README.md"
-keywords = ["selenium", "webdriver", "chromedriver", "geckodriver", "automation"]
-categories = ["api-bindings", "development-tools::testing", "web-programming::http-client"]
+keywords = [
+    "selenium",
+    "webdriver",
+    "chromedriver",
+    "geckodriver",
+    "automation",
+]
+categories = [
+    "api-bindings",
+    "development-tools::testing",
+    "web-programming::http-client",
+]
 
 [features]
 default = ["reqwest", "rustls-tls", "component"]
@@ -38,12 +48,21 @@ stringmatch = "0.4"
 strum = { version = "0.25", features = ["derive"] }
 thirtyfour-macros = { path = "../thirtyfour-macros", version = "0.1.1", optional = true }
 thiserror = "1"
-tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread", "io-util", "sync", "time"] }
+tokio = { version = "1", features = [
+    "fs",
+    "macros",
+    "rt-multi-thread",
+    "io-util",
+    "sync",
+    "time",
+] }
 tracing = "0.1"
 url = "2.5"
 
 # Optional HTTP client. Not needed if you supply your own.
-reqwest = { version = "0.11", default-features = false, features = ["json"], optional = true }
+reqwest = { version = "0.11", default-features = false, features = [
+    "json",
+], optional = true }
 
 [dev-dependencies]
 assert_matches = "1.5"
