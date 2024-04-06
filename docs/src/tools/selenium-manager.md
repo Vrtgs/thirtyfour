@@ -12,4 +12,4 @@ selenium-manager = { git = "https://github.com/SeleniumHQ/selenium", branch = "t
 ```
 
 > **NOTE:** Due to the way the selenium repository is structured, it is quite large. 
-> Better integration with selenium-manager in `thirtyfour` is planned.
+> Better integration with selenium-manager, or equivalent functionality, is planned.
