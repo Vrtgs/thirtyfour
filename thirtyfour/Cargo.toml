@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.32.0-rc.10"
+version = "0.32.0-rc.11"
 authors = ["Steve Pryde <steve@stevepryde.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -35,7 +35,7 @@ component = ["thirtyfour-macros"]
 
 [dependencies]
 async-trait = "0.1"
-base64 = "0.21"
+base64 = "0.22"
 futures = "0.3"
 http = "1"
 indexmap = "2.1"
@@ -45,7 +45,7 @@ serde = { version = "1.0.111", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 serde_repr = "0.1.18"
 stringmatch = "0.4"
-strum = { version = "0.25", features = ["derive"] }
+strum = { version = "0.26", features = ["derive"] }
 thirtyfour-macros = { path = "../thirtyfour-macros", version = "0.1.1", optional = true }
 thiserror = "1"
 tokio = { version = "1", features = [
@@ -60,7 +60,7 @@ tracing = "0.1"
 url = "2.5"
 
 # Optional HTTP client. Not needed if you supply your own.
-reqwest = { version = "0.11", default-features = false, features = [
+reqwest = { version = "0.12", default-features = false, features = [
     "json",
 ], optional = true }
 
