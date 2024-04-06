@@ -13,7 +13,7 @@ You will see a `Cargo.toml` file and a `src/` directory there already.
 First, let's edit the `Cargo.toml` file in your editor (e.g. Visual Studio Code) and add some dependencies:
 
     [dependencies]
-    thirtyfour = "0.32.0-rc.8"
+    thirtyfour = "THIRTYFOUR_CRATE_VERSION"
     tokio = { version = "1", features = ["full"] }
 
 Great! Now let's open `src/main.rs` and  add the following code.

@@ -3,7 +3,7 @@
 To use the `thirtyfour` crate in your Rust project, you need to add it as a dependency in your `Cargo.toml` file:
 
     [dependencies]
-    thirtyfour = "0.32.0-rc.8"
+    thirtyfour = "THIRTYFOUR_CRATE_VERSION"
 
 To automate a web browser, `thirtyfour` needs to communicate with a webdriver server. You will need
 to download the appropriate webdriver server for your browser.

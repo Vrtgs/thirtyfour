@@ -22,6 +22,13 @@ jobs:
           mkdir mdbook
           curl -sSL $url | tar -xz --directory=./mdbook
           echo `pwd`/mdbook >> $GITHUB_PATH
+      - name: Replace crate version
+        run: |
+          LATEST_VERSION=$(cargo search thirtyfour | grep "^thirtyfour = " | cut -d'"' -f2)
+          cd docs
+          for file in *.md; do
+            sed -i "s/THIRTYFOUR_CRATE_VERSION/${LATEST_VERSION}/g" "$file"
+          done
       - name: Build Book
         run: |
           # This assumes your book is in the root of your repository.
