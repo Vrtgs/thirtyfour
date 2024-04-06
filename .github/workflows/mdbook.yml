@@ -26,7 +26,7 @@ jobs:
         run: |
           LATEST_VERSION=$(cargo search thirtyfour | grep "^thirtyfour = " | cut -d'"' -f2)
           cd docs
-          find src/ -name '*.md' -exec sed -i "s/THIRYFOUR_CRATE_VERSION/${LATEST_VERSION}/g" {} \;
+          find src/ -name '*.md' -exec sed -i "s/THIRTYFOUR_CRATE_VERSION/${LATEST_VERSION}/g" {} \;
       - name: Build Book
         run: |
           # This assumes your book is in the root of your repository.
