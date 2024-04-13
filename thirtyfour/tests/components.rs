@@ -18,7 +18,7 @@ mod feature_component {
         base: WebElement,
         #[by(tag = "label", not_empty)]
         boxes: ElementResolver<Vec<CheckboxComponent>>,
-        // Other fields will be initialized with Default::default().
+        // Other fields will be initialised with Default::default().
         my_field: bool,
     }
 
