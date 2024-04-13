@@ -148,14 +148,14 @@ impl From<Key> for char {
     }
 }
 
-/// TypingData is a wrapper around a Vec<char> that can be used to send Key to the browser.
+/// TypingData is a wrapper around a `Vec<char>` that can be used to send Key to the browser.
 #[derive(Debug)]
 pub struct TypingData {
     data: Vec<char>,
 }
 
 impl TypingData {
-    /// Get the underlying Vec<char>.
+    /// Get the underlying `Vec<char>`.
     pub fn as_vec(&self) -> Vec<char> {
         self.data.clone()
     }
