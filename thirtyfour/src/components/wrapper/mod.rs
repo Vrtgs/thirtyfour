@@ -7,7 +7,7 @@ pub use resolver::*;
 #[cfg(feature = "component")]
 pub use thirtyfour_macros::Component;
 
-/// The `Component` trait is automatically implemented by the `Component` derive macro.
+/// The `Component` automatically implements the `Component` trait derive macro.
 ///
 /// Anything that implements `Component + Clone + From<WebElement>` can be used with
 /// ElementResolver to take the resolved element as input, and return the specific type.

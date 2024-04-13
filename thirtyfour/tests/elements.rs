@@ -116,7 +116,7 @@ fn element_rect(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
         let elem = c.find(By::Id("button-alert")).await?;
         let rect = elem.rect().await?;
         // Rather than try to verify the exact position and size of the element,
-        // let's just verify that the returned values deserialized ok and
+        // let's verify that the returned values deserialized ok and
         // are within the expected range.
         assert!(rect.x > 0.0);
         assert!(rect.x < 100.0);
@@ -195,7 +195,7 @@ fn serialize_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
             .await
             .expect_err("Failure expected with an invalid ID");
 
-        // You can easily deserialize elements too.
+        // You can deserialize elements too.
         let ret = c.execute(r#"return document.getElementById("select1");"#, vec![]).await?;
         let elem = ret.element()?;
         assert_eq!(elem.tag_name().await?, "select");

@@ -1,9 +1,12 @@
+use futures::future::BoxFuture;
+use std::future::Future;
+use std::sync::Arc;
 use std::{fmt, time::Duration};
 
-use futures::future::BoxFuture;
 use serde::{Deserialize, Serialize};
 
 use crate::error::WebDriverResult;
+use crate::session::IntoTransfer;
 use crate::WebElement;
 
 /// Rectangle representing the dimensions of an element.
@@ -67,12 +70,12 @@ impl ElementRef {
 /// Newtype for the session id.
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 pub struct SessionId {
-    id: String,
+    id: Arc<str>,
 }
 
 impl<S> From<S> for SessionId
 where
-    S: Into<String>,
+    S: IntoTransfer,
 {
     fn from(value: S) -> Self {
         SessionId {
@@ -88,26 +91,26 @@ impl fmt::Display for SessionId {
 }
 
 impl SessionId {
-    /// Create a dummy SessionId for cases where it's not used.
+    /// Create a placeholder SessionId for cases where it's not used.
     ///
-    /// E.g. session creation.
+    /// E.g., session creation.
     pub fn null() -> Self {
         SessionId {
-            id: String::new(),
+            id: Arc::from(""),
         }
     }
 }
 
-/// Newtype for the element id.
+/// New-type for the element id.
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 #[serde(transparent)]
 pub struct ElementId {
-    id: String,
+    id: Arc<str>,
 }
 
 impl<S> From<S> for ElementId
 where
-    S: Into<String>,
+    S: IntoTransfer,
 {
     fn from(value: S) -> Self {
         ElementId {
@@ -122,15 +125,15 @@ impl fmt::Display for ElementId {
     }
 }
 
-/// Newtype for the window handle.
+/// New-type for the window handle.
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 pub struct WindowHandle {
-    handle: String,
+    handle: Arc<str>,
 }
 
 impl<S> From<S> for WindowHandle
 where
-    S: Into<String>,
+    S: IntoTransfer,
 {
     fn from(value: S) -> Self {
         WindowHandle {
@@ -193,11 +196,36 @@ impl Rect {
 }
 
 /// Generic element query function that returns some type T.
-pub type ElementQueryFn<T> =
-    Box<dyn Fn(&WebElement) -> BoxFuture<WebDriverResult<T>> + Send + Sync + 'static>;
+pub trait ElementQueryFn<T>: Send + Sync {
+    /// the future returned by ElementQueryFn::query
+    type Fut: Future<Output = WebDriverResult<T>> + Send;
 
-/// Function signature for element predicates.
-pub type ElementPredicate = ElementQueryFn<bool>;
+    /// the implementation of the query function
+    fn call(&self, arg: &WebElement) -> Self::Fut;
+}
+
+impl<T, Fut, Fun> ElementQueryFn<T> for Fun
+where
+    Fun: Fn(&WebElement) -> Fut + Send + Sync + ?Sized,
+    Fut: Future<Output = WebDriverResult<T>> + Send + 'static,
+{
+    type Fut = Fut;
+
+    fn call(&self, arg: &WebElement) -> Fut {
+        self(arg)
+    }
+}
+
+/// element predicates.
+pub trait ElementPredicate: ElementQueryFn<bool> {}
+
+impl<Fn: ElementQueryFn<bool> + ?Sized> ElementPredicate for Fn {}
+
+/// a dynamically dispatched query function
+pub type DynElementQueryFn<T> = dyn ElementQueryFn<T, Fut = BoxFuture<'static, WebDriverResult<T>>>;
+
+/// a dynamically dispatched element predicate
+pub type DynElementPredicate = DynElementQueryFn<bool>;
 
 /// Rect struct with optional fields.
 #[derive(Debug, Default, Clone, Eq, PartialEq, Serialize)]
@@ -287,7 +315,7 @@ impl Default for TimeoutConfiguration {
         TimeoutConfiguration::new(
             Some(Duration::from_secs(60)),
             Some(Duration::from_secs(60)),
-            // NOTE: Implicit wait must default to zero in order to support ElementQuery.
+            // NOTE: Implicit wait must default to zero to support ElementQuery.
             Some(Duration::from_secs(0)),
         )
     }

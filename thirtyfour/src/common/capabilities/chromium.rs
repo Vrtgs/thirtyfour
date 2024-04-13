@@ -31,13 +31,8 @@ macro_rules! chromium_arg_wrapper {
     }
 }
 
-/// Capabilities helper methods for all chromium-based browsers.
+/// Capabilities helper methods for all Chromium-based browsers.
 pub trait ChromiumLikeCapabilities: BrowserCapabilitiesHelper {
-    /// Get the current list of command-line arguments to `chromedriver` as a vec.
-    fn args(&self) -> Vec<String> {
-        self.browser_option("args").unwrap_or_default()
-    }
-
     /// Get the current list of Chrome extensions as a vec.
     ///
     /// Each item is a base64-encoded string containing the .CRX extension file contents.
@@ -96,20 +91,9 @@ pub trait ChromiumLikeCapabilities: BrowserCapabilitiesHelper {
         self.insert_browser_option("args", to_value(args)?)
     }
 
-    /// Remove the specified Chrome command-line argument if it had been added previously.
-    fn remove_arg(&mut self, arg: &str) -> WebDriverResult<()> {
-        let mut args = self.args();
-        if args.is_empty() {
-            Ok(())
-        } else {
-            args.retain(|v| v != arg);
-            self.insert_browser_option("args", to_value(args)?)
-        }
-    }
-
     /// Return true if the specified arg is currently set.
     fn has_arg(&self, arg: &str) -> bool {
-        self.args().contains(&arg.to_string())
+        self.args().iter().any(|s| s == arg)
     }
 
     /// Add the specified experimental option.

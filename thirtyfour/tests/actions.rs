@@ -63,7 +63,7 @@ fn actions_mouse_move(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 
         // Test mouse MoveBy.
 
-        // Sanity check - ensure no alerts are displayed prior to actions.
+        // check - ensure no alerts are displayed prior to actions.
         assert_matches!(c.get_alert_text().await, Err(WebDriverError::NoSuchAlert(..)));
 
         c.action_chain()
@@ -102,10 +102,10 @@ fn actions_release(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 
         // Now press the 'a' key again.
         //
-        // If the Control key was not released, this would do `Ctrl+a` (i.e. select all)
-        // but there is no text so it would do nothing.
+        // If the Control key was not released, this would do `Ctrl+a` (i.e., select all)
+        // but there is no text, so it would do nothing.
         //
-        // However if the Control key was released (as expected)
+        // However, if the Control key was released (as expected)
         // then this will type 'a' into the text element.
         c.action_chain().key_down('a').perform().await?;
         assert_eq!(elem.prop("value").await?.unwrap(), "a");
@@ -121,7 +121,7 @@ fn actions_drag_and_drop(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
         let drag_to_url = drag_to_url();
         c.goto(&drag_to_url).await?;
 
-        // Validate we are starting with a div and an image that are adjacent to one another.
+        // Validate we are starting with a div and an image that is adjacent to one another.
         c.find(By::XPath("//div[@id='target']/../img[@id='draggable']")).await?;
 
         // Drag the image to the target div

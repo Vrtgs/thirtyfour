@@ -18,7 +18,7 @@ mod feature_component {
         base: WebElement,
         #[by(tag = "label", not_empty)]
         boxes: ElementResolver<Vec<CheckboxComponent>>,
-        // Other fields will be initialised with Default::default().
+        // Other fields will be initialized with Default::default().
         my_field: bool,
     }
 
@@ -38,7 +38,7 @@ mod feature_component {
             Ok(prop.unwrap_or_default() == "true")
         }
 
-        /// Tick the checkbox if it is clickable and isn't already ticked.
+        /// Tick the checkbox if it is clickable and isn't yet ticked.
         pub async fn tick(&self) -> WebDriverResult<()> {
             let elem = resolve_present!(self.input);
             if elem.is_clickable().await? && !self.is_ticked().await? {

@@ -19,7 +19,7 @@ impl Alert {
         }
     }
 
-    /// Get the text of the active alert, if there is one.
+    /// Get the text of the active alert if there is one.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::get_alert_text()"
@@ -28,7 +28,7 @@ impl Alert {
         self.handle.get_alert_text().await
     }
 
-    /// Dismiss the active alert, if there is one.
+    /// Dismiss the active alert if there is one.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::dismiss_alert()"
@@ -37,7 +37,7 @@ impl Alert {
         self.handle.dismiss_alert().await
     }
 
-    /// Accept the active alert, if there is one.
+    /// Accept the active alert if there is one.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::accept_alert()"
@@ -46,7 +46,7 @@ impl Alert {
         self.handle.accept_alert().await
     }
 
-    /// Send the specified text to the active alert, if there is one.
+    /// Send the specified text to the active alert if there is one.
     #[deprecated(
         since = "0.30.0",
         note = "This method has been moved to WebDriver::send_alert_text()"

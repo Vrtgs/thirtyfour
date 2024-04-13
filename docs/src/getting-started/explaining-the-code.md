@@ -10,7 +10,7 @@ So what did this code actually do?
 Well, the first thing to know is that `thirtyfour` doesn't talk directly to the Web Browser.
 It simply fires off commands to the webdriver server as HTTP Requests. 
 The webdriver then talks to the Web Browser and tells it to execute each command, and then 
-returns the response from the Web Browser back to `thirtyfour`. As long as the webdriver is
+returns the response from the Web Browser to `thirtyfour`. As long as the webdriver is
 running, `thirtyfour` can do just about anything a human can do in a web browser.
 
 ## Explaining The Code 

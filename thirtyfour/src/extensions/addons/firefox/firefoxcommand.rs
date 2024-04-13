@@ -17,7 +17,7 @@ pub enum FirefoxCommand {
 }
 
 impl FormatRequestData for FirefoxCommand {
-    fn format_request(&self, session_id: &crate::SessionId) -> crate::RequestData {
+    fn format_request(&self, session_id: &crate::SessionId) -> RequestData {
         match &self {
             FirefoxCommand::InstallAddon {
                 path,

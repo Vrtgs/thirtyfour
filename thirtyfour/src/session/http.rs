@@ -193,7 +193,7 @@ pub(crate) async fn run_webdriver_cmd(
 #[derive(Debug, Clone)]
 pub struct CmdResponse {
     /// The body of the response.
-    pub body: serde_json::Value,
+    pub body: Value,
     /// The HTTP status code of the response.
     pub status: u16,
 }

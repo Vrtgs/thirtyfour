@@ -9,18 +9,9 @@ use syn::{
     Data, Fields, GenericArgument, Lit, Meta, MetaNameValue, NestedMeta, PathArguments, PathSegment,
 };
 
-pub fn expand_component_derive(ast: syn::DeriveInput) -> TokenStream {
-    let opts = match ParsedOptions::try_from(ast) {
-        Ok(x) => x,
-        Err(e) => return e,
-    };
-
-    let args = match ComponentArgs::try_from(opts) {
-        Ok(x) => x,
-        Err(e) => return e,
-    };
-
-    quote!(#args)
+pub fn expand_component_derive(ast: syn::DeriveInput) -> Result<TokenStream, TokenStream> {
+    let args = ComponentArgs::try_from(ParsedOptions::try_from(ast)?)?;
+    Ok(quote!(#args))
 }
 
 struct ParsedOptions {
@@ -128,7 +119,7 @@ impl ToTokens for ComponentArgs {
 
         tokens.append_all(quote!(
             impl #ident {
-                pub fn new(base: thirtyfour::WebElement) -> Self {
+                pub fn new(base: ::thirtyfour::WebElement) -> Self {
                     #(#field_initialisers)*
                     Self {
                         #base_ident: base,
@@ -141,8 +132,8 @@ impl ToTokens for ComponentArgs {
         // impl From<WebElement>
         tokens.append_all(quote!(
             #[automatically_derived]
-            impl From<thirtyfour::WebElement> for #ident {
-                fn from(elem: thirtyfour::WebElement) -> Self {
+            impl From<::thirtyfour::WebElement> for #ident {
+                fn from(elem: ::thirtyfour::WebElement) -> Self {
                     Self::new(elem)
                 }
             }
@@ -151,8 +142,8 @@ impl ToTokens for ComponentArgs {
         // impl Component
         tokens.append_all(quote!(
             #[automatically_derived]
-            impl thirtyfour::components::Component for #ident {
-                fn base_element(&self) -> thirtyfour::WebElement {
+            impl ::thirtyfour::components::Component for #ident {
+                fn base_element(&self) -> ::thirtyfour::WebElement {
                     self.#base_ident.clone()
                 }
             }
@@ -196,7 +187,7 @@ impl ParsedField {
         ))
     }
 
-    /// Get the initialiser for this field that should go in new().
+    /// Get the initializer for this field that should go in new().
     ///
     /// ```ignore
     /// let some_field = ...; // <-- this (including any attributes as necessary)
@@ -252,15 +243,15 @@ impl ToTokens for WaitOptions {
         let timeout_ms = &self.timeout_ms;
         let interval_ms = &self.interval_ms;
         tokens.append_all(quote!(
-            Some(thirtyfour::extensions::query::ElementQueryWaitOptions::Wait {
-                timeout: std::time::Duration::from_millis(#timeout_ms),
-                interval: std::time::Duration::from_millis(#interval_ms)
+            Some(::thirtyfour::extensions::query::ElementQueryWaitOptions::Wait {
+                timeout: ::std::time::Duration::from_millis(#timeout_ms),
+                interval: ::std::time::Duration::from_millis(#interval_ms)
             })
         ));
     }
 }
 
-/// These are all of the supported tokens in a `#[by(..)]` attribute.
+/// These are all the supported tokens in a `#[by(..)]` attribute.
 #[derive(Debug)]
 enum ByToken {
     Id(Literal),
@@ -733,8 +724,10 @@ impl ToTokens for SingleResolverArgs {
             SingleResolverOptions::CustomFn(f) => {
                 let f_ident = format_ident!("{}", f);
                 tokens.append_all(quote!(
-                    let custom_resolver: thirtyfour::ElementQueryFn<_> = Box::new(|elem| Box::pin(#f_ident(elem)));
-                    #ty::new_custom(base.clone(), custom_resolver)
+                    #ty::new_custom(base.clone(), move |elem: &WebElement| {
+                        let elem = ::std::clone::Clone::clone(elem);
+                        async move { #f_ident(&elem).await }
+                    })
                 ));
             }
             SingleResolverOptions::Opts {
@@ -746,26 +739,28 @@ impl ToTokens for SingleResolverArgs {
                 nowait,
             } => {
                 let ignore_errors_ident = match ignore_errors {
-                    Some(true) => quote!(Some(true)),
-                    _ => quote!(None),
+                    Some(true) => quote!(::std::option::Option::Some(true)),
+                    _ => quote!(::std::option::Option::None),
                 };
                 let description_ident = match description {
-                    Some(desc) => quote!(Some(#desc.to_string())),
-                    None => quote!(None),
+                    Some(desc) => {
+                        quote!(::std::option::Option::Some(::std::string::ToString::to_string(&#desc)))
+                    }
+                    None => quote!(::std::option::Option::None),
                 };
                 let wait_ident = match wait {
                     Some(opts) => quote!(#opts),
                     None => match nowait {
                         Some(true) => {
                             quote! {
-                                Some(thirtyfour::extensions::query::ElementQueryWaitOptions::NoWait)
+                                ::std::option::Option::Some(::thirtyfour::extensions::query::ElementQueryWaitOptions::NoWait)
                             }
                         }
-                        _ => quote!(None),
+                        _ => quote!(::std::option::Option::None),
                     },
                 };
                 let opts_ident = quote!(
-                    thirtyfour::extensions::query::ElementQueryOptions::default()
+                    ::thirtyfour::extensions::query::ElementQueryOptions::default()
                         .set_ignore_errors(#ignore_errors_ident)
                         .set_description::<String>(#description_ident)
                         .set_wait(#wait_ident)
@@ -845,8 +840,10 @@ impl ToTokens for MultiResolverArgs {
             MultiResolverOptions::CustomFn(f) => {
                 let f_ident = format_ident!("{}", f);
                 tokens.append_all(quote!(
-                    let custom_resolver: thirtyfour::ElementQueryFn<_> = Box::new(|elem| Box::pin(#f_ident(elem)));
-                    #ty::new_custom(base.clone(), custom_resolver)
+                    #ty::new_custom(base.clone(), move |elem: &WebElement| {
+                        let elem = ::std::clone::Clone::clone(elem);
+                        async move { #f_ident(&elem).await }
+                    })
                 ));
             }
             MultiResolverOptions::Opts {
@@ -858,26 +855,28 @@ impl ToTokens for MultiResolverArgs {
                 nowait,
             } => {
                 let ignore_errors_ident = match ignore_errors {
-                    Some(true) => quote!(Some(true)),
-                    _ => quote!(None),
+                    Some(true) => quote!(::std::option::Option::Some(true)),
+                    _ => quote!(::std::option::Option::None),
                 };
                 let description_ident = match description {
-                    Some(desc) => quote!(Some(#desc.to_string())),
-                    None => quote!(None),
+                    Some(desc) => {
+                        quote!(::std::option::Option::Some(::std::string::ToString::to_string(&#desc)))
+                    }
+                    None => quote!(::std::option::Option::None),
                 };
                 let wait_ident = match wait {
                     Some(opts) => quote!(#opts),
                     None => match nowait {
                         Some(true) => {
                             quote! {
-                                Some(thirtyfour::extensions::query::ElementQueryWaitOptions::NoWait)
+                                Some(::thirtyfour::extensions::query::ElementQueryWaitOptions::NoWait)
                             }
                         }
                         _ => quote!(None),
                     },
                 };
                 let opts_ident = quote!(
-                    thirtyfour::extensions::query::ElementQueryOptions::default()
+                    ::thirtyfour::extensions::query::ElementQueryOptions::default()
                         .set_ignore_errors(#ignore_errors_ident)
                         .set_description::<String>(#description_ident)
                         .set_wait(#wait_ident)
@@ -900,7 +899,7 @@ impl ToTokens for MultiResolverArgs {
     }
 }
 
-/// Converts GenericType<Args> to GenericType::<Args> in order to call ::new_*() on it.
+/// Converts GenericType<Args> to GenericType::<Args> to call ::new_*() on it.
 ///
 /// Non-generic types will be returned as is.
 fn fix_type(mut ty: syn::Path) -> TokenStream {

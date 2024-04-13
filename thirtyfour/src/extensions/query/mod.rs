@@ -7,9 +7,10 @@
 //! ### ElementQuery
 //!
 //! The `WebDriver::query()` and `WebElement::query()` methods work out-of-the-box with no
-//! additional setup required. However, you can customize some of the behaviour if needed.
+//! additional setup required.
+//! However, you can customize some behavior if needed.
 //!
-//! Now, using the query interface you can do things like this:
+//! Now, using the query interface, you can do things like this:
 //!
 //! ```no_run
 //! # use thirtyfour::prelude::*;
@@ -71,22 +72,28 @@
 //! See the documentation for [StringMatch](https://crates.io/crates/stringmatch) for more info.
 //!
 //! **NOTE:** Each filter will trigger an additional request to the WebDriver server for every poll
-//! iteration. It is therefore strongly recommended to use `By::*` selectors to perform filtering,
-//! if possible. The `By::Css` and `By::XPath` selectors may be required for more complex
+//! iteration.
+//! It is therefore strongly recommended to use `By::*` selectors to perform filtering,
+//! if possible.
+//! The `By::Css` and `By::XPath` selectors may be required for more complex
 //! filters.
 //!
-//! To fetch all matching elements instead of just the first one, simply change `first()` to `all()`
-//! and you'll get a Vec instead. Note that `all()` will return only the elements from the query
-//! branch that first matched something. In the above example, if the
+//! To fetch all matching elements instead of just the first one, change `first()` to `all()`
+//! and you'll get a Vec instead.
+//! Note that `all()` will return only the elements from the query
+//! branch that first matched something.
+//! In the above example, if the
 //! `(By::Css("branch.one")).with_text("testing")` branch returned at least one element, then only
-//! those elements will be returned from an `all()` call even if the other branch would have
-//! matched something. If you want to fetch all elements matched by all branches,
+//! those elements will be returned from an `all()` call even if the other branch has
+//! matched something.
+//! If you want to fetch all elements matched by all branches,
 //! it's probably best to execute multiple queries.
 //!
 //! All timeout, interval and ElementPoller details can be overridden on a per-call basis if
-//! desired. See the [`ElementQuery`] documentation for more details.
+//! desired.
+//! See the [`ElementQuery`] documentation for more details.
 //!
-//! [`ElementQuery`]: crate::extensions::query::ElementQuery
+//! [`ElementQuery`]: ElementQuery
 //!
 //! ### ElementWaiter
 //!
@@ -100,10 +107,11 @@
 //! elem.wait_until().clickable().await?;
 //! ```
 //!
-//! And so on. See the [`ElementWaiter`] docs for the full
+//! And so on.
+//! See the [`ElementWaiter`] docs for the full
 //! list of predicates available.
 //!
-//! [`ElementWaiter`]: crate::extensions::query::ElementWaiter
+//! [`ElementWaiter`]: ElementWaiter
 //!
 //! `ElementWaiter` also allows the user of custom predicates that take a `&WebElement` argument
 //! and return a `WebDriverResult<bool>`.
@@ -120,7 +128,7 @@
 //! ]).await?;
 //! ```
 //! Take a look at the `conditions` module for the full list of predicates available.
-//! NOTE: Predicates require you to specify whether or not errors should be ignored.
+//! NOTE: Predicates require you to specify whether errors should be ignored.
 //!
 //! These predicates (or your own) can also be supplied as filters to `ElementQuery`.
 //!
@@ -129,11 +137,11 @@
 //! The polling strategy can be customized by implementing both [`ElementPoller`]
 //! and [`IntoElementPoller`].
 //!
-//! See [`ElementPollerWithTimeout`] for more details about the default polling behaviour.
+//! See [`ElementPollerWithTimeout`] for more details about the default polling behavior.
 //!
-//! [`ElementPoller`]: crate::extensions::query::ElementPoller
-//! [`IntoElementPoller`]: crate::extensions::query::IntoElementPoller
-//! [`ElementPollerWithTimeout`]: crate::extensions::query::ElementPollerWithTimeout
+//! [`ElementPoller`]: ElementPoller
+//! [`IntoElementPoller`]: IntoElementPoller
+//! [`ElementPollerWithTimeout`]: ElementPollerWithTimeout
 
 /// Predicates to use for element conditions.
 pub mod conditions;

@@ -25,13 +25,14 @@ mod component;
 /// ## Attributes
 ///
 /// ### `#[base]`
-/// By default the base element should be named `base` and be of type `WebElement`.
+/// By default, the base element should be named `base` and be of type `WebElement`.
 /// You can optionally use the `#[base]` attribute if you wish to name the base element
-/// something other than `base`. If you use this attribute you cannot also have another
+/// something other than `base`.
+/// If you use this attribute, you cannot also have another
 /// element named `base`.
 ///
 /// ### `#[by(..)]`
-/// Components use the `#[by(..)]` attribute to specify all of the details of the query.
+/// Components use the `#[by(..)]` attribute to specify all the details of the query.
 ///
 /// The only required attribute is the selector attribute, which can be one of the following:
 /// - `id = "..."`: Select element by id.
@@ -46,7 +47,7 @@ mod component;
 /// - `single`: (default, single element only) Return `NoSuchElement` if the number of elements
 ///             found is != 1.
 /// - `first`: (single element only) Select the first element that matches the query.
-///            By default a query will return `NoSuchElement` if multiple elements match.
+///            By default, a query will return `NoSuchElement` if multiple elements match.
 ///            This default is designed to catch instances where a query is not specific enough.
 /// - `not_empty`: (default, multi elements only) Return `NoSuchElement` if no elements were found.
 /// - `allow_empty`: (multi elements only) Return an empty Vec if no elements were found.
@@ -121,5 +122,5 @@ mod component;
 #[proc_macro_error::proc_macro_error]
 pub fn derive_component_fn(input: TokenStream) -> TokenStream {
     let ast: DeriveInput = parse_macro_input!(input);
-    expand_component_derive(ast).into()
+    expand_component_derive(ast).unwrap_or_else(|err| err).into()
 }

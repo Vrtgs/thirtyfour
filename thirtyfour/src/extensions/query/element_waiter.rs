@@ -1,8 +1,10 @@
-use super::conditions::handle_errors;
+use super::conditions::{collect_arg_slice, handle_errors};
 use super::{conditions, ElementPollerWithTimeout, IntoElementPoller};
 use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
-use crate::{ElementPredicate, WebElement};
+use crate::session::IntoTransfer;
+use crate::{DynElementPredicate, ElementPredicate, WebElement};
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 use stringmatch::Needle;
@@ -60,8 +62,8 @@ impl ElementWaiter {
         self
     }
 
-    /// By default a waiter will ignore any errors that occur while polling for the desired
-    /// condition(s). However, this behaviour can be modified so that the waiter will return
+    /// By default, a waiter will ignore any errors that occur while polling for the desired
+    /// condition(s). However, this behavior can be modified so that the waiter will return
     /// early if an error is returned from thirtyfour.
     pub fn ignore_errors(mut self, ignore: bool) -> Self {
         self.ignore_errors = ignore;
@@ -75,12 +77,17 @@ impl ElementWaiter {
         self.with_poller(Arc::new(ElementPollerWithTimeout::new(timeout, interval)))
     }
 
-    async fn run_poller(&self, conditions: Vec<ElementPredicate>) -> WebDriverResult<bool> {
+    async fn run_poller<'a, F, I, P>(&self, conditions: F) -> WebDriverResult<bool>
+    where
+        F: Fn() -> I,
+        I: IntoIterator<Item = &'a P>,
+        P: ElementPredicate + ?Sized + 'a,
+    {
         let mut poller = self.poller.start();
         loop {
             let mut conditions_met = true;
-            for f in &conditions {
-                if !f(&self.element).await? {
+            for f in conditions() {
+                if !f.call(&self.element).await? {
                     conditions_met = false;
                     break;
                 }
@@ -101,16 +108,19 @@ impl ElementWaiter {
     }
 
     /// Wait for the specified condition to be true.
-    pub async fn condition(self, f: ElementPredicate) -> WebDriverResult<()> {
-        match self.run_poller(vec![f]).await? {
+    pub async fn condition(self, f: impl ElementPredicate) -> WebDriverResult<()> {
+        match self.run_poller(|| [&f].into_iter()).await? {
             true => Ok(()),
             false => self.timeout(),
         }
     }
 
     /// Wait for the specified conditions to be true.
-    pub async fn conditions(self, conditions: Vec<ElementPredicate>) -> WebDriverResult<()> {
-        match self.run_poller(conditions).await? {
+    pub async fn conditions(
+        self,
+        conditions: Vec<Box<DynElementPredicate>>,
+    ) -> WebDriverResult<()> {
+        match self.run_poller(|| conditions.iter().map(Box::deref)).await? {
             true => Ok(()),
             false => self.timeout(),
         }
@@ -119,11 +129,10 @@ impl ElementWaiter {
     /// Wait for the element to become stale.
     pub async fn stale(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
-        self.condition(Box::new(move |elem| {
-            Box::pin(
-                async move { handle_errors(elem.is_present().await.map(|x| !x), ignore_errors) },
-            )
-        }))
+        self.condition(move |elem: &WebElement| {
+            let elem = elem.clone();
+            async move { handle_errors(elem.is_present().await.map(|x| !x), ignore_errors) }
+        })
         .await
     }
 
@@ -232,97 +241,134 @@ impl ElementWaiter {
     /// Wait until the element has the specified attribute.
     pub async fn has_attribute<S, N>(self, attribute_name: S, value: N) -> WebDriverResult<()>
     where
-        S: Into<String>,
+        S: IntoTransfer,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
-        self.condition(conditions::element_has_attribute(attribute_name, value, ignore_errors))
-            .await
+        self.condition(conditions::element_has_attribute(
+            attribute_name.into(),
+            value,
+            ignore_errors,
+        ))
+        .await
     }
 
     /// Wait until the element lacks the specified attribute.
     pub async fn lacks_attribute<S, N>(self, attribute_name: S, value: N) -> WebDriverResult<()>
     where
-        S: Into<String>,
+        S: IntoTransfer,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
-        self.condition(conditions::element_lacks_attribute(attribute_name, value, ignore_errors))
-            .await
+        self.condition(conditions::element_lacks_attribute(
+            attribute_name.into(),
+            value,
+            ignore_errors,
+        ))
+        .await
     }
 
-    /// Wait until the element has all of the specified attributes.
-    pub async fn has_attributes<S, N>(self, desired_attributes: &[(S, N)]) -> WebDriverResult<()>
+    /// Wait until the element has all the specified attributes.
+    pub async fn has_attributes<S, N>(
+        self,
+        desired_attributes: impl IntoIterator<Item = (S, N)>,
+    ) -> WebDriverResult<()>
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoTransfer,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
-        self.condition(conditions::element_has_attributes(desired_attributes, ignore_errors)).await
+        self.condition(conditions::element_has_attributes(
+            collect_arg_slice(desired_attributes),
+            ignore_errors,
+        ))
+        .await
     }
 
-    /// Wait until the element lacks all of the specified attributes.
-    pub async fn lacks_attributes<S, N>(self, desired_attributes: &[(S, N)]) -> WebDriverResult<()>
+    /// Wait until the element lacks all the specified attributes.
+    pub async fn lacks_attributes<S, N>(
+        self,
+        desired_attributes: impl IntoIterator<Item = (S, N)>,
+    ) -> WebDriverResult<()>
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoTransfer,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
-        self.condition(conditions::element_lacks_attributes(desired_attributes, ignore_errors))
-            .await
+        self.condition(conditions::element_lacks_attributes(
+            collect_arg_slice(desired_attributes),
+            ignore_errors,
+        ))
+        .await
     }
 
     /// Wait until the element has the specified property.
     pub async fn has_property<S, N>(self, property_name: S, value: N) -> WebDriverResult<()>
     where
-        S: Into<String>,
+        S: IntoTransfer,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
-        self.condition(conditions::element_has_property(property_name, value, ignore_errors)).await
+        self.condition(conditions::element_has_property(property_name.into(), value, ignore_errors))
+            .await
     }
 
     /// Wait until the element lacks the specified property.
     pub async fn lacks_property<S, N>(self, property_name: S, value: N) -> WebDriverResult<()>
     where
-        S: Into<String>,
+        S: IntoTransfer,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
-        self.condition(conditions::element_lacks_property(property_name, value, ignore_errors))
-            .await
+        self.condition(conditions::element_lacks_property(
+            property_name.into(),
+            value,
+            ignore_errors,
+        ))
+        .await
     }
 
-    /// Wait until the element has all of the specified properties.
-    pub async fn has_properties<S, N>(self, desired_properties: &[(S, N)]) -> WebDriverResult<()>
+    /// Wait until the element has all the specified properties.
+    pub async fn has_properties<S, N>(
+        self,
+        desired_properties: impl IntoIterator<Item = (S, N)>,
+    ) -> WebDriverResult<()>
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoTransfer,
+        N: Needle + Send + Sync + 'static,
     {
+        let desired_properties: Arc<[(Arc<str>, N)]> =
+            desired_properties.into_iter().map(|(a, b)| (a.into(), b)).collect();
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_has_properties(desired_properties, ignore_errors)).await
     }
 
-    /// Wait until the element lacks all of the specified properties.
-    pub async fn lacks_properties<S, N>(self, desired_properties: &[(S, N)]) -> WebDriverResult<()>
+    /// Wait until the element lacks all the specified properties.
+    pub async fn lacks_properties<S, N>(
+        self,
+        desired_properties: impl IntoIterator<Item = (S, N)>,
+    ) -> WebDriverResult<()>
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoTransfer,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
-        self.condition(conditions::element_lacks_properties(desired_properties, ignore_errors))
-            .await
+        self.condition(conditions::element_lacks_properties(
+            collect_arg_slice(desired_properties),
+            ignore_errors,
+        ))
+        .await
     }
 
     /// Wait until the element has the specified CSS property.
     pub async fn has_css_property<S, N>(self, css_property_name: S, value: N) -> WebDriverResult<()>
     where
-        S: Into<String>,
+        S: IntoTransfer,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_has_css_property(
-            css_property_name,
+            css_property_name.into(),
             value,
             ignore_errors,
         ))
@@ -336,47 +382,47 @@ impl ElementWaiter {
         value: N,
     ) -> WebDriverResult<()>
     where
-        S: Into<String>,
+        S: IntoTransfer,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_lacks_css_property(
-            css_property_name,
+            css_property_name.into(),
             value,
             ignore_errors,
         ))
         .await
     }
 
-    /// Wait until the element has all of the specified CSS properties.
+    /// Wait until the element has all the specified CSS properties.
     pub async fn has_css_properties<S, N>(
         self,
-        desired_css_properties: &[(S, N)],
+        desired_css_properties: impl IntoIterator<Item = (S, N)>,
     ) -> WebDriverResult<()>
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoTransfer,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_has_css_properties(
-            desired_css_properties,
+            collect_arg_slice(desired_css_properties),
             ignore_errors,
         ))
         .await
     }
 
-    /// Wait until the element lacks all of the specified CSS properties.
+    /// Wait until the element lacks all the specified CSS properties.
     pub async fn lacks_css_properties<S, N>(
         self,
-        desired_css_properties: &[(S, N)],
+        desired_css_properties: impl IntoIterator<Item = (S, N)>,
     ) -> WebDriverResult<()>
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoTransfer,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
         self.condition(conditions::element_lacks_css_properties(
-            desired_css_properties,
+            collect_arg_slice(desired_css_properties),
             ignore_errors,
         ))
         .await
@@ -420,9 +466,10 @@ async fn _test_is_send() -> WebDriverResult<()> {
     is_send_val(&elem.wait_until().displayed());
     is_send_val(&elem.wait_until().selected());
     is_send_val(&elem.wait_until().enabled());
-    is_send_val(&elem.wait_until().condition(Box::new(|elem| {
-        Box::pin(async move { elem.is_enabled().await.or(Ok(false)) })
-    })));
+    is_send_val(&elem.wait_until().condition(move |elem: &WebElement| {
+        let elem = elem.clone();
+        async move { elem.is_enabled().await.or(Ok(false)) }
+    }));
 
     Ok(())
 }

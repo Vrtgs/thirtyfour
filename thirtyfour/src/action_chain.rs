@@ -45,7 +45,7 @@ impl ActionChain {
         }
     }
 
-    /// Reset all actions, reverting all input devices back to default states.
+    /// Reset all actions, reverting all input devices to default states.
     ///
     /// # Example:
     /// ```no_run

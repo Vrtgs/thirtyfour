@@ -1,7 +1,7 @@
 //! Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 //!
 //! It supports the W3C WebDriver v1 spec.
-//! Tested with Chrome and Firefox although any W3C-compatible WebDriver
+//! Tested with Chrome and Firefox, although any W3C-compatible WebDriver
 //! should work.
 //!
 //! ## Getting Started
@@ -78,7 +78,7 @@
 //! it to complete. This means you are in charge of closing the browser at the end of your code,
 //! via a call to [`WebDriver::quit`] as in the above example.
 //!
-//! If you do not call [`WebDriver::quit`] then the browser will stay open until it is
+//! If you do not call [`WebDriver::quit`], then the browser will stay open until it is
 //! either explicitly closed later outside your code, or the session times out.
 //!
 //! ### Advanced element queries and explicit waits
@@ -86,15 +86,15 @@
 //! You can use [`WebDriver::query`] to perform more advanced queries
 //! including polling and filtering. Custom filter functions are also supported.
 //!
-//! Also the [`WebElement::wait_until`] method provides additional support for explicit waits
+//! Also, the [`WebElement::wait_until`] method provides additional support for explicit waits
 //! using a variety of built-in predicates. You can also provide your own custom predicate if
 //! desired.
 //!
 //! See the [`query`] documentation for more details and examples.
 //!
-//! [`WebDriver::query`]: crate::extensions::query::ElementQueryable::query
-//! [`WebElement::wait_until`]: crate::extensions::query::ElementWaitable::wait_until
-//! [`query`]: crate::extensions::query
+//! [`WebDriver::query`]: extensions::query::ElementQueryable::query
+//! [`WebElement::wait_until`]: extensions::query::ElementWaitable::wait_until
+//! [`query`]: extensions::query
 //!
 //! ### Components
 //!
@@ -164,8 +164,8 @@ pub use common::{
     types::*,
 };
 pub use switch_to::SwitchTo;
-pub use webdriver::WebDriver;
-pub use webelement::WebElement;
+pub use web_driver::WebDriver;
+pub use web_element::WebElement;
 
 /// Allow importing the common types via `use thirtyfour::prelude::*`.
 pub mod prelude {
@@ -202,8 +202,8 @@ pub mod support;
 
 mod js;
 mod switch_to;
-mod webdriver;
-mod webelement;
+mod web_driver;
+mod web_element;
 
 // Re-export StringMatch if needed.
 pub use stringmatch;

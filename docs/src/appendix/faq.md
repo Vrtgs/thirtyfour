@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-If you have a question that's not answered here, head over to the 
+If you have a question not answered here, head over to the 
 [discussion page](https://github.com/stevepryde/thirtyfour/discussions) and ask your question there.
 
 Remember to search through existing discussions and issues to check that your question hasn't already been asked/answered.

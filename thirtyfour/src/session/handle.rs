@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
@@ -18,6 +18,7 @@ use crate::common::cookie::Cookie;
 use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
 use crate::session::scriptret::ScriptRet;
+use crate::session::IntoTransfer;
 use crate::support::base64_decode;
 use crate::{By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
 use crate::{TimeoutConfiguration, WindowHandle};
@@ -29,7 +30,7 @@ pub struct SessionHandle {
     /// The HTTP client for performing webdriver requests.
     pub client: Arc<dyn HttpClient + Send + Sync>,
     /// The webdriver server URL.
-    server_url: url::Url,
+    server_url: Url,
     /// The session id for this webdriver session.
     session_id: SessionId,
     /// The config used by this instance.
@@ -189,26 +190,25 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn goto(&self, url: impl Into<String>) -> WebDriverResult<()> {
+    pub async fn goto(&self, url: impl IntoTransfer) -> WebDriverResult<()> {
         let mut url = url.into();
         if !url.starts_with("http") {
-            url = format!("https://{url}");
+            url = format!("https://{url}").into();
         }
         self.cmd(Command::NavigateTo(url)).await?;
         Ok(())
     }
 
     /// Navigate to the specified URL. Alias of goto().
-    pub async fn get(&self, url: impl Into<String>) -> WebDriverResult<()> {
+    pub async fn get(&self, url: impl IntoTransfer) -> WebDriverResult<()> {
         self.goto(url).await
     }
 
     /// Get the current URL.
-    pub async fn current_url(&self) -> WebDriverResult<url::Url> {
+    pub async fn current_url(&self) -> WebDriverResult<Url> {
         let r = self.cmd(Command::GetCurrentUrl).await?;
         let s: String = r.value()?;
-        url::Url::parse(&s)
-            .map_err(|e| WebDriverError::ParseError(format!("invalid url: {s}: {e}")))
+        Url::parse(&s).map_err(|e| WebDriverError::ParseError(format!("invalid url: {s}: {e}")))
     }
 
     /// Get the page source as a String.
@@ -347,10 +347,10 @@ impl SessionHandle {
     /// ```
     pub async fn execute(
         self: &Arc<Self>,
-        script: impl Into<String>,
-        args: Vec<Value>,
+        script: impl IntoTransfer,
+        args: impl Into<Arc<[Value]>>,
     ) -> WebDriverResult<ScriptRet> {
-        let r = self.cmd(Command::ExecuteScript(script.into(), args)).await?;
+        let r = self.cmd(Command::ExecuteScript(script.into(), args.into())).await?;
         Ok(ScriptRet::new(self.clone(), r.value()?))
     }
 
@@ -358,7 +358,7 @@ impl SessionHandle {
     #[deprecated(since = "0.30.0", note = "This method has been renamed to execute()")]
     pub async fn execute_script(
         self: &Arc<Self>,
-        script: impl Into<String>,
+        script: impl IntoTransfer,
         args: Vec<Value>,
     ) -> WebDriverResult<ScriptRet> {
         self.execute(script, args).await
@@ -425,10 +425,10 @@ impl SessionHandle {
     /// ```
     pub async fn execute_async(
         self: &Arc<Self>,
-        script: impl Into<String>,
-        args: Vec<Value>,
+        script: impl IntoTransfer,
+        args: impl Into<Arc<[Value]>>,
     ) -> WebDriverResult<ScriptRet> {
-        let r = self.cmd(Command::ExecuteAsyncScript(script.into(), args)).await?;
+        let r = self.cmd(Command::ExecuteAsyncScript(script.into(), args.into())).await?;
         Ok(ScriptRet::new(self.clone(), r.value()?))
     }
 
@@ -436,10 +436,10 @@ impl SessionHandle {
     #[deprecated(since = "0.30.0", note = "This method has been renamed to execute_async()")]
     pub async fn execute_script_async(
         self: &Arc<Self>,
-        script: impl Into<String>,
-        args: Vec<Value>,
+        script: impl IntoTransfer,
+        args: impl Into<Arc<[Value]>>,
     ) -> WebDriverResult<ScriptRet> {
-        self.execute_async(script, args).await
+        self.execute_async(script, args.into()).await
     }
 
     /// Get the current window handle.
@@ -953,13 +953,13 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn get_named_cookie(&self, name: impl Into<String>) -> WebDriverResult<Cookie> {
+    pub async fn get_named_cookie(&self, name: impl IntoTransfer) -> WebDriverResult<Cookie> {
         self.cmd(Command::GetNamedCookie(name.into())).await?.value()
     }
 
     /// Get the specified cookie.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to get_named_cookie()")]
-    pub async fn get_cookie(&self, name: impl Into<String>) -> WebDriverResult<Cookie> {
+    pub async fn get_cookie(&self, name: impl IntoTransfer) -> WebDriverResult<Cookie> {
         self.get_named_cookie(name).await
     }
 
@@ -980,7 +980,7 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn delete_cookie(&self, name: impl Into<String>) -> WebDriverResult<()> {
+    pub async fn delete_cookie(&self, name: impl IntoTransfer) -> WebDriverResult<()> {
         self.cmd(Command::DeleteCookie(name.into())).await?;
         Ok(())
     }
@@ -1100,10 +1100,10 @@ impl SessionHandle {
     /// ```
     pub async fn set_window_name(
         self: &Arc<SessionHandle>,
-        window_name: impl Into<String>,
+        window_name: impl Display,
     ) -> WebDriverResult<()> {
-        let script = format!(r#"window.name = "{}""#, window_name.into());
-        self.execute(&script, Vec::new()).await?;
+        let script = format!(r#"window.name = "{}""#, window_name);
+        self.execute(script, Vec::new()).await?;
         Ok(())
     }
 

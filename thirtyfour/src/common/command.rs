@@ -6,19 +6,21 @@ use crate::common::{
     keys::TypingData,
     types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
 };
+use crate::session::IntoTransfer;
 use crate::{RequestData, RequestMethod};
 use std::fmt;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 /// The W3C element identifier key.
 pub const MAGIC_ELEMENTID: &str = "element-6066-11e4-a52e-4f735466cecf";
 
 /// Actions.
 #[derive(Debug)]
-pub struct Actions(serde_json::Value);
+pub struct Actions(Value);
 
-impl From<serde_json::Value> for Actions {
-    fn from(value: serde_json::Value) -> Self {
+impl From<Value> for Actions {
+    fn from(value: Value) -> Self {
         Actions(value)
     }
 }
@@ -27,14 +29,14 @@ impl From<serde_json::Value> for Actions {
 #[derive(Debug, Clone)]
 pub struct Selector {
     /// Selector name.
-    pub name: String,
+    pub name: Arc<str>,
     /// Selector query.
-    pub query: String,
+    pub query: Arc<str>,
 }
 
 impl Selector {
     /// Create a new Selector.
-    pub fn new(name: impl Into<String>, query: impl Into<String>) -> Self {
+    pub fn new(name: impl IntoTransfer, query: impl IntoTransfer) -> Self {
         Self {
             name: name.into(),
             query: query.into(),
@@ -45,22 +47,22 @@ impl Selector {
 /// Element Selector representation.
 #[derive(Debug, Clone)]
 pub enum BySelector {
-    /// Select element by id.
-    Id(String),
-    /// Select element by XPath.
-    XPath(String),
-    /// Select element by link text.
-    LinkText(String),
-    /// Select element by partial link text.
-    PartialLinkText(String),
+    /// Select an element by id.
+    Id(Arc<str>),
+    /// Select an element by XPath.
+    XPath(Arc<str>),
+    /// Select an element by link text.
+    LinkText(Arc<str>),
+    /// Select an element by partial link text.
+    PartialLinkText(Arc<str>),
     /// Select element by name.
-    Name(String),
-    /// Select element by tag.
-    Tag(String),
-    /// Select element by class.
-    ClassName(String),
-    /// Select element by CSS.
-    Css(String),
+    Name(Arc<str>),
+    /// Select an element by tag.
+    Tag(Arc<str>),
+    /// Select an element by class.
+    ClassName(Arc<str>),
+    /// Select an element by CSS.
+    Css(Arc<str>),
 }
 
 /// Element Selector struct providing a convenient way to specify selectors.
@@ -72,51 +74,51 @@ pub struct By {
 #[allow(non_snake_case)]
 impl By {
     /// Select element by id.
-    pub fn Id(id: impl Into<String>) -> Self {
+    pub fn Id(id: impl IntoTransfer) -> Self {
         Self {
             selector: BySelector::Id(id.into()),
         }
     }
 
     /// Select element by link text.
-    pub fn LinkText(text: impl Into<String>) -> Self {
+    pub fn LinkText(text: impl IntoTransfer) -> Self {
         Self {
             selector: BySelector::LinkText(text.into()),
         }
     }
 
     /// Select element by CSS.
-    pub fn Css(css: impl Into<String>) -> Self {
+    pub fn Css(css: impl IntoTransfer) -> Self {
         Self {
             selector: BySelector::Css(css.into()),
         }
     }
 
     /// Select element by XPath.
-    pub fn XPath(x: impl Into<String>) -> Self {
+    pub fn XPath(x: impl IntoTransfer) -> Self {
         Self {
             selector: BySelector::XPath(x.into()),
         }
     }
 
     /// Select element by name.
-    pub fn Name(name: impl Into<String>) -> Self {
+    pub fn Name(name: impl IntoTransfer) -> Self {
         Self {
-            selector: BySelector::Css(format!(r#"[name="{}"]"#, name.into())),
+            selector: BySelector::Css(format!(r#"[name="{}"]"#, name.into()).into()),
         }
     }
 
     /// Select element by tag.
-    pub fn Tag(tag: impl Into<String>) -> Self {
+    pub fn Tag(tag: impl IntoTransfer) -> Self {
         Self {
             selector: BySelector::Css(tag.into()),
         }
     }
 
     /// Select element by class.
-    pub fn ClassName(name: impl Into<String>) -> Self {
+    pub fn ClassName(name: impl IntoTransfer) -> Self {
         Self {
-            selector: BySelector::Css(format!(".{}", name.into())),
+            selector: BySelector::Css(format!(".{}", name.into()).into()),
         }
     }
 }
@@ -166,7 +168,7 @@ impl From<By> for Selector {
 /// Extension Command trait.
 pub trait ExtensionCommand: Debug {
     /// Request Body
-    fn parameters_json(&self) -> Option<serde_json::Value>;
+    fn parameters_json(&self) -> Option<Value>;
 
     /// HTTP method accepting by the webdriver
     fn method(&self) -> RequestMethod;
@@ -174,10 +176,10 @@ pub trait ExtensionCommand: Debug {
     /// Endpoint URL without `/session/{sessionId}` prefix
     ///
     /// Example:- `/moz/addon/install`
-    fn endpoint(&self) -> String;
+    fn endpoint(&self) -> Arc<str>;
 }
 
-/// All of the standard WebDriver commands.
+/// All the standard WebDriver commands.
 #[allow(missing_docs)]
 #[derive(Debug)]
 pub enum Command {
@@ -186,7 +188,7 @@ pub enum Command {
     Status,
     GetTimeouts,
     SetTimeouts(TimeoutConfiguration),
-    NavigateTo(String),
+    NavigateTo(Arc<str>),
     GetCurrentUrl,
     Back,
     Forward,
@@ -214,9 +216,9 @@ pub enum Command {
     FindElementsFromElement(ElementId, Selector),
     IsElementSelected(ElementId),
     IsElementDisplayed(ElementId),
-    GetElementAttribute(ElementId, String),
-    GetElementProperty(ElementId, String),
-    GetElementCssValue(ElementId, String),
+    GetElementAttribute(ElementId, Arc<str>),
+    GetElementProperty(ElementId, Arc<str>),
+    GetElementCssValue(ElementId, Arc<str>),
     GetElementText(ElementId),
     GetElementTagName(ElementId),
     GetElementRect(ElementId),
@@ -225,12 +227,12 @@ pub enum Command {
     ElementClear(ElementId),
     ElementSendKeys(ElementId, TypingData),
     GetPageSource,
-    ExecuteScript(String, Vec<serde_json::Value>),
-    ExecuteAsyncScript(String, Vec<serde_json::Value>),
+    ExecuteScript(Arc<str>, Arc<[Value]>),
+    ExecuteAsyncScript(Arc<str>, Arc<[Value]>),
     GetAllCookies,
-    GetNamedCookie(String),
+    GetNamedCookie(Arc<str>),
     AddCookie(Cookie),
-    DeleteCookie(String),
+    DeleteCookie(Arc<str>),
     DeleteAllCookies,
     PerformActions(Actions),
     ReleaseActions,

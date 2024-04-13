@@ -69,8 +69,8 @@ impl WebDriver {
     ///
     /// ## Troubleshooting
     ///
-    /// - If the webdriver appears to hang or give no response, please check that the
-    ///   capabilities object is of the correct type for that webdriver.
+    /// - If the webdriver appears to freeze or give no response, please check that the
+    ///   capabilities' object is of the correct type for that webdriver.
     pub async fn new<S, C>(server_url: S, capabilities: C) -> WebDriverResult<Self>
     where
         S: Into<String>,
@@ -135,7 +135,7 @@ impl WebDriver {
 }
 
 /// The Deref implementation allows the WebDriver to "fall back" to SessionHandle and
-/// exposes all of the methods there without requiring us to use an async_trait.
+/// exposes all the methods there without requiring us to use an async_trait.
 /// See documentation at the top of this module for more details on the design.
 impl Deref for WebDriver {
     type Target = Arc<SessionHandle>;
