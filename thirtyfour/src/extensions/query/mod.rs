@@ -8,7 +8,7 @@
 //!
 //! The `WebDriver::query()` and `WebElement::query()` methods work out-of-the-box with no
 //! additional setup required.
-//! However, you can customize some behavior if needed.
+//! However, you can customize some behaviour if needed.
 //!
 //! Now, using the query interface, you can do things like this:
 //!
@@ -137,7 +137,7 @@
 //! The polling strategy can be customized by implementing both [`ElementPoller`]
 //! and [`IntoElementPoller`].
 //!
-//! See [`ElementPollerWithTimeout`] for more details about the default polling behavior.
+//! See [`ElementPollerWithTimeout`] for more details about the default polling behaviour.
 //!
 //! [`ElementPoller`]: ElementPoller
 //! [`IntoElementPoller`]: IntoElementPoller
