@@ -13,42 +13,53 @@ mod sealed {
     use std::borrow::Cow;
     use std::rc::Rc;
     use std::sync::Arc;
+    use url::Url;
+    use crate::error::{WebDriverError, WebDriverResult};
 
     pub trait IntoTransfer {
         fn into(self) -> Arc<str>;
     }
 
+    pub trait IntoUrl {
+        fn into_url(self) -> WebDriverResult<Url>;
+    }
+    
     impl IntoTransfer for &str {
         fn into(self) -> Arc<str> {
             Arc::from(self)
         }
     }
 
+    impl IntoUrl for &str {
+        fn into_url(self) -> WebDriverResult<Url> {
+            Url::parse(self).map_err(|e| WebDriverError::ParseError(format!("url parse err {e}")))
+        }
+    }
+
     macro_rules! deref_impl {
-        (($(({$($life: lifetime)?}, $T: ty)),* $(,)?)) => {$(
-            impl$(<$life>)? IntoTransfer for $T {
+        ($trait: path => $meth:ident -> $ret:ty {on} ($($T: ty),*)) => {$(
+            impl $trait for $T {
                 #[inline]
-                fn into(self) -> Arc<str> {
-                    <&$T as IntoTransfer>::into(&self)
+                fn $meth(self) -> $ret {
+                    <&$T as $trait>::$meth(&self)
                 }
             }
 
-            impl$(<$life>)? IntoTransfer for &$T {
+            impl $trait for &$T {
                 #[inline]
-                fn into(self) -> Arc<str> {
-                    <&str as IntoTransfer>::into(&self)
+                fn $meth(self) -> $ret {
+                    <&str as $trait>::$meth(&self)
                 }
             }
         )*};
-        (($($T: ty),*) {and} $(({$life: lifetime}, $life_ty: ty))*) => {
-            deref_impl! {
-                ($(({$life}, $life_ty))*, $(({}, $T)),*)
-            }
-        };
     }
 
     deref_impl! {
-        (String, Box<str>, Rc<str>) {and} ({'a}, Cow<'a, str>)
+        IntoTransfer => into -> Arc<str> {on} (String, Box<str>, Rc<str>, Cow<'_, str>)
+    }
+    
+    deref_impl! {
+        IntoUrl => into_url -> WebDriverResult<Url> {on} (String)
     }
 
     impl IntoTransfer for Arc<str> {
@@ -62,12 +73,26 @@ mod sealed {
             Arc::clone(self)
         }
     }
+
+    impl IntoUrl for Url {
+        fn into_url(self) -> WebDriverResult<Url> {
+            Ok(self)
+        }
+    }
+
+    impl IntoUrl for &Url {
+        fn into_url(self) -> WebDriverResult<Url> {
+            Ok(self.clone())
+        }
+    }
 }
 
 /// trait for turning a string into a cheaply cloneable and transferable String
 pub trait IntoArcStr: sealed::IntoTransfer {}
-
 impl<T: sealed::IntoTransfer> IntoArcStr for T {}
+
+ trait IntoUrl: sealed::IntoUrl {}
+impl<T: sealed::IntoUrl> IntoUrl for T {}
 
 /// Rectangle representing the dimensions of an element.
 #[derive(Debug, Clone, Serialize, Deserialize)]
