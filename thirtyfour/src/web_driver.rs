@@ -9,6 +9,7 @@ use crate::session::create::start_session;
 use crate::session::handle::SessionHandle;
 #[cfg(feature = "reqwest")]
 use crate::session::http::create_reqwest_client;
+use crate::session::http::HttpClient;
 use crate::Capabilities;
 
 /// The `WebDriver` struct encapsulates an async Selenium WebDriver browser
@@ -91,17 +92,34 @@ impl WebDriver {
         S: Into<String>,
         C: Into<Capabilities>,
     {
+        // TODO: create builder and make timeout configurable.
+        #[cfg(feature = "reqwest")]
+        let client = create_reqwest_client(std::time::Duration::from_secs(120));
+        #[cfg(not(feature = "reqwest"))]
+        let client = crate::session::http::null_client::create_null_client();
+        Self::new_with_config_and_client(server_url, capabilities, config, client).await
+    }
+
+    /// Create a new `WebDriver` with the specified `WebDriverConfig`.
+    ///
+    /// Use `WebDriverConfig::builder().build()` to construct the config.
+    pub async fn new_with_config_and_client<S, C>(
+        server_url: S,
+        capabilities: C,
+        config: WebDriverConfig,
+        client: impl HttpClient,
+    ) -> WebDriverResult<Self>
+    where
+        S: Into<String>,
+        C: Into<Capabilities>,
+    {
         let capabilities = capabilities.into();
         let server_url = server_url
             .into()
             .parse()
             .map_err(|e| WebDriverError::ParseError(format!("invalid url: {e}")))?;
 
-        // TODO: create builder and make timeout configurable.
-        #[cfg(feature = "reqwest")]
-        let client = Arc::new(create_reqwest_client(std::time::Duration::from_secs(120)));
-        #[cfg(not(feature = "reqwest"))]
-        let client = Arc::new(crate::session::http::null_client::create_null_client());
+        let client = Arc::new(client);
         let session_id = start_session(client.as_ref(), &server_url, &config, capabilities).await?;
 
         let handle = SessionHandle::new_with_config(client, server_url, session_id, config)?;
@@ -126,7 +144,7 @@ impl WebDriver {
     /// End the webdriver session and close the browser.
     ///
     /// **NOTE:** The browser will not close automatically when `WebDriver` goes out of scope.
-    ///           Thus if you intend for the browser to close once you are done with it, then
+    ///           Thus, if you intend for the browser to close once you are done with it, then
     ///           you must call this method at that point, and await it.
     pub async fn quit(self) -> WebDriverResult<()> {
         self.handle.cmd(Command::DeleteSession).await?;

@@ -19,8 +19,8 @@ use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
 use crate::session::scriptret::ScriptRet;
 use crate::support::base64_decode;
-use crate::{IntoArcStr, IntoUrl};
 use crate::{By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
+use crate::{IntoArcStr, IntoUrl};
 use crate::{TimeoutConfiguration, WindowHandle};
 
 /// The SessionHandle contains a shared reference to the HTTP client

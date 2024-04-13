@@ -37,7 +37,7 @@ impl<'a, T: Into<Option<&'a Value>>> From<T> for Body<'a> {
 
 /// Trait used to implement a HTTP client.
 #[async_trait::async_trait]
-pub trait HttpClient {
+pub trait HttpClient: Send + Sync + 'static {
     /// Send an HTTP request and return the response.
     async fn send(&self, request: Request<Body<'_>>) -> WebDriverResult<Response<Bytes>>;
 }
@@ -106,10 +106,7 @@ pub(crate) mod null_client {
 
     #[async_trait::async_trait]
     impl HttpClient for NullHttpClient {
-        async fn send(
-            &self,
-            _: http::Request<super::Body>,
-        ) -> super::WebDriverResult<http::Response<Bytes>> {
+        async fn send(&self, _: Request<Body<'_>>) -> WebDriverResult<Response<Bytes>> {
             panic!("Either enable the `reqwest` feature or implement your own `HttpClient`")
         }
     }
