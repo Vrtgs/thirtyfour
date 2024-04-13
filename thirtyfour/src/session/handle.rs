@@ -27,7 +27,7 @@ use crate::{TimeoutConfiguration, WindowHandle};
 /// to allow sending commands to the underlying WebDriver.
 pub struct SessionHandle {
     /// The HTTP client for performing webdriver requests.
-    pub client: Arc<dyn HttpClient + Send + Sync>,
+    pub client: Arc<dyn HttpClient>,
     /// The webdriver server URL.
     server_url: Arc<Url>,
     /// The session id for this webdriver session.
@@ -48,7 +48,7 @@ impl Debug for SessionHandle {
 impl SessionHandle {
     /// Create new SessionHandle.
     pub fn new(
-        client: Arc<dyn HttpClient + Send + Sync>,
+        client: Arc<dyn HttpClient>,
         server_url: impl IntoUrl,
         session_id: SessionId,
     ) -> WebDriverResult<Self> {
@@ -57,7 +57,7 @@ impl SessionHandle {
 
     /// Create new `SessionHandle` with the specified `WebDriverConfig`.
     pub(crate) fn new_with_config(
-        client: Arc<dyn HttpClient + Send + Sync>,
+        client: Arc<dyn HttpClient>,
         server_url: impl IntoUrl,
         session_id: SessionId,
         config: WebDriverConfig,
