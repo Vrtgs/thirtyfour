@@ -147,7 +147,7 @@ impl SelectElement {
     ///       However, if no exact match was found,
     ///       it will attempt to select options that contain the longest word in the
     ///       specified search text.
-    ///       This particular behavior is patterned after the python selenium library.
+    ///       This particular behaviour is patterned after the python selenium library.
     async fn set_selection_by_visible_text(&self, text: &str, select: bool) -> WebDriverResult<()> {
         let mut xpath = format!(".//option[normalize-space(.) = {}]", escape_string(text));
         let options = match self.element.find_all(By::XPath(&*xpath)).await {

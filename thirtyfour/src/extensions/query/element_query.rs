@@ -250,7 +250,7 @@ impl ElementQuery {
 
     /// By default, a query will ignore any errors that occur while polling for the desired
     /// element(s).
-    /// However, this behavior can be modified so that the waiter will return
+    /// However, this behaviour can be modified so that the waiter will return
     /// early if an error is returned from thirtyfour.
     pub fn ignore_errors(mut self, ignore: bool) -> Self {
         self.options = self.options.ignore_errors(ignore);

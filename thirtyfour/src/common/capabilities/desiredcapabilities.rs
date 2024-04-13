@@ -193,7 +193,7 @@ pub trait CapabilitiesHelper {
         self.set_base_capability("proxy", proxy)
     }
 
-    /// Set the behavior to be followed when an unexpected alert is encountered.
+    /// Set the behaviour to be followed when an unexpected alert is encountered.
     fn set_unexpected_alert_behaviour(&mut self, behaviour: AlertBehaviour) -> WebDriverResult<()> {
         self.set_base_capability("unexpectedAlertBehaviour", behaviour)
     }
@@ -356,7 +356,7 @@ pub enum AlertBehaviour {
     Ignore,
 }
 
-/// The automatic scrolling behavior for this session.
+/// The automatic scrolling behaviour for this session.
 #[derive(Debug, Clone, Serialize)]
 #[repr(u8)]
 pub enum ScrollBehaviour {

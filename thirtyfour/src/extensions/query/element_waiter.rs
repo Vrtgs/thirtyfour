@@ -63,7 +63,7 @@ impl ElementWaiter {
     }
 
     /// By default, a waiter will ignore any errors that occur while polling for the desired
-    /// condition(s). However, this behavior can be modified so that the waiter will return
+    /// condition(s). However, this behaviour can be modified so that the waiter will return
     /// early if an error is returned from thirtyfour.
     pub fn ignore_errors(mut self, ignore: bool) -> Self {
         self.ignore_errors = ignore;
