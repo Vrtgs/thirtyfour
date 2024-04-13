@@ -91,7 +91,8 @@ mod sealed {
 pub trait IntoArcStr: sealed::IntoTransfer {}
 impl<T: sealed::IntoTransfer> IntoArcStr for T {}
 
-trait IntoUrl: sealed::IntoUrl {}
+/// A trait to try to convert some type into an `Url`.
+pub trait IntoUrl: sealed::IntoUrl {}
 impl<T: sealed::IntoUrl> IntoUrl for T {}
 
 /// Rectangle representing the dimensions of an element.

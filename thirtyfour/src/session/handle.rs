@@ -1,4 +1,3 @@
-use reqwest::IntoUrl;
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::path::Path;
@@ -20,7 +19,7 @@ use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
 use crate::session::scriptret::ScriptRet;
 use crate::support::base64_decode;
-use crate::IntoArcStr;
+use crate::{IntoArcStr, IntoUrl};
 use crate::{By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
 use crate::{TimeoutConfiguration, WindowHandle};
 
