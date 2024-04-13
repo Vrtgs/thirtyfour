@@ -1,5 +1,5 @@
 use crate::error::WebDriverResult;
-use crate::session::IntoTransfer;
+use crate::IntoArcStr;
 use crate::{ElementPredicate, WebElement};
 use std::sync::Arc;
 use stringmatch::Needle;
@@ -190,7 +190,7 @@ where
 pub(crate) fn collect_arg_slice<S, N, I>(desired_attributes: I) -> Arc<[(Arc<str>, N)]>
 where
     I: IntoIterator<Item = (S, N)>,
-    S: IntoTransfer,
+    S: IntoArcStr,
     N: Needle + Send + Sync + 'static,
 {
     desired_attributes.into_iter().map(|(a, b)| (a.into(), b)).collect()

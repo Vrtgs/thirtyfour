@@ -119,7 +119,7 @@ impl WebDriver {
     /// some other configuration option) for only one instance of `WebDriver`.
     pub fn clone_with_config(&self, config: WebDriverConfig) -> Self {
         Self {
-            handle: self.handle.clone_with_config(config),
+            handle: Arc::new(self.handle.clone_with_config(config)),
         }
     }
 

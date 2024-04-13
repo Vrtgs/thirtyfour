@@ -1,4 +1,5 @@
 use futures::future::BoxFuture;
+use futures::FutureExt;
 use std::future::Future;
 use std::sync::Arc;
 use std::{fmt, time::Duration};
@@ -6,8 +7,67 @@ use std::{fmt, time::Duration};
 use serde::{Deserialize, Serialize};
 
 use crate::error::WebDriverResult;
-use crate::session::IntoTransfer;
 use crate::WebElement;
+
+mod sealed {
+    use std::borrow::Cow;
+    use std::rc::Rc;
+    use std::sync::Arc;
+
+    pub trait IntoTransfer {
+        fn into(self) -> Arc<str>;
+    }
+
+    impl IntoTransfer for &str {
+        fn into(self) -> Arc<str> {
+            Arc::from(self)
+        }
+    }
+
+    macro_rules! deref_impl {
+        (($(({$($life: lifetime)?}, $T: ty)),* $(,)?)) => {$(
+            impl$(<$life>)? IntoTransfer for $T {
+                #[inline]
+                fn into(self) -> Arc<str> {
+                    <&$T as IntoTransfer>::into(&self)
+                }
+            }
+
+            impl$(<$life>)? IntoTransfer for &$T {
+                #[inline]
+                fn into(self) -> Arc<str> {
+                    <&str as IntoTransfer>::into(&self)
+                }
+            }
+        )*};
+        (($($T: ty),*) {and} $(({$life: lifetime}, $life_ty: ty))*) => {
+            deref_impl! {
+                ($(({$life}, $life_ty))*, $(({}, $T)),*)
+            }
+        };
+    }
+
+    deref_impl! {
+        (String, Box<str>, Rc<str>) {and} ({'a}, Cow<'a, str>)
+    }
+
+    impl IntoTransfer for Arc<str> {
+        fn into(self) -> Arc<str> {
+            self
+        }
+    }
+
+    impl IntoTransfer for &Arc<str> {
+        fn into(self) -> Arc<str> {
+            Arc::clone(self)
+        }
+    }
+}
+
+/// trait for turning a string into a cheaply cloneable and transferable String
+pub trait IntoArcStr: sealed::IntoTransfer {}
+
+impl<T: sealed::IntoTransfer> IntoArcStr for T {}
 
 /// Rectangle representing the dimensions of an element.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,7 +135,7 @@ pub struct SessionId {
 
 impl<S> From<S> for SessionId
 where
-    S: IntoTransfer,
+    S: IntoArcStr,
 {
     fn from(value: S) -> Self {
         SessionId {
@@ -110,7 +170,7 @@ pub struct ElementId {
 
 impl<S> From<S> for ElementId
 where
-    S: IntoTransfer,
+    S: IntoArcStr,
 {
     fn from(value: S) -> Self {
         ElementId {
@@ -133,7 +193,7 @@ pub struct WindowHandle {
 
 impl<S> From<S> for WindowHandle
 where
-    S: IntoTransfer,
+    S: IntoArcStr,
 {
     fn from(value: S) -> Self {
         WindowHandle {
@@ -196,17 +256,17 @@ impl Rect {
 }
 
 /// Generic element query function that returns some type T.
-pub trait ElementQueryFn<T>: Send + Sync {
+pub trait ElementQueryFn<T: 'static>: Send + Sync + 'static {
     /// the future returned by ElementQueryFn::query
-    type Fut: Future<Output = WebDriverResult<T>> + Send;
+    type Fut: Future<Output = WebDriverResult<T>> + Send + 'static;
 
     /// the implementation of the query function
     fn call(&self, arg: &WebElement) -> Self::Fut;
 }
 
-impl<T, Fut, Fun> ElementQueryFn<T> for Fun
+impl<T: 'static, Fut, Fun> ElementQueryFn<T> for Fun
 where
-    Fun: Fn(&WebElement) -> Fut + Send + Sync + ?Sized,
+    Fun: Fn(&WebElement) -> Fut + Send + Sync + ?Sized + 'static,
     Fut: Future<Output = WebDriverResult<T>> + Send + 'static,
 {
     type Fut = Fut;
@@ -226,6 +286,24 @@ pub type DynElementQueryFn<T> = dyn ElementQueryFn<T, Fut = BoxFuture<'static, W
 
 /// a dynamically dispatched element predicate
 pub type DynElementPredicate = DynElementQueryFn<bool>;
+
+impl<T: 'static> DynElementQueryFn<T> {
+    fn wrap<F: ElementQueryFn<T>>(
+        fun: F,
+    ) -> impl ElementQueryFn<T, Fut = BoxFuture<'static, WebDriverResult<T>>> {
+        move |arg: &WebElement| fun.call(arg).boxed()
+    }
+
+    /// erases the type of ElementQueryFn, and dynamically dispatches it using a Box smart pointer
+    pub fn boxed<F: ElementQueryFn<T>>(fun: F) -> Box<Self> {
+        Box::new(Self::wrap(fun)) as Box<Self>
+    }
+
+    /// erases the type of ElementQueryFn, and dynamically dispatches it using an Arc smart pointer
+    pub fn arc<F: ElementQueryFn<T>>(fun: F) -> Arc<Self> {
+        Arc::new(Self::wrap(fun)) as Arc<Self>
+    }
+}
 
 /// Rect struct with optional fields.
 #[derive(Debug, Default, Clone, Eq, PartialEq, Serialize)]

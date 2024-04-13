@@ -10,8 +10,8 @@ use crate::common::command::Command;
 use crate::error::WebDriverError;
 use crate::js::SIMULATE_DRAG_AND_DROP;
 use crate::session::handle::SessionHandle;
-use crate::session::IntoTransfer;
 use crate::support::base64_decode;
+use crate::IntoArcStr;
 use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRef};
 use crate::{ElementId, TypingData};
 
@@ -322,7 +322,7 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn prop(&self, name: impl IntoTransfer) -> WebDriverResult<Option<String>> {
+    pub async fn prop(&self, name: impl IntoArcStr) -> WebDriverResult<Option<String>> {
         let resp = self
             .handle
             .cmd(Command::GetElementProperty(self.element_id.clone(), name.into()))
@@ -337,7 +337,7 @@ impl WebElement {
 
     /// Get the specified property.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to prop()")]
-    pub async fn get_property(&self, name: impl IntoTransfer) -> WebDriverResult<Option<String>> {
+    pub async fn get_property(&self, name: impl IntoArcStr) -> WebDriverResult<Option<String>> {
         self.prop(name).await
     }
 
@@ -363,7 +363,7 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn attr(&self, name: impl IntoTransfer) -> WebDriverResult<Option<String>> {
+    pub async fn attr(&self, name: impl IntoArcStr) -> WebDriverResult<Option<String>> {
         self.handle
             .cmd(Command::GetElementAttribute(self.element_id.clone(), name.into()))
             .await?
@@ -372,7 +372,7 @@ impl WebElement {
 
     /// Get the specified attribute.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to attr()")]
-    pub async fn get_attribute(&self, name: impl IntoTransfer) -> WebDriverResult<Option<String>> {
+    pub async fn get_attribute(&self, name: impl IntoArcStr) -> WebDriverResult<Option<String>> {
         self.attr(name).await
     }
 
@@ -398,7 +398,7 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn css_value(&self, name: impl IntoTransfer) -> WebDriverResult<String> {
+    pub async fn css_value(&self, name: impl IntoArcStr) -> WebDriverResult<String> {
         self.handle
             .cmd(Command::GetElementCssValue(self.element_id.clone(), name.into()))
             .await?
@@ -407,7 +407,7 @@ impl WebElement {
 
     /// Get the specified CSS property.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to css_value()")]
-    pub async fn get_css_property(&self, name: impl IntoTransfer) -> WebDriverResult<String> {
+    pub async fn get_css_property(&self, name: impl IntoArcStr) -> WebDriverResult<String> {
         self.css_value(name).await
     }
 

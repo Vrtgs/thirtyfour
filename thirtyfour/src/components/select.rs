@@ -21,6 +21,7 @@
 
 use crate::error::{no_such_element, WebDriverError, WebDriverResult};
 use crate::{By, WebElement};
+use std::fmt::{Display, Formatter};
 
 /// Set the selection state of the specified element.
 async fn set_selected(element: &WebElement, select: bool) -> WebDriverResult<()> {
@@ -30,24 +31,30 @@ async fn set_selected(element: &WebElement, select: bool) -> WebDriverResult<()>
     Ok(())
 }
 
+struct Escaped<'a>(&'a str);
+
+impl Display for Escaped<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for (i, substring) in self.0.split('\"').enumerate() {
+            if i != 0 {
+                f.write_str(", '\"', ")?
+            }
+            write!(f, "\"{}\"", substring)?;
+        }
+        if self.0.ends_with('\"') {
+            f.write_str(", '\"'")?;
+        }
+        Ok(())
+    }
+}
+
 /// Escape the specified string for use in Css or XPath selector.
 pub fn escape_string(value: &str) -> String {
     let contains_single = value.contains('\'');
     let contains_double = value.contains('\"');
     if contains_single && contains_double {
-        let mut result = vec![String::from("concat(")];
-        for substring in value.split('\"') {
-            result.push(format!("\"{}\"", substring));
-            result.push(String::from(", '\"', "));
-        }
-        result.pop();
-        if value.ends_with('\"') {
-            result.push(String::from(", '\"'"));
-        }
-        return result.join("") + ")";
-    }
-
-    if contains_double {
+        format!("concat({})", Escaped(value))
+    } else if contains_double {
         format!("'{}'", value)
     } else {
         format!("\"{}\"", value)

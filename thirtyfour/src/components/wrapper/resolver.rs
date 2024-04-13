@@ -4,7 +4,6 @@ use crate::extensions::query::ElementQueryOptions;
 use crate::prelude::ElementQueryable;
 use crate::{By, DynElementQueryFn, ElementQueryFn, WebElement};
 use arc_swap::ArcSwap;
-use futures::FutureExt;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tokio::sync::OnceCell;
@@ -58,8 +57,7 @@ impl<T: Clone + 'static> ElementResolver<T> {
     ) -> Self {
         Self {
             base_element,
-            query_fn: Arc::new(move |arg: &WebElement| query_fn.call(arg).boxed())
-                as Arc<DynElementQueryFn<T>>,
+            query_fn: DynElementQueryFn::arc(query_fn),
             element: Arc::new(ArcSwap::from_pointee(OnceCell::new())),
         }
     }

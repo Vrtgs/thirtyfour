@@ -1,8 +1,10 @@
+use crate::error::WebDriverError;
 use crate::{
     extensions::query::{ElementPollerWithTimeout, IntoElementPoller},
     prelude::WebDriverResult,
 };
-use std::sync::Arc;
+use http::HeaderValue;
+use std::sync::{Arc, OnceLock};
 
 /// Configuration options used by a `WebDriver` instance and the related `SessionHandle`.
 ///
@@ -15,7 +17,7 @@ pub struct WebDriverConfig {
     /// The default poller to use when performing element queries or waits.
     pub poller: Arc<dyn IntoElementPoller + Send + Sync>,
     /// The user agent to use when sending commands to the webdriver server.
-    pub user_agent: String,
+    pub user_agent: HeaderValue,
 }
 
 impl Default for WebDriverConfig {
@@ -31,22 +33,30 @@ impl WebDriverConfig {
     }
 
     /// Get the default user agent.
-    pub fn default_user_agent() -> String {
-        format!(
-            "thirtyfour/{} (rust/{}; {})",
-            crate::VERSION,
-            std::env::var("RUSTC_VERSION").unwrap_or_else(|_| String::from("unknown")),
-            std::env::consts::OS
-        )
+    pub fn default_user_agent() -> HeaderValue {
+        static DEFAULT: OnceLock<HeaderValue> = OnceLock::new();
+
+        DEFAULT
+            .get_or_init(|| {
+                format!(
+                    "thirtyfour/{} (rust/{}; {})",
+                    crate::VERSION,
+                    std::env::var("RUSTC_VERSION").as_deref().unwrap_or("unknown"),
+                    std::env::consts::OS
+                )
+                .try_into()
+                .expect("bad default user agent")
+            })
+            .clone()
     }
 }
 
 /// Builder for `WebDriverConfig`.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct WebDriverConfigBuilder {
     keep_alive: bool,
     poller: Option<Arc<dyn IntoElementPoller + Send + Sync>>,
-    user_agent: Option<String>,
+    user_agent: Option<WebDriverResult<HeaderValue>>,
 }
 
 impl Default for WebDriverConfigBuilder {
@@ -78,8 +88,12 @@ impl WebDriverConfigBuilder {
     }
 
     /// Set the user agent.
-    pub fn user_agent(mut self, user_agent: String) -> Self {
-        self.user_agent = Some(user_agent);
+    pub fn user_agent<V>(mut self, user_agent: V) -> Self
+    where
+        HeaderValue: TryFrom<V>,
+        <HeaderValue as TryFrom<V>>::Error: Into<WebDriverError>,
+    {
+        self.user_agent = Some(user_agent.try_into().map_err(Into::into));
         self
     }
 
@@ -88,8 +102,9 @@ impl WebDriverConfigBuilder {
         Ok(WebDriverConfig {
             keep_alive: self.keep_alive,
             poller: self.poller.unwrap_or_else(|| Arc::new(ElementPollerWithTimeout::default())),
-            #[allow(clippy::redundant_closure)]
-            user_agent: self.user_agent.unwrap_or_else(|| WebDriverConfig::default_user_agent()),
+            user_agent: self
+                .user_agent
+                .unwrap_or_else(|| Ok(WebDriverConfig::default_user_agent()))?,
         })
     }
 }

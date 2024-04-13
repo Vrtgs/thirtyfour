@@ -3,45 +3,62 @@ use super::{conditions, ElementPollerNoWait, ElementPollerWithTimeout, IntoEleme
 use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
-use crate::session::IntoTransfer;
+use crate::IntoArcStr;
 use crate::{By, DynElementPredicate, ElementPredicate, WebElement};
-use futures::FutureExt;
 use indexmap::IndexMap;
-use std::fmt::{Debug, Formatter};
+use std::borrow::Cow;
+use std::fmt::{Debug, Display, Formatter, Write};
 use std::sync::Arc;
 use std::time::Duration;
 use stringmatch::Needle;
 
 /// Get String containing comma-separated list of selectors used.
 fn get_selector_summary(selectors: &[ElementSelector]) -> String {
-    let criteria: Vec<String> = selectors.iter().map(|s| s.by.to_string()).collect();
-    format!("[{}]", criteria.join(","))
+    struct Criteria<'a>(&'a [ElementSelector]);
+
+    impl Display for Criteria<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            for (i, by) in self.0.iter().map(|s| &s.by).enumerate() {
+                if i != 0 {
+                    f.write_char(',')?
+                }
+                Display::fmt(by, f)?;
+            }
+            Ok(())
+        }
+    }
+
+    format!("[{}]", Criteria(selectors))
 }
 
 /// Helper function to return the NoSuchElement error struct.
 fn no_such_element(selectors: &[ElementSelector], description: &str) -> WebDriverError {
-    let element_description = if description.is_empty() {
-        String::from("element(s)")
+    let element_description: Cow<str> = if description.is_empty() {
+        "element(s)".into()
     } else {
-        format!("'{}' element(s)", description)
+        format!("'{description}' element(s)").into()
     };
 
     crate::error::no_such_element(format!(
-        "no such element: {} not found using selectors: {}",
-        element_description,
+        "no such element: {element_description} not found using selectors: {}",
         get_selector_summary(selectors)
     ))
 }
 
 /// Filter the specified elements using the specified filters.
-pub async fn filter_elements(
+pub async fn filter_elements<'a, I, P, Ref>(
     mut elements: Vec<WebElement>,
-    filters: &[Box<DynElementPredicate>],
-) -> WebDriverResult<Vec<WebElement>> {
+    filters: I,
+) -> WebDriverResult<Vec<WebElement>>
+where
+    I: IntoIterator<Item = Ref>,
+    Ref: AsRef<P>,
+    P: ElementPredicate + ?Sized,
+{
     for func in filters {
         let tmp_elements = std::mem::take(&mut elements);
         for element in tmp_elements {
-            if func.call(&element).await? {
+            if func.as_ref().call(&element).await? {
                 elements.push(element);
             }
         }
@@ -80,10 +97,8 @@ impl ElementSelector {
     }
 
     /// Add the specified filter to the list of filters for this selector.
-    pub fn add_filter(&mut self, f: impl ElementPredicate + 'static) {
-        self.add_box_filter(
-            Box::new(move |arg: &WebElement| f.call(arg).boxed()) as Box<DynElementPredicate>
-        );
+    pub fn add_filter(&mut self, f: impl ElementPredicate) {
+        self.add_box_filter(DynElementPredicate::boxed(f));
     }
 
     /// Add the specified filter to the list of filters for this selector.
@@ -98,9 +113,9 @@ impl ElementSelector {
 /// interface is the same for both.
 #[derive(Debug)]
 pub enum ElementQuerySource {
-    /// Execute query from the `WebDriver` instance.
+    /// Execute a query from the `WebDriver` instance.
     Driver(Arc<SessionHandle>),
-    /// Execute query using the specified `WebElement` as the base.
+    /// Execute a query using the specified `WebElement` as the base.
     Element(WebElement),
 }
 
@@ -152,7 +167,7 @@ impl ElementQueryOptions {
     }
 
     /// Set the description to be used in error messages for this element query.
-    pub fn description(mut self, description: impl IntoTransfer) -> Self {
+    pub fn description(mut self, description: impl IntoArcStr) -> Self {
         self.description = Some(description.into());
         self
     }
@@ -205,6 +220,17 @@ pub struct ElementQuery {
     poller: Arc<dyn IntoElementPoller + Send + Sync>,
     selectors: Vec<ElementSelector>,
     options: ElementQueryOptions,
+}
+
+macro_rules! disallow_empty {
+    ($elements: expr, $self: expr) => {
+        if $elements.is_empty() {
+            let desc: &str = $self.options.description.as_deref().unwrap_or("");
+            Err(no_such_element(&$self.selectors, desc))
+        } else {
+            Ok($elements)
+        }
+    };
 }
 
 impl ElementQuery {
@@ -378,13 +404,7 @@ impl ElementQuery {
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
     pub async fn any_required(&self) -> WebDriverResult<Vec<WebElement>> {
         let elements = self.run_poller(false, false).await?;
-
-        if elements.is_empty() {
-            let desc: &str = self.options.description.as_deref().unwrap_or("");
-            Err(no_such_element(&self.selectors, desc))
-        } else {
-            Ok(elements)
-        }
+        disallow_empty!(elements, self)
     }
 
     /// Return all WebElements that match any single selector (including filters).
@@ -417,13 +437,7 @@ impl ElementQuery {
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
     pub async fn all_from_selector_required(&self) -> WebDriverResult<Vec<WebElement>> {
         let elements = self.run_poller(true, false).await?;
-
-        if elements.is_empty() {
-            let desc: &str = self.options.description.as_deref().unwrap_or("");
-            Err(no_such_element(&self.selectors, desc))
-        } else {
-            Ok(elements)
-        }
+        disallow_empty!(elements, self)
     }
 
     /// Run the poller for this ElementQuery and return the Vec of WebElements matched.
@@ -702,7 +716,7 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn with_attribute<S, N>(self, attribute_name: S, value: N) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -717,7 +731,7 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn without_attribute<S, N>(self, attribute_name: S, value: N) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -732,7 +746,7 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn with_attributes<S, N>(self, desired_attributes: impl IntoIterator<Item = (S, N)>) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -749,7 +763,7 @@ impl ElementQuery {
         desired_attributes: impl IntoIterator<Item = (S, N)>,
     ) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -763,7 +777,7 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn with_property<S, N>(self, property_name: S, value: N) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -778,7 +792,7 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn without_property<S, N>(self, property_name: S, value: N) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -793,7 +807,7 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn with_properties<S, N>(self, desired_properties: impl IntoIterator<Item = (S, N)>) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -810,7 +824,7 @@ impl ElementQuery {
         desired_properties: impl IntoIterator<Item = (S, N)>,
     ) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -824,7 +838,7 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn with_css_property<S, N>(self, css_property_name: S, value: N) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -839,7 +853,7 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn without_css_property<S, N>(self, css_property_name: S, value: N) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -858,7 +872,7 @@ impl ElementQuery {
         desired_css_properties: impl IntoIterator<Item = (S, N)>,
     ) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
@@ -876,7 +890,7 @@ impl ElementQuery {
         desired_css_properties: impl IntoIterator<Item = (S, N)>,
     ) -> Self
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();

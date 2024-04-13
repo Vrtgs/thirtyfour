@@ -16,7 +16,7 @@ use super::http::HttpClient;
 /// Start a new WebDriver session, returning the session id and the
 /// capabilities JSON that was received back from the server.
 pub async fn start_session(
-    http_client: &(dyn HttpClient + Send + Sync),
+    http_client: &(impl HttpClient + ?Sized),
     server_url: &Url,
     config: &WebDriverConfig,
     capabilities: Capabilities,
@@ -24,15 +24,15 @@ pub async fn start_session(
     let request_data = Command::NewSession(serde_json::Value::Object(capabilities))
         .format_request(&SessionId::null());
 
-    let v = match run_webdriver_cmd(http_client, request_data.clone(), server_url, config).await {
+    let v = match run_webdriver_cmd(http_client, &request_data, server_url, config).await {
         Ok(x) => Ok(x),
         Err(e) => {
             // Selenium sometimes gives a bogus 500 error "Chrome failed to start".
-            // Retry if we get a 500. If it happens twice in a row then the second error
+            // Retry if we get a 500. If it happens twice in a row, then the second error
             // will be returned.
             if let WebDriverError::UnknownError(x) = &e {
                 if x.status == 500 {
-                    run_webdriver_cmd(http_client, request_data, server_url, config).await
+                    run_webdriver_cmd(http_client, &request_data, server_url, config).await
                 } else {
                     Err(e)
                 }
@@ -68,7 +68,7 @@ pub async fn start_session(
     // Set default timeouts.
     let request_data =
         Command::SetTimeouts(TimeoutConfiguration::default()).format_request(&session_id);
-    run_webdriver_cmd(http_client, request_data, server_url, config).await?;
+    run_webdriver_cmd(http_client, &request_data, server_url, config).await?;
 
     Ok(session_id)
 }

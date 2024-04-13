@@ -2,7 +2,7 @@ use super::conditions::{collect_arg_slice, handle_errors};
 use super::{conditions, ElementPollerWithTimeout, IntoElementPoller};
 use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
-use crate::session::IntoTransfer;
+use crate::IntoArcStr;
 use crate::{DynElementPredicate, ElementPredicate, WebElement};
 use std::ops::Deref;
 use std::sync::Arc;
@@ -81,7 +81,7 @@ impl ElementWaiter {
     where
         F: Fn() -> I,
         I: IntoIterator<Item = &'a P>,
-        P: ElementPredicate + ?Sized + 'a,
+        P: ElementPredicate + ?Sized,
     {
         let mut poller = self.poller.start();
         loop {
@@ -241,7 +241,7 @@ impl ElementWaiter {
     /// Wait until the element has the specified attribute.
     pub async fn has_attribute<S, N>(self, attribute_name: S, value: N) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -256,7 +256,7 @@ impl ElementWaiter {
     /// Wait until the element lacks the specified attribute.
     pub async fn lacks_attribute<S, N>(self, attribute_name: S, value: N) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -274,7 +274,7 @@ impl ElementWaiter {
         desired_attributes: impl IntoIterator<Item = (S, N)>,
     ) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -291,7 +291,7 @@ impl ElementWaiter {
         desired_attributes: impl IntoIterator<Item = (S, N)>,
     ) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -305,7 +305,7 @@ impl ElementWaiter {
     /// Wait until the element has the specified property.
     pub async fn has_property<S, N>(self, property_name: S, value: N) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -316,7 +316,7 @@ impl ElementWaiter {
     /// Wait until the element lacks the specified property.
     pub async fn lacks_property<S, N>(self, property_name: S, value: N) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -334,7 +334,7 @@ impl ElementWaiter {
         desired_properties: impl IntoIterator<Item = (S, N)>,
     ) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let desired_properties: Arc<[(Arc<str>, N)]> =
@@ -349,7 +349,7 @@ impl ElementWaiter {
         desired_properties: impl IntoIterator<Item = (S, N)>,
     ) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -363,7 +363,7 @@ impl ElementWaiter {
     /// Wait until the element has the specified CSS property.
     pub async fn has_css_property<S, N>(self, css_property_name: S, value: N) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -382,7 +382,7 @@ impl ElementWaiter {
         value: N,
     ) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -400,7 +400,7 @@ impl ElementWaiter {
         desired_css_properties: impl IntoIterator<Item = (S, N)>,
     ) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;
@@ -417,7 +417,7 @@ impl ElementWaiter {
         desired_css_properties: impl IntoIterator<Item = (S, N)>,
     ) -> WebDriverResult<()>
     where
-        S: IntoTransfer,
+        S: IntoArcStr,
         N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.ignore_errors;

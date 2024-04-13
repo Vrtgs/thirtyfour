@@ -1,3 +1,4 @@
+use reqwest::IntoUrl;
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::path::Path;
@@ -18,19 +19,18 @@ use crate::common::cookie::Cookie;
 use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
 use crate::session::scriptret::ScriptRet;
-use crate::session::IntoTransfer;
 use crate::support::base64_decode;
+use crate::IntoArcStr;
 use crate::{By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
 use crate::{TimeoutConfiguration, WindowHandle};
 
 /// The SessionHandle contains a shared reference to the HTTP client
 /// to allow sending commands to the underlying WebDriver.
-#[derive(Clone)]
 pub struct SessionHandle {
     /// The HTTP client for performing webdriver requests.
     pub client: Arc<dyn HttpClient + Send + Sync>,
     /// The webdriver server URL.
-    server_url: Url,
+    server_url: Arc<Url>,
     /// The session id for this webdriver session.
     session_id: SessionId,
     /// The config used by this instance.
@@ -50,27 +50,22 @@ impl SessionHandle {
     /// Create new SessionHandle.
     pub fn new(
         client: Arc<dyn HttpClient + Send + Sync>,
-        server_url: Url,
+        server_url: impl IntoUrl,
         session_id: SessionId,
     ) -> WebDriverResult<Self> {
-        Ok(Self {
-            client,
-            server_url,
-            session_id,
-            config: WebDriverConfig::default(),
-        })
+        Self::new_with_config(client, server_url, session_id, WebDriverConfig::default())
     }
 
     /// Create new `SessionHandle` with the specified `WebDriverConfig`.
     pub(crate) fn new_with_config(
         client: Arc<dyn HttpClient + Send + Sync>,
-        server_url: Url,
+        server_url: impl IntoUrl,
         session_id: SessionId,
         config: WebDriverConfig,
     ) -> WebDriverResult<Self> {
         Ok(Self {
             client,
-            server_url,
+            server_url: Arc::new(server_url.into_url()?),
             session_id,
             config,
         })
@@ -79,16 +74,13 @@ impl SessionHandle {
     /// Clone this session handle but attach the specified `WebDriverConfig`.
     ///
     /// See `WebDriver::clone_with_config()`.
-    pub(crate) fn clone_with_config(
-        self: &Arc<SessionHandle>,
-        config: WebDriverConfig,
-    ) -> Arc<Self> {
-        Arc::new(Self {
+    pub(crate) fn clone_with_config(self: &SessionHandle, config: WebDriverConfig) -> Self {
+        Self {
             client: self.client.clone(),
             server_url: self.server_url.clone(),
             session_id: self.session_id.clone(),
             config,
-        })
+        }
     }
 
     /// The session id for this webdriver session.
@@ -110,7 +102,7 @@ impl SessionHandle {
     /// Send the specified command to the webdriver server.
     pub async fn cmd(&self, command: impl FormatRequestData) -> WebDriverResult<CmdResponse> {
         let request_data = command.format_request(&self.session_id);
-        run_webdriver_cmd(self.client.as_ref(), request_data, &self.server_url, &self.config).await
+        run_webdriver_cmd(self.client.as_ref(), &request_data, &self.server_url, &self.config).await
     }
 
     /// Get the WebDriver status.
@@ -190,7 +182,7 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn goto(&self, url: impl IntoTransfer) -> WebDriverResult<()> {
+    pub async fn goto(&self, url: impl IntoArcStr) -> WebDriverResult<()> {
         let mut url = url.into();
         if !url.starts_with("http") {
             url = format!("https://{url}").into();
@@ -200,7 +192,7 @@ impl SessionHandle {
     }
 
     /// Navigate to the specified URL. Alias of goto().
-    pub async fn get(&self, url: impl IntoTransfer) -> WebDriverResult<()> {
+    pub async fn get(&self, url: impl IntoArcStr) -> WebDriverResult<()> {
         self.goto(url).await
     }
 
@@ -347,7 +339,7 @@ impl SessionHandle {
     /// ```
     pub async fn execute(
         self: &Arc<Self>,
-        script: impl IntoTransfer,
+        script: impl IntoArcStr,
         args: impl Into<Arc<[Value]>>,
     ) -> WebDriverResult<ScriptRet> {
         let r = self.cmd(Command::ExecuteScript(script.into(), args.into())).await?;
@@ -358,7 +350,7 @@ impl SessionHandle {
     #[deprecated(since = "0.30.0", note = "This method has been renamed to execute()")]
     pub async fn execute_script(
         self: &Arc<Self>,
-        script: impl IntoTransfer,
+        script: impl IntoArcStr,
         args: Vec<Value>,
     ) -> WebDriverResult<ScriptRet> {
         self.execute(script, args).await
@@ -425,7 +417,7 @@ impl SessionHandle {
     /// ```
     pub async fn execute_async(
         self: &Arc<Self>,
-        script: impl IntoTransfer,
+        script: impl IntoArcStr,
         args: impl Into<Arc<[Value]>>,
     ) -> WebDriverResult<ScriptRet> {
         let r = self.cmd(Command::ExecuteAsyncScript(script.into(), args.into())).await?;
@@ -436,7 +428,7 @@ impl SessionHandle {
     #[deprecated(since = "0.30.0", note = "This method has been renamed to execute_async()")]
     pub async fn execute_script_async(
         self: &Arc<Self>,
-        script: impl IntoTransfer,
+        script: impl IntoArcStr,
         args: impl Into<Arc<[Value]>>,
     ) -> WebDriverResult<ScriptRet> {
         self.execute_async(script, args.into()).await
@@ -953,13 +945,13 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn get_named_cookie(&self, name: impl IntoTransfer) -> WebDriverResult<Cookie> {
+    pub async fn get_named_cookie(&self, name: impl IntoArcStr) -> WebDriverResult<Cookie> {
         self.cmd(Command::GetNamedCookie(name.into())).await?.value()
     }
 
     /// Get the specified cookie.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to get_named_cookie()")]
-    pub async fn get_cookie(&self, name: impl IntoTransfer) -> WebDriverResult<Cookie> {
+    pub async fn get_cookie(&self, name: impl IntoArcStr) -> WebDriverResult<Cookie> {
         self.get_named_cookie(name).await
     }
 
@@ -980,7 +972,7 @@ impl SessionHandle {
     /// #     })
     /// # }
     /// ```
-    pub async fn delete_cookie(&self, name: impl IntoTransfer) -> WebDriverResult<()> {
+    pub async fn delete_cookie(&self, name: impl IntoArcStr) -> WebDriverResult<()> {
         self.cmd(Command::DeleteCookie(name.into())).await?;
         Ok(())
     }

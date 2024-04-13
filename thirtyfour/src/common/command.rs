@@ -6,7 +6,7 @@ use crate::common::{
     keys::TypingData,
     types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
 };
-use crate::session::IntoTransfer;
+use crate::IntoArcStr;
 use crate::{RequestData, RequestMethod};
 use std::fmt;
 use std::fmt::Debug;
@@ -36,7 +36,7 @@ pub struct Selector {
 
 impl Selector {
     /// Create a new Selector.
-    pub fn new(name: impl IntoTransfer, query: impl IntoTransfer) -> Self {
+    pub fn new(name: impl IntoArcStr, query: impl IntoArcStr) -> Self {
         Self {
             name: name.into(),
             query: query.into(),
@@ -74,49 +74,49 @@ pub struct By {
 #[allow(non_snake_case)]
 impl By {
     /// Select element by id.
-    pub fn Id(id: impl IntoTransfer) -> Self {
+    pub fn Id(id: impl IntoArcStr) -> Self {
         Self {
             selector: BySelector::Id(id.into()),
         }
     }
 
     /// Select element by link text.
-    pub fn LinkText(text: impl IntoTransfer) -> Self {
+    pub fn LinkText(text: impl IntoArcStr) -> Self {
         Self {
             selector: BySelector::LinkText(text.into()),
         }
     }
 
     /// Select element by CSS.
-    pub fn Css(css: impl IntoTransfer) -> Self {
+    pub fn Css(css: impl IntoArcStr) -> Self {
         Self {
             selector: BySelector::Css(css.into()),
         }
     }
 
     /// Select element by XPath.
-    pub fn XPath(x: impl IntoTransfer) -> Self {
+    pub fn XPath(x: impl IntoArcStr) -> Self {
         Self {
             selector: BySelector::XPath(x.into()),
         }
     }
 
     /// Select element by name.
-    pub fn Name(name: impl IntoTransfer) -> Self {
+    pub fn Name(name: impl IntoArcStr) -> Self {
         Self {
             selector: BySelector::Css(format!(r#"[name="{}"]"#, name.into()).into()),
         }
     }
 
     /// Select element by tag.
-    pub fn Tag(tag: impl IntoTransfer) -> Self {
+    pub fn Tag(tag: impl IntoArcStr) -> Self {
         Self {
             selector: BySelector::Css(tag.into()),
         }
     }
 
     /// Select element by class.
-    pub fn ClassName(name: impl IntoTransfer) -> Self {
+    pub fn ClassName(name: impl IntoArcStr) -> Self {
         Self {
             selector: BySelector::Css(format!(".{}", name.into()).into()),
         }
