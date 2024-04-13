@@ -187,7 +187,7 @@ impl ParsedField {
         ))
     }
 
-    /// Get the initializer for this field that should go in new().
+    /// Get the initialiser for this field that should go in new().
     ///
     /// ```ignore
     /// let some_field = ...; // <-- this (including any attributes as necessary)
