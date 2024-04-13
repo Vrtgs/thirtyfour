@@ -10,11 +10,11 @@ use crate::error::WebDriverResult;
 use crate::WebElement;
 
 mod sealed {
+    use crate::error::{WebDriverError, WebDriverResult};
     use std::borrow::Cow;
     use std::rc::Rc;
     use std::sync::Arc;
     use url::Url;
-    use crate::error::{WebDriverError, WebDriverResult};
 
     pub trait IntoTransfer {
         fn into(self) -> Arc<str>;
@@ -23,7 +23,7 @@ mod sealed {
     pub trait IntoUrl {
         fn into_url(self) -> WebDriverResult<Url>;
     }
-    
+
     impl IntoTransfer for &str {
         fn into(self) -> Arc<str> {
             Arc::from(self)
@@ -57,7 +57,7 @@ mod sealed {
     deref_impl! {
         IntoTransfer => into -> Arc<str> {on} (String, Box<str>, Rc<str>, Cow<'_, str>)
     }
-    
+
     deref_impl! {
         IntoUrl => into_url -> WebDriverResult<Url> {on} (String)
     }
@@ -91,7 +91,7 @@ mod sealed {
 pub trait IntoArcStr: sealed::IntoTransfer {}
 impl<T: sealed::IntoTransfer> IntoArcStr for T {}
 
- trait IntoUrl: sealed::IntoUrl {}
+trait IntoUrl: sealed::IntoUrl {}
 impl<T: sealed::IntoUrl> IntoUrl for T {}
 
 /// Rectangle representing the dimensions of an element.

@@ -1,10 +1,9 @@
-
+use reqwest::IntoUrl;
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
-use reqwest::IntoUrl;
 
 use serde_json::Value;
 use tokio::fs::File;
