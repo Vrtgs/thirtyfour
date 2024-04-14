@@ -112,11 +112,6 @@ impl FirefoxCapabilities {
         self.insert_browser_option("args", to_value(args)?)
     }
 
-    /// Return true if the specified arg is currently set.
-    pub fn has_arg(&self, arg: &str) -> bool {
-        self.args().contains(&arg.to_string())
-    }
-
     firefox_arg_wrapper! {
         headless => "-headless"
     }

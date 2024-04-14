@@ -234,11 +234,6 @@ pub trait BrowserCapabilitiesHelper: CapabilitiesHelper {
     /// The key containing the browser-specific capabilities.
     const KEY: &'static str;
 
-    /// Get the current list of command-line arguments to `geckodriver` as a vec.
-    fn args(&self) -> Vec<String> {
-        self.browser_option("args").unwrap_or_default()
-    }
-
     /// Add any Serialize-able object to the capabilities under the browser's custom key.
     fn insert_browser_option(
         &mut self,
@@ -271,6 +266,11 @@ pub trait BrowserCapabilitiesHelper: CapabilitiesHelper {
             .and_then(|option| from_value(option.clone()).ok())
     }
 
+    /// Get the current list of command-line arguments to `geckodriver` as a vec.
+    fn args(&self) -> Vec<String> {
+        self.browser_option("args").unwrap_or_default()
+    }
+
     /// Remove the specified Chrome command-line argument if it had been added previously.
     fn remove_arg(&mut self, arg: &str) -> WebDriverResult<()> {
         let mut args = self.args();
@@ -280,6 +280,11 @@ pub trait BrowserCapabilitiesHelper: CapabilitiesHelper {
             args.retain(|v| v != arg);
             self.insert_browser_option("args", to_value(args)?)
         }
+    }
+
+    /// Return true if the specified arg is currently set.
+    fn has_arg(&self, arg: &str) -> bool {
+        self.args().iter().any(|s| s == arg)
     }
 }
 

@@ -91,11 +91,6 @@ pub trait ChromiumLikeCapabilities: BrowserCapabilitiesHelper {
         self.insert_browser_option("args", to_value(args)?)
     }
 
-    /// Return true if the specified arg is currently set.
-    fn has_arg(&self, arg: &str) -> bool {
-        self.args().iter().any(|s| s == arg)
-    }
-
     /// Add the specified experimental option.
     ///
     /// ## Example
