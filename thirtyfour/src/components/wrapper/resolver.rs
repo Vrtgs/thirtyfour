@@ -94,32 +94,52 @@ mod sealed {
     use crate::components::Component;
     use crate::error::WebDriverResult;
     use crate::WebElement;
-    use futures::{StreamExt, TryStreamExt};
-    use std::future::Future;
+    use futures::future::BoxFuture;
+    use futures::{FutureExt, StreamExt, TryStreamExt};
 
+    #[async_trait::async_trait]
     pub trait Resolve: Sized {
-        fn is_present(&self) -> impl Future<Output = WebDriverResult<bool>>;
+        async fn is_present(&self) -> WebDriverResult<bool>;
     }
 
+    #[async_trait::async_trait]
     impl Resolve for WebElement {
-        #[inline]
-        fn is_present(&self) -> impl Future<Output = WebDriverResult<bool>> {
-            self.is_present()
+        async fn is_present(&self) -> WebDriverResult<bool> {
+            self.is_present().await
         }
     }
 
-    impl<T: Component> Resolve for T {
+    #[async_trait::async_trait]
+    impl<T: Component + Sync> Resolve for T {
         async fn is_present(&self) -> WebDriverResult<bool> {
             self.base_element().is_present().await
         }
     }
 
-    impl<T: Resolve> Resolve for Vec<T> {
-        fn is_present(&self) -> impl Future<Output = WebDriverResult<bool>> {
+    // // this doesn't build for some wierd reason:
+    // #[async_trait::async_trait]
+    // impl<T: Resolve + Sync> Resolve for Vec<T> {
+    //      async fn is_present(&self) -> WebDriverResult<bool> {
+    //          futures::stream::iter(self)
+    //              .map(Resolve::is_present)
+    //              // 16 is arbitrary, just don't send too many requests at the same time
+    //              .buffer_unordered(self.len().min(16))
+    //              .try_all(std::future::ready)
+    //              .await
+    //      }
+    //  }
+
+    impl<T: Resolve + Sync> Resolve for Vec<T> {
+        fn is_present<'a: 'b, 'b>(&'a self) -> BoxFuture<'b, WebDriverResult<bool>>
+        where
+            Self: 'b,
+        {
             futures::stream::iter(self)
                 .map(Resolve::is_present)
-                .buffer_unordered(16)
-                .try_any(std::future::ready)
+                // 16 is arbitrary, just don't send too many requests at the same time
+                .buffer_unordered(self.len().min(16))
+                .try_all(std::future::ready)
+                .boxed()
         }
     }
 }
