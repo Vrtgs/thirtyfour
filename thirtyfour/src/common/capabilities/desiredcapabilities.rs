@@ -34,8 +34,8 @@ const OSS_W3C_CONVERSION: &[(&str, &str)] = &[
 ];
 
 /// Convert the given serde_json::Value into a W3C-compatible Capabilities struct.
-pub fn make_w3c_caps(caps: &serde_json::Value) -> serde_json::Value {
-    let mut always_match = serde_json::json!({});
+pub fn make_w3c_caps(caps: &Value) -> Value {
+    let mut always_match = json!({});
 
     if let Some(caps_map) = caps.as_object() {
         for (k, v) in caps_map.iter() {
@@ -249,7 +249,7 @@ pub trait BrowserCapabilitiesHelper: CapabilitiesHelper {
         Ok(())
     }
 
-    /// Remove the custom browser-specific property, if it exists.
+    /// Remove the custom browser-specific property if it exists.
     fn remove_browser_option(&mut self, key: &str) {
         if let Some(Value::Object(v)) = &mut self._get_mut(Self::KEY) {
             v.remove(key);
@@ -264,6 +264,27 @@ pub trait BrowserCapabilitiesHelper: CapabilitiesHelper {
         self._get(Self::KEY)
             .and_then(|options| options.get(key))
             .and_then(|option| from_value(option.clone()).ok())
+    }
+
+    /// Get the current list of command-line arguments to `geckodriver` as a vec.
+    fn args(&self) -> Vec<String> {
+        self.browser_option("args").unwrap_or_default()
+    }
+
+    /// Remove the specified Chrome command-line argument if it had been added previously.
+    fn remove_arg(&mut self, arg: &str) -> WebDriverResult<()> {
+        let mut args = self.args();
+        if args.is_empty() {
+            Ok(())
+        } else {
+            args.retain(|v| v != arg);
+            self.insert_browser_option("args", to_value(args)?)
+        }
+    }
+
+    /// Return true if the specified arg is currently set.
+    fn has_arg(&self, arg: &str) -> bool {
+        self.args().iter().any(|s| s == arg)
     }
 }
 

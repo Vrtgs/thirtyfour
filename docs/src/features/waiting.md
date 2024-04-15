@@ -1,8 +1,8 @@
 # Waiting For Element Changes
 
-Sometimes you already have a reference to an element but you want to perform an action that
+Sometimes you already have a reference to an element, but you want to perform an action that
 might change the element in some way. One way to do this would be to call `WebDriver::query()`
-and poll for the element with its new attributes. But it might be difficult to get the right
+and poll for the element with its new attributes. But it might be challenging to get the right
 query, and the query might return a different element that already has the attribute you specified.
 
 If you already have a reference to the element, why not use that to poll for the changes you expect?

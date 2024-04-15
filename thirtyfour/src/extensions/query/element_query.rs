@@ -1,45 +1,64 @@
-use super::conditions::{handle_errors, negate};
+use super::conditions::{collect_arg_slice, handle_errors, negate};
 use super::{conditions, ElementPollerNoWait, ElementPollerWithTimeout, IntoElementPoller};
 use crate::error::WebDriverError;
 use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
-use crate::{By, ElementPredicate, WebElement};
+use crate::IntoArcStr;
+use crate::{By, DynElementPredicate, ElementPredicate, WebElement};
 use indexmap::IndexMap;
-use std::fmt::{Debug, Formatter};
+use std::borrow::Cow;
+use std::fmt::{Debug, Display, Formatter, Write};
 use std::sync::Arc;
 use std::time::Duration;
 use stringmatch::Needle;
 
 /// Get String containing comma-separated list of selectors used.
 fn get_selector_summary(selectors: &[ElementSelector]) -> String {
-    let criteria: Vec<String> = selectors.iter().map(|s| s.by.to_string()).collect();
-    format!("[{}]", criteria.join(","))
+    struct Criteria<'a>(&'a [ElementSelector]);
+
+    impl Display for Criteria<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            for (i, by) in self.0.iter().map(|s| &s.by).enumerate() {
+                if i != 0 {
+                    f.write_char(',')?
+                }
+                Display::fmt(by, f)?;
+            }
+            Ok(())
+        }
+    }
+
+    format!("[{}]", Criteria(selectors))
 }
 
 /// Helper function to return the NoSuchElement error struct.
 fn no_such_element(selectors: &[ElementSelector], description: &str) -> WebDriverError {
-    let element_description = if description.is_empty() {
-        String::from("element(s)")
+    let element_description: Cow<str> = if description.is_empty() {
+        "element(s)".into()
     } else {
-        format!("'{}' element(s)", description)
+        format!("'{description}' element(s)").into()
     };
 
     crate::error::no_such_element(format!(
-        "no such element: {} not found using selectors: {}",
-        element_description,
+        "no such element: {element_description} not found using selectors: {}",
         get_selector_summary(selectors)
     ))
 }
 
 /// Filter the specified elements using the specified filters.
-pub async fn filter_elements(
+pub async fn filter_elements<'a, I, P, Ref>(
     mut elements: Vec<WebElement>,
-    filters: &[ElementPredicate],
-) -> WebDriverResult<Vec<WebElement>> {
+    filters: I,
+) -> WebDriverResult<Vec<WebElement>>
+where
+    I: IntoIterator<Item = Ref>,
+    Ref: AsRef<P>,
+    P: ElementPredicate + ?Sized,
+{
     for func in filters {
         let tmp_elements = std::mem::take(&mut elements);
         for element in tmp_elements {
-            if func(&element).await? {
+            if func.as_ref().call(&element).await? {
                 elements.push(element);
             }
         }
@@ -59,7 +78,7 @@ pub struct ElementSelector {
     /// The selector to use.
     pub by: By,
     /// The filters for this element selector.
-    pub filters: Vec<ElementPredicate>,
+    pub filters: Vec<Box<DynElementPredicate>>,
 }
 
 impl Debug for ElementSelector {
@@ -78,7 +97,12 @@ impl ElementSelector {
     }
 
     /// Add the specified filter to the list of filters for this selector.
-    pub fn add_filter(&mut self, f: ElementPredicate) {
+    pub fn add_filter(&mut self, f: impl ElementPredicate) {
+        self.add_box_filter(DynElementPredicate::boxed(f));
+    }
+
+    /// Add the specified filter to the list of filters for this selector.
+    pub fn add_box_filter(&mut self, f: Box<DynElementPredicate>) {
         self.filters.push(f);
     }
 }
@@ -89,9 +113,9 @@ impl ElementSelector {
 /// interface is the same for both.
 #[derive(Debug)]
 pub enum ElementQuerySource {
-    /// Execute query from the `WebDriver` instance.
+    /// Execute a query from the `WebDriver` instance.
     Driver(Arc<SessionHandle>),
-    /// Execute query using the specified `WebElement` as the base.
+    /// Execute a query using the specified `WebElement` as the base.
     Element(WebElement),
 }
 
@@ -125,7 +149,7 @@ impl Default for ElementQueryWaitOptions {
 #[non_exhaustive]
 pub struct ElementQueryOptions {
     ignore_errors: Option<bool>,
-    description: Option<String>,
+    description: Option<Arc<str>>,
     wait: Option<ElementQueryWaitOptions>,
 }
 
@@ -143,13 +167,13 @@ impl ElementQueryOptions {
     }
 
     /// Set the description to be used in error messages for this element query.
-    pub fn description(mut self, description: impl Into<String>) -> Self {
+    pub fn description(mut self, description: impl IntoArcStr) -> Self {
         self.description = Some(description.into());
         self
     }
 
     /// Set the description to be used in error messages for this element query.
-    pub fn set_description<T: Into<String>>(mut self, description: Option<T>) -> Self {
+    pub fn set_description<T: Into<Arc<str>>>(mut self, description: Option<T>) -> Self {
         self.description = description.map(|x| x.into());
         self
     }
@@ -198,6 +222,17 @@ pub struct ElementQuery {
     options: ElementQueryOptions,
 }
 
+macro_rules! disallow_empty {
+    ($elements: expr, $self: expr) => {
+        if $elements.is_empty() {
+            let desc: &str = $self.options.description.as_deref().unwrap_or("");
+            Err(no_such_element(&$self.selectors, desc))
+        } else {
+            Ok($elements)
+        }
+    };
+}
+
 impl ElementQuery {
     /// Create a new `ElementQuery`.
     ///
@@ -239,8 +274,9 @@ impl ElementQuery {
         self
     }
 
-    /// By default a query will ignore any errors that occur while polling for the desired
-    /// element(s). However, this behaviour can be modified so that the waiter will return
+    /// By default, a query will ignore any errors that occur while polling for the desired
+    /// element(s).
+    /// However, this behaviour can be modified so that the waiter will return
     /// early if an error is returned from thirtyfour.
     pub fn ignore_errors(mut self, ignore: bool) -> Self {
         self.options = self.options.ignore_errors(ignore);
@@ -336,7 +372,7 @@ impl ElementQuery {
     ///
     /// This is useful because sometimes your element query is not specific enough and
     /// might accidentally match multiple elements. This is a common source of bugs in
-    /// automated tests, because the first element might not actually be the one you expect.
+    /// automated tests, because the first element might not be the one you expect.
     ///
     /// By requiring that only one element is matched, you can be more sure that it is the
     /// one you intended.
@@ -368,13 +404,7 @@ impl ElementQuery {
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
     pub async fn any_required(&self) -> WebDriverResult<Vec<WebElement>> {
         let elements = self.run_poller(false, false).await?;
-
-        if elements.is_empty() {
-            let desc: &str = self.options.description.as_deref().unwrap_or("");
-            Err(no_such_element(&self.selectors, desc))
-        } else {
-            Ok(elements)
-        }
+        disallow_empty!(elements, self)
     }
 
     /// Return all WebElements that match any single selector (including filters).
@@ -407,13 +437,7 @@ impl ElementQuery {
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
     pub async fn all_from_selector_required(&self) -> WebDriverResult<Vec<WebElement>> {
         let elements = self.run_poller(true, false).await?;
-
-        if elements.is_empty() {
-            let desc: &str = self.options.description.as_deref().unwrap_or("");
-            Err(no_such_element(&self.selectors, desc))
-        } else {
-            Ok(elements)
-        }
+        disallow_empty!(elements, self)
     }
 
     /// Run the poller for this ElementQuery and return the Vec of WebElements matched.
@@ -493,7 +517,7 @@ impl ElementQuery {
     //
 
     /// Add the specified ElementPredicate to the last selector.
-    pub fn with_filter(mut self, f: ElementPredicate) -> Self {
+    pub fn with_filter(mut self, f: impl ElementPredicate + 'static) -> Self {
         if let Some(selector) = self.selectors.last_mut() {
             selector.add_filter(f);
         }
@@ -583,16 +607,17 @@ impl ElementQuery {
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(Box::new(move |elem| {
+        self.with_filter(move |elem: &WebElement| {
             let id = id.clone();
-            Box::pin(async move {
+            let elem = elem.clone();
+            async move {
                 match elem.id().await {
                     Ok(Some(x)) => Ok(id.is_match(&x)),
                     Ok(None) => Ok(false),
                     Err(e) => handle_errors(Err(e), ignore_errors),
                 }
-            })
-        }))
+            }
+        })
     }
 
     /// Only match elements that do not have the specified id.
@@ -602,16 +627,17 @@ impl ElementQuery {
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(Box::new(move |elem| {
+        self.with_filter(move |elem: &WebElement| {
+            let elem = elem.clone();
             let id = id.clone();
-            Box::pin(async move {
+            async move {
                 match elem.id().await {
                     Ok(Some(x)) => Ok(!id.is_match(&x)),
                     Ok(None) => Ok(true),
                     Err(e) => handle_errors(Err(e), ignore_errors),
                 }
-            })
-        }))
+            }
+        })
     }
 
     /// Only match elements that contain the specified class name.
@@ -641,12 +667,13 @@ impl ElementQuery {
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(Box::new(move |elem| {
+        self.with_filter(move |elem: &WebElement| {
+            let elem = elem.clone();
             let tag_name = tag_name.clone();
-            Box::pin(async move {
+            async move {
                 handle_errors(elem.tag_name().await.map(|x| tag_name.is_match(&x)), ignore_errors)
-            })
-        }))
+            }
+        })
     }
 
     /// Only match elements that do not have the specified tag.
@@ -656,12 +683,13 @@ impl ElementQuery {
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(Box::new(move |elem| {
+        self.with_filter(move |elem: &WebElement| {
+            let elem = elem.clone();
             let tag_name = tag_name.clone();
-            Box::pin(async move {
+            async move {
                 negate(elem.tag_name().await.map(|x| tag_name.is_match(&x)), ignore_errors)
-            })
-        }))
+            }
+        })
     }
 
     /// Only match elements that have the specified value.
@@ -688,100 +716,134 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn with_attribute<S, N>(self, attribute_name: S, value: N) -> Self
     where
-        S: Into<String>,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(conditions::element_has_attribute(attribute_name, value, ignore_errors))
+        self.with_filter(conditions::element_has_attribute(
+            attribute_name.into(),
+            value,
+            ignore_errors,
+        ))
     }
 
     /// Only match elements that do not have the specified attribute with the specified value.
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn without_attribute<S, N>(self, attribute_name: S, value: N) -> Self
     where
-        S: Into<String>,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(conditions::element_lacks_attribute(attribute_name, value, ignore_errors))
+        self.with_filter(conditions::element_lacks_attribute(
+            attribute_name.into(),
+            value,
+            ignore_errors,
+        ))
     }
 
-    /// Only match elements that have all of the specified attributes with the specified values.
+    /// Only match elements that have all the specified attributes with the specified values.
     /// See the `Needle` documentation for more details on text matching rules.
-    pub fn with_attributes<S, N>(self, desired_attributes: &[(S, N)]) -> Self
+    pub fn with_attributes<S, N>(self, desired_attributes: impl IntoIterator<Item = (S, N)>) -> Self
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoArcStr,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(conditions::element_has_attributes(desired_attributes, ignore_errors))
+        self.with_filter(conditions::element_has_attributes(
+            collect_arg_slice(desired_attributes),
+            ignore_errors,
+        ))
     }
 
     /// Only match elements that do not have any of the specified attributes with the specified
     /// values. See the `Needle` documentation for more details on text matching rules.
-    pub fn without_attributes<S, N>(self, desired_attributes: &[(S, N)]) -> Self
+    pub fn without_attributes<S, N>(
+        self,
+        desired_attributes: impl IntoIterator<Item = (S, N)>,
+    ) -> Self
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoArcStr,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(conditions::element_lacks_attributes(desired_attributes, ignore_errors))
+        self.with_filter(conditions::element_lacks_attributes(
+            collect_arg_slice(desired_attributes),
+            ignore_errors,
+        ))
     }
 
     /// Only match elements that have the specified property with the specified value.
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn with_property<S, N>(self, property_name: S, value: N) -> Self
     where
-        S: Into<String>,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(conditions::element_has_property(property_name, value, ignore_errors))
+        self.with_filter(conditions::element_has_property(
+            property_name.into(),
+            value,
+            ignore_errors,
+        ))
     }
 
     /// Only match elements that do not have the specified property with the specified value.
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn without_property<S, N>(self, property_name: S, value: N) -> Self
     where
-        S: Into<String>,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(conditions::element_lacks_property(property_name, value, ignore_errors))
+        self.with_filter(conditions::element_lacks_property(
+            property_name.into(),
+            value,
+            ignore_errors,
+        ))
     }
 
-    /// Only match elements that have all of the specified properties with the specified value.
+    /// Only match elements that have all the specified properties with the specified value.
     /// See the `Needle` documentation for more details on text matching rules.
-    pub fn with_properties<S, N>(self, desired_properties: &[(S, N)]) -> Self
+    pub fn with_properties<S, N>(self, desired_properties: impl IntoIterator<Item = (S, N)>) -> Self
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoArcStr,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(conditions::element_has_properties(desired_properties, ignore_errors))
+        self.with_filter(conditions::element_has_properties(
+            collect_arg_slice(desired_properties),
+            ignore_errors,
+        ))
     }
 
     /// Only match elements that do not have any of the specified properties with the specified
     /// value. See the `Needle` documentation for more details on text matching rules.
-    pub fn without_properties<S, N>(self, desired_properties: &[(S, N)]) -> Self
+    pub fn without_properties<S, N>(
+        self,
+        desired_properties: impl IntoIterator<Item = (S, N)>,
+    ) -> Self
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoArcStr,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(conditions::element_lacks_properties(desired_properties, ignore_errors))
+        self.with_filter(conditions::element_lacks_properties(
+            collect_arg_slice(desired_properties),
+            ignore_errors,
+        ))
     }
 
     /// Only match elements that have the specified CSS property with the specified value.
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn with_css_property<S, N>(self, css_property_name: S, value: N) -> Self
     where
-        S: Into<String>,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
         self.with_filter(conditions::element_has_css_property(
-            css_property_name,
+            css_property_name.into(),
             value,
             ignore_errors,
         ))
@@ -791,28 +853,31 @@ impl ElementQuery {
     /// See the `Needle` documentation for more details on text matching rules.
     pub fn without_css_property<S, N>(self, css_property_name: S, value: N) -> Self
     where
-        S: Into<String>,
+        S: IntoArcStr,
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
         self.with_filter(conditions::element_lacks_css_property(
-            css_property_name,
+            css_property_name.into(),
             value,
             ignore_errors,
         ))
     }
 
-    /// Only match elements that have all of the specified CSS properties with the
+    /// Only match elements that have all the specified CSS properties with the
     /// specified values.
     /// See the `Needle` documentation for more details on text matching rules.
-    pub fn with_css_properties<S, N>(self, desired_css_properties: &[(S, N)]) -> Self
+    pub fn with_css_properties<S, N>(
+        self,
+        desired_css_properties: impl IntoIterator<Item = (S, N)>,
+    ) -> Self
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoArcStr,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
         self.with_filter(conditions::element_has_css_properties(
-            desired_css_properties,
+            collect_arg_slice(desired_css_properties),
             ignore_errors,
         ))
     }
@@ -820,14 +885,17 @@ impl ElementQuery {
     /// Only match elements that do not have any of the specified CSS properties with the
     /// specified values.
     /// See the `Needle` documentation for more details on text matching rules.
-    pub fn without_css_properties<S, N>(self, desired_css_properties: &[(S, N)]) -> Self
+    pub fn without_css_properties<S, N>(
+        self,
+        desired_css_properties: impl IntoIterator<Item = (S, N)>,
+    ) -> Self
     where
-        S: Into<String> + Clone,
-        N: Needle + Clone + Send + Sync + 'static,
+        S: IntoArcStr,
+        N: Needle + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
         self.with_filter(conditions::element_lacks_css_properties(
-            desired_css_properties,
+            collect_arg_slice(desired_css_properties),
             ignore_errors,
         ))
     }

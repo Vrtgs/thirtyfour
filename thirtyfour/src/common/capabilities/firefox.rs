@@ -102,11 +102,6 @@ impl FirefoxCapabilities {
         self.insert_browser_option("profile", profile)
     }
 
-    /// Get the current list of command-line arguments to `geckodriver` as a vec.
-    pub fn args(&self) -> Vec<String> {
-        self.browser_option("args").unwrap_or_default()
-    }
-
     /// Add the specified command-line argument to `geckodriver`.
     pub fn add_arg(&mut self, arg: &str) -> WebDriverResult<()> {
         let mut args = self.args();
@@ -115,22 +110,6 @@ impl FirefoxCapabilities {
             args.push(arg_string);
         }
         self.insert_browser_option("args", to_value(args)?)
-    }
-
-    /// Remove the specified `geckodriver` command-line argument if it had been added previously.
-    pub fn remove_arg(&mut self, arg: &str) -> WebDriverResult<()> {
-        let mut args = self.args();
-        if args.is_empty() {
-            Ok(())
-        } else {
-            args.retain(|v| v != arg);
-            self.insert_browser_option("args", to_value(args)?)
-        }
-    }
-
-    /// Return true if the specified arg is currently set.
-    pub fn has_arg(&self, arg: &str) -> bool {
-        self.args().contains(&arg.to_string())
     }
 
     firefox_arg_wrapper! {

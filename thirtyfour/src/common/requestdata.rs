@@ -1,9 +1,11 @@
 use std::fmt::Display;
+use std::sync::Arc;
 
+use crate::IntoArcStr;
 use serde::{Deserialize, Serialize};
 
 /// The request method for a request.
-#[derive(Debug, Clone, strum::EnumString, strum::Display, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, strum::EnumString, strum::Display, Serialize, Deserialize)]
 #[strum(serialize_all = "UPPERCASE")]
 #[serde(rename_all = "UPPERCASE")]
 pub enum RequestMethod {
@@ -49,14 +51,14 @@ pub struct RequestData {
     /// The request method.
     pub method: RequestMethod,
     /// The request URI.
-    pub uri: String,
+    pub uri: Arc<str>,
     /// The request body.
     pub body: Option<serde_json::Value>,
 }
 
 impl RequestData {
     /// Create a new RequestData struct.
-    pub fn new<S: Into<String>>(method: RequestMethod, uri: S) -> Self {
+    pub fn new<S: IntoArcStr>(method: RequestMethod, uri: S) -> Self {
         RequestData {
             method,
             uri: uri.into(),

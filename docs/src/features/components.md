@@ -4,10 +4,10 @@ Components are a more structured way to automate an element or page.
 
 This approach may seem familiar to anyone who has used a 
 [Page Object Model](https://www.selenium.dev/documentation/test_practices/encouraged/page_object_models/) before. 
-However a `Component` can wrap any node in the DOM, not just "pages".
+However, a `Component` can wrap any node in the DOM, not just "pages".
 
-It uses smart element resolvers that can lazily resolve elements within the component and cache them for subsequent 
-uses. You can also nest components, making them an extremely powerful feature for automating any modern web app.
+It uses smart element resolvers that can lazily resolve elements within the component and cache them for further 
+use. You can also nest components, making them an extremely powerful feature for automating any modern web app.
 
 ## Example
 
@@ -70,7 +70,7 @@ pub struct CheckboxSectionComponent {
     base: WebElement, // This is the outer <div>
     #[by(tag = "label", allow_empty)]
     boxes: ElementResolver<Vec<CheckboxComponent>>, // ElementResolver works with Components too.
-    // Other fields will be initialised with Default::default().
+    // Other fields will be initialized with Default::default().
     my_field: bool,
 }
 ```

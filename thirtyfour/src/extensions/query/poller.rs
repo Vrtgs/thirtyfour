@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 /// Trait for implementing the element polling strategy.
 ///
 /// Each time the element condition is not met, the `tick()` method will be
-/// called. Upon returning `false` the polling loop will terminate.
+/// called. Upon returning `false`, the polling loop will terminate.
 #[async_trait::async_trait]
 pub trait ElementPoller: Debug {
     /// Process the poller forward by one tick.
@@ -60,7 +60,7 @@ impl ElementPoller for ElementPollerWithTimeout {
             return false;
         }
 
-        // Next poll is due no earlier than this long after the first poll started.
+        // The Next poll is due no earlier than this long after the first poll started.
         let minimum_elapsed = self.interval * self.cur_tries;
 
         // But this much time has elapsed since the first poll started.

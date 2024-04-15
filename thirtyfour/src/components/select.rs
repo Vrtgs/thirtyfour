@@ -21,6 +21,7 @@
 
 use crate::error::{no_such_element, WebDriverError, WebDriverResult};
 use crate::{By, WebElement};
+use std::fmt::{Display, Formatter};
 
 /// Set the selection state of the specified element.
 async fn set_selected(element: &WebElement, select: bool) -> WebDriverResult<()> {
@@ -30,24 +31,30 @@ async fn set_selected(element: &WebElement, select: bool) -> WebDriverResult<()>
     Ok(())
 }
 
+struct Escaped<'a>(&'a str);
+
+impl Display for Escaped<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for (i, substring) in self.0.split('\"').enumerate() {
+            if i != 0 {
+                f.write_str(", '\"', ")?
+            }
+            write!(f, "\"{}\"", substring)?;
+        }
+        if self.0.ends_with('\"') {
+            f.write_str(", '\"'")?;
+        }
+        Ok(())
+    }
+}
+
 /// Escape the specified string for use in Css or XPath selector.
 pub fn escape_string(value: &str) -> String {
     let contains_single = value.contains('\'');
     let contains_double = value.contains('\"');
     if contains_single && contains_double {
-        let mut result = vec![String::from("concat(")];
-        for substring in value.split('\"') {
-            result.push(format!("\"{}\"", substring));
-            result.push(String::from(", '\"', "));
-        }
-        result.pop();
-        if value.ends_with('\"') {
-            result.push(String::from(", '\"'"));
-        }
-        return result.join("") + ")";
-    }
-
-    if contains_double {
+        format!("concat({})", Escaped(value))
+    } else if contains_double {
         format!("'{}'", value)
     } else {
         format!("\"{}\"", value)
@@ -120,7 +127,7 @@ impl SelectElement {
     /// Set the selection state of options matching the specified value.
     async fn set_selection_by_value(&self, value: &str, select: bool) -> WebDriverResult<()> {
         let selector = format!("option[value={}]", escape_string(value));
-        let options = self.element.find_all(By::Css(&selector)).await?;
+        let options = self.element.find_all(By::Css(&*selector)).await?;
         for option in options {
             set_selected(&option, select).await?;
             if !self.multiple {
@@ -133,7 +140,7 @@ impl SelectElement {
     /// Set the selection state of the option at the specified index.
     async fn set_selection_by_index(&self, index: u32, select: bool) -> WebDriverResult<()> {
         let selector = format!("option:nth-of-type({})", index + 1);
-        let option = self.element.find(By::Css(&selector)).await?;
+        let option = self.element.find(By::Css(&*selector)).await?;
         set_selected(&option, select).await?;
         Ok(())
     }
@@ -143,13 +150,14 @@ impl SelectElement {
     ///
     /// `<option value="foo">Bar</option>`
     ///
-    /// NOTE: This will attempt to first select by exact match. However if no exact match was
-    ///       found it will attempt to select options that contain the longest word in the
-    ///       specified search text. This particular behaviour is patterned after the python
-    ///       selenium library.
+    /// NOTE: This will attempt to first select by exact match.
+    ///       However, if no exact match was found,
+    ///       it will attempt to select options that contain the longest word in the
+    ///       specified search text.
+    ///       This particular behaviour is patterned after the python selenium library.
     async fn set_selection_by_visible_text(&self, text: &str, select: bool) -> WebDriverResult<()> {
         let mut xpath = format!(".//option[normalize-space(.) = {}]", escape_string(text));
-        let options = match self.element.find_all(By::XPath(&xpath)).await {
+        let options = match self.element.find_all(By::XPath(&*xpath)).await {
             Ok(elems) => elems,
             Err(WebDriverError::NoSuchElement(_)) => Vec::new(),
             Err(e) => return Err(e),
@@ -171,7 +179,7 @@ impl SelectElement {
             } else {
                 xpath =
                     format!(".//option[contains(.,{})]", escape_string(substring_without_space));
-                self.element.find_all(By::XPath(&xpath)).await?
+                self.element.find_all(By::XPath(&*xpath)).await?
             };
             for candidate in candidates {
                 if text == candidate.text().await? {
@@ -198,7 +206,7 @@ impl SelectElement {
         select: bool,
     ) -> WebDriverResult<()> {
         let xpath = format!(".//option[{}]", condition);
-        let options = self.element.find_all(By::XPath(&xpath)).await?;
+        let options = self.element.find_all(By::XPath(&*xpath)).await?;
         if options.is_empty() {
             return Err(no_such_element(format!(
                 "Could not locate element matching XPath condition: {:?}",

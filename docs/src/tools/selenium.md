@@ -7,21 +7,21 @@
 
     cargo run --example selenium_example
 
-Below you can find my recommended development environment for running selenium tests.
+Below, you can find my recommended development environment for running selenium tests.
 
-Essentially you need 3 main components as a minimum:
+Essentially, you need three main things set up as a minimum:
 
 1. Selenium standalone running on some server, usually localhost at port 4444.
 
     For example, `http://localhost:4444`
 
-2. The webdriver for your browser somewhere in your PATH, e.g. chromedriver (Chrome) or geckodriver (Firefox)
-3. Your code, that imports this library
+2. The webdriver for your browser somewhere in your PATH, e.g., chromedriver (Chrome) or geckodriver (Firefox)
+3. Your code that imports this library
 
 If you want you can download selenium and the webdriver manually, copy the webdriver
 to somewhere in your path, then run selenium manually using `java -jar selenium.jar`.
 
-However, this is a lot of messing around and you'll need to do it all again any
+However, this is a lot of messing around, and you'll need to do it all again any
 time either selenium or the webdriver gets updated. A better solution is to run
 both selenium and webdriver in a docker container, following the instructions below.
 

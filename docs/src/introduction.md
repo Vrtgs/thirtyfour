@@ -11,7 +11,7 @@ especially for the automated testing of Web Applications.
 
 ## Why is it called "thirtyfour" ?
 
-34 is the atomic number for the Selenium chemical element (Se) ⚛️.
+Thirty-four (34) is the atomic number for the Selenium chemical element (Se) ⚛️.
 
 ## Features
 

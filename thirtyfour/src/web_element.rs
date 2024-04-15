@@ -11,6 +11,7 @@ use crate::error::WebDriverError;
 use crate::js::SIMULATE_DRAG_AND_DROP;
 use crate::session::handle::SessionHandle;
 use crate::support::base64_decode;
+use crate::IntoArcStr;
 use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRef};
 use crate::{ElementId, TypingData};
 
@@ -321,7 +322,7 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn prop(&self, name: impl Into<String>) -> WebDriverResult<Option<String>> {
+    pub async fn prop(&self, name: impl IntoArcStr) -> WebDriverResult<Option<String>> {
         let resp = self
             .handle
             .cmd(Command::GetElementProperty(self.element_id.clone(), name.into()))
@@ -336,7 +337,7 @@ impl WebElement {
 
     /// Get the specified property.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to prop()")]
-    pub async fn get_property(&self, name: impl Into<String>) -> WebDriverResult<Option<String>> {
+    pub async fn get_property(&self, name: impl IntoArcStr) -> WebDriverResult<Option<String>> {
         self.prop(name).await
     }
 
@@ -362,7 +363,7 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn attr(&self, name: impl Into<String>) -> WebDriverResult<Option<String>> {
+    pub async fn attr(&self, name: impl IntoArcStr) -> WebDriverResult<Option<String>> {
         self.handle
             .cmd(Command::GetElementAttribute(self.element_id.clone(), name.into()))
             .await?
@@ -371,7 +372,7 @@ impl WebElement {
 
     /// Get the specified attribute.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to attr()")]
-    pub async fn get_attribute(&self, name: impl Into<String>) -> WebDriverResult<Option<String>> {
+    pub async fn get_attribute(&self, name: impl IntoArcStr) -> WebDriverResult<Option<String>> {
         self.attr(name).await
     }
 
@@ -397,7 +398,7 @@ impl WebElement {
     /// #     })
     /// # }
     /// ```
-    pub async fn css_value(&self, name: impl Into<String>) -> WebDriverResult<String> {
+    pub async fn css_value(&self, name: impl IntoArcStr) -> WebDriverResult<String> {
         self.handle
             .cmd(Command::GetElementCssValue(self.element_id.clone(), name.into()))
             .await?
@@ -406,7 +407,7 @@ impl WebElement {
 
     /// Get the specified CSS property.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to css_value()")]
-    pub async fn get_css_property(&self, name: impl Into<String>) -> WebDriverResult<String> {
+    pub async fn get_css_property(&self, name: impl IntoArcStr) -> WebDriverResult<String> {
         self.css_value(name).await
     }
 
@@ -485,11 +486,11 @@ impl WebElement {
     /// Return true if the WebElement is currently (still) present
     /// and not stale.
     ///
-    /// NOTE: This method simply queries the tag name in order to
+    /// NOTE: This method simply queries the tag name to
     ///       determine whether the element is still present.
     ///
     /// IMPORTANT:
-    /// If an element is re-rendered it may be considered stale even
+    /// If an element is re-rendered, it may be considered stale even
     /// though to the user it looks like it is still there.
     ///
     /// The recommended way to check for the presence of an element is

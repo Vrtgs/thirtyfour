@@ -11,7 +11,7 @@ It supports the [W3C WebDriver v1 spec](https://www.w3.org/TR/webdriver1/). Test
 
 ## Why is it called "thirtyfour" ?
 
-34 is the atomic number for the Selenium chemical element (Se) ⚛️.
+Thirty-four (34) is the atomic number for the Selenium chemical element (Se) ⚛️.
 
 ## Getting Started
 

@@ -1,14 +1,14 @@
 //! # Components
 //!
-//! Components allow you to wrap elements or groups of elements in order to abstract the
+//! Components allow you to wrap elements or groups of elements to abstract the
 //! element selectors and focus more on the logic and flow of your website or web app.
 //!
 //! This approach may be familiar to anyone who has used a
 //! [Page Object Model](https://www.selenium.dev/documentation/test_practices/encouraged/page_object_models/) before.
-//! However a `Component` can wrap any node in the DOM, not just "pages".
+//! However, a `Component` can wrap any node in the DOM, not just "pages".
 //!
-//! It uses smart element resolvers that can lazily resolve elements within the component and cache them for subsequent
-//! uses. You can also nest components, making them an extremely powerful feature for automating any modern web app.
+//! It uses smart element resolvers that can lazily resolve elements within the component and cache them for further
+//! use. You can also nest components, making them an extremely powerful feature for automating any modern web app.
 //!
 //! ### Example
 //!

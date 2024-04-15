@@ -1,14 +1,26 @@
 use base64::DecodeError;
 use serde::Deserialize;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter, Write};
 
 /// Type def for Result<T, WebDriverError>.
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
 
 fn indent_lines(message: &str, indent: usize) -> String {
-    let lines: Vec<String> =
-        message.split('\n').map(|s| format!("{0:i$}{1}", " ", s, i = indent)).collect();
-    lines.join("\n")
+    struct IdentLines<'a>(&'a str, usize);
+
+    impl Display for IdentLines<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            for (i, s) in self.0.split('\n').enumerate() {
+                if i != 0 {
+                    f.write_char('\n')?
+                }
+                write!(f, "{:i$}{s}", " ", i = self.1)?;
+            }
+            Ok(())
+        }
+    }
+
+    IdentLines(message, indent).to_string()
 }
 
 /// Struct representing the error value returned by the WebDriver server.
@@ -36,7 +48,7 @@ impl WebDriverErrorValue {
     }
 }
 
-impl std::fmt::Display for WebDriverErrorValue {
+impl Display for WebDriverErrorValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let stacktrace = self
             .stacktrace
@@ -81,7 +93,7 @@ impl WebDriverErrorInfo {
     }
 }
 
-impl std::fmt::Display for WebDriverErrorInfo {
+impl Display for WebDriverErrorInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut msg = String::new();
         if self.status != 0 {

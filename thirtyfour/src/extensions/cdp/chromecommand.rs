@@ -27,7 +27,7 @@ pub enum ChromeCommand {
 }
 
 impl FormatRequestData for ChromeCommand {
-    fn format_request(&self, session_id: &crate::SessionId) -> crate::RequestData {
+    fn format_request(&self, session_id: &crate::SessionId) -> RequestData {
         match &self {
             ChromeCommand::LaunchApp(app_id) => RequestData::new(
                 RequestMethod::Post,

@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use base64::Engine;
+use bytes::Bytes;
 use http::{
     header::{ACCEPT, AUTHORIZATION, CONNECTION, CONTENT_TYPE, USER_AGENT},
-    Request, Response,
+    HeaderValue, Request, Response,
 };
 use serde_json::Value;
 use url::Url;
@@ -18,16 +19,16 @@ use super::handle::SessionHandle;
 
 /// Enum representing the body of an HTTP request.
 #[derive(Debug, Clone)]
-pub enum Body {
+pub enum Body<'a> {
     /// Empty body.
     Empty,
     /// JSON body.
-    Json(Value),
+    Json(&'a Value),
 }
 
-impl From<Option<Value>> for Body {
-    fn from(value: Option<Value>) -> Self {
-        match value {
+impl<'a, T: Into<Option<&'a Value>>> From<T> for Body<'a> {
+    fn from(value: T) -> Self {
+        match value.into() {
             None => Body::Empty,
             Some(value) => Body::Json(value),
         }
@@ -36,15 +37,15 @@ impl From<Option<Value>> for Body {
 
 /// Trait used to implement a HTTP client.
 #[async_trait::async_trait]
-pub trait HttpClient {
+pub trait HttpClient: Send + Sync + 'static {
     /// Send an HTTP request and return the response.
-    async fn send(&self, request: Request<Body>) -> WebDriverResult<Response<Vec<u8>>>;
+    async fn send(&self, request: Request<Body<'_>>) -> WebDriverResult<Response<Bytes>>;
 }
 
 #[cfg(feature = "reqwest")]
 #[async_trait::async_trait]
 impl HttpClient for reqwest::Client {
-    async fn send(&self, request: Request<Body>) -> WebDriverResult<Response<Vec<u8>>> {
+    async fn send(&self, request: Request<Body<'_>>) -> WebDriverResult<Response<Bytes>> {
         let (parts, body) = request.into_parts();
         let method = match parts.method {
             http::Method::GET => reqwest::Method::GET,
@@ -64,32 +65,29 @@ impl HttpClient for reqwest::Client {
                 Some(x) => x,
                 None => continue,
             };
-            req = req.header(key.to_string(), value.as_bytes().to_vec());
+            req = req.header(key, value);
         }
         match body {
-            Body::Empty => {}
+            Body::Empty => req = req.body(reqwest::Body::default()),
             Body::Json(json) => {
-                req = req.json(&json);
+                req = req.json(json);
             }
         }
 
         let resp = req.send().await?;
-        let status_u16 = resp.status().as_u16();
+        let status = resp.status();
         let mut builder = Response::builder();
 
-        builder = builder.status(
-            http::StatusCode::from_u16(status_u16)
-                .map_err(|e| WebDriverError::HttpError(format!("invalid status code: {e}")))?,
-        );
+        builder = builder.status(status);
         for (key, value) in resp.headers().iter() {
-            builder = builder.header(key.to_string(), value.as_bytes().to_vec());
+            builder = builder.header(key.clone(), value.clone());
         }
 
-        let body = resp.bytes().await?.to_vec();
-        let body_str = String::from_utf8_lossy(&body).to_string();
+        let body = resp.bytes().await?;
+        let body_str = String::from_utf8_lossy(&body).into_owned();
         let resp = builder
             .body(body)
-            .map_err(|_| WebDriverError::UnknownResponse(status_u16, body_str.to_string()))?;
+            .map_err(|_| WebDriverError::UnknownResponse(status.as_u16(), body_str))?;
         Ok(resp)
     }
 }
@@ -108,10 +106,7 @@ pub(crate) mod null_client {
 
     #[async_trait::async_trait]
     impl HttpClient for NullHttpClient {
-        async fn send(
-            &self,
-            _: http::Request<super::Body>,
-        ) -> super::WebDriverResult<http::Response<Vec<u8>>> {
+        async fn send(&self, _: Request<Body<'_>>) -> WebDriverResult<Response<Bytes>> {
             panic!("Either enable the `reqwest` feature or implement your own `HttpClient`")
         }
     }
@@ -123,22 +118,21 @@ pub(crate) mod null_client {
 
 #[tracing::instrument(skip_all)]
 pub(crate) async fn run_webdriver_cmd(
-    client: &(dyn HttpClient + Send + Sync),
-    request_data: RequestData,
+    client: &(impl HttpClient + ?Sized),
+    request_data: &RequestData,
     server_url: &Url,
     config: &WebDriverConfig,
 ) -> WebDriverResult<CmdResponse> {
     tracing::debug!("webdriver request: {request_data}");
-    let uri: String = server_url
+    let uri = server_url
         .join(&request_data.uri)
-        .map_err(|e| WebDriverError::ParseError(format!("invalid url: {e}")))?
-        .to_string();
+        .map_err(|e| WebDriverError::ParseError(format!("invalid url: {e}")))?;
     let mut builder = http::Request::builder()
         .method(request_data.method)
-        .uri(uri)
-        .header(ACCEPT, "application/json")
-        .header(CONTENT_TYPE, "application/json;charset=UTF-8")
-        .header(USER_AGENT, &config.user_agent);
+        .uri(uri.as_str())
+        .header(ACCEPT, HeaderValue::from_static("application/json"))
+        .header(CONTENT_TYPE, HeaderValue::from_static("application/json;charset=UTF-8"))
+        .header(USER_AGENT, config.user_agent.clone());
 
     // Authentication.
     let url_username = server_url.username();
@@ -157,8 +151,8 @@ pub(crate) async fn run_webdriver_cmd(
         builder = builder.header(CONNECTION, "keep-alive");
     }
 
-    let body = match request_data.body {
-        Some(body) => Body::Json(body),
+    let body = match &request_data.body {
+        Some(body) => Body::from(body),
         None => Body::Empty,
     };
 
@@ -167,25 +161,17 @@ pub(crate) async fn run_webdriver_cmd(
         .map_err(|e| WebDriverError::RequestFailed(format!("invalid request body: {e}")))?;
     let response = client.send(request).await?;
     let status = response.status().as_u16();
-    tracing::debug!("webdriver response: {status} {}", String::from_utf8_lossy(response.body()));
+    let lossy_response = String::from_utf8_lossy(response.body());
+    tracing::debug!("webdriver response: {status} {lossy_response}");
     match status {
-        200..=399 => {
-            match serde_json::from_slice(response.body()) {
-                Ok(v) => Ok(CmdResponse {
-                    body: v,
-                    status,
-                }),
-                Err(_) => {
-                    // Try to parse the response as a string.
-                    let body = String::from_utf8_lossy(response.body()).to_string();
-                    Err(WebDriverError::parse(status, body))
-                }
-            }
-        }
-        _ => {
-            let body = String::from_utf8_lossy(response.body()).to_string();
-            Err(WebDriverError::parse(status, body))
-        }
+        200..=399 => match serde_json::from_slice(response.body()) {
+            Ok(v) => Ok(CmdResponse {
+                body: v,
+                status,
+            }),
+            Err(_) => Err(WebDriverError::parse(status, lossy_response.into_owned())),
+        },
+        _ => Err(WebDriverError::parse(status, lossy_response.into_owned())),
     }
 }
 
@@ -193,7 +179,7 @@ pub(crate) async fn run_webdriver_cmd(
 #[derive(Debug, Clone)]
 pub struct CmdResponse {
     /// The body of the response.
-    pub body: serde_json::Value,
+    pub body: Value,
     /// The HTTP status code of the response.
     pub status: u16,
 }

@@ -1,10 +1,99 @@
+use futures::future::BoxFuture;
+use futures::FutureExt;
+use std::future::Future;
+use std::sync::Arc;
 use std::{fmt, time::Duration};
 
-use futures::future::BoxFuture;
 use serde::{Deserialize, Serialize};
 
 use crate::error::WebDriverResult;
 use crate::WebElement;
+
+mod sealed {
+    use crate::error::{WebDriverError, WebDriverResult};
+    use std::borrow::Cow;
+    use std::rc::Rc;
+    use std::sync::Arc;
+    use url::Url;
+
+    pub trait IntoTransfer {
+        fn into(self) -> Arc<str>;
+    }
+
+    pub trait IntoUrl {
+        fn into_url(self) -> WebDriverResult<Url>;
+    }
+
+    impl IntoTransfer for &str {
+        fn into(self) -> Arc<str> {
+            Arc::from(self)
+        }
+    }
+
+    impl IntoUrl for &str {
+        fn into_url(self) -> WebDriverResult<Url> {
+            Url::parse(self).map_err(|e| WebDriverError::ParseError(format!("url parse err {e}")))
+        }
+    }
+
+    macro_rules! deref_impl {
+        ($trait: path => $meth:ident -> $ret:ty {on} ($($T: ty),*)) => {$(
+            impl $trait for $T {
+                #[inline]
+                fn $meth(self) -> $ret {
+                    <&$T as $trait>::$meth(&self)
+                }
+            }
+
+            impl $trait for &$T {
+                #[inline]
+                fn $meth(self) -> $ret {
+                    <&str as $trait>::$meth(&self)
+                }
+            }
+        )*};
+    }
+
+    deref_impl! {
+        IntoTransfer => into -> Arc<str> {on} (String, Box<str>, Rc<str>, Cow<'_, str>)
+    }
+
+    deref_impl! {
+        IntoUrl => into_url -> WebDriverResult<Url> {on} (String)
+    }
+
+    impl IntoTransfer for Arc<str> {
+        fn into(self) -> Arc<str> {
+            self
+        }
+    }
+
+    impl IntoTransfer for &Arc<str> {
+        fn into(self) -> Arc<str> {
+            Arc::clone(self)
+        }
+    }
+
+    impl IntoUrl for Url {
+        fn into_url(self) -> WebDriverResult<Url> {
+            Ok(self)
+        }
+    }
+
+    impl IntoUrl for &Url {
+        fn into_url(self) -> WebDriverResult<Url> {
+            Ok(self.clone())
+        }
+    }
+}
+
+/// trait for turning a string into a cheaply cloneable and transferable String
+pub trait IntoArcStr: sealed::IntoTransfer {}
+impl<T: sealed::IntoTransfer> IntoArcStr for T {}
+
+/// A trait to try to convert some type into an `Url`.
+pub trait IntoUrl: sealed::IntoUrl {}
+impl<T: sealed::IntoUrl> IntoUrl for T {}
 
 /// Rectangle representing the dimensions of an element.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,12 +156,12 @@ impl ElementRef {
 /// Newtype for the session id.
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 pub struct SessionId {
-    id: String,
+    id: Arc<str>,
 }
 
 impl<S> From<S> for SessionId
 where
-    S: Into<String>,
+    S: IntoArcStr,
 {
     fn from(value: S) -> Self {
         SessionId {
@@ -88,26 +177,26 @@ impl fmt::Display for SessionId {
 }
 
 impl SessionId {
-    /// Create a dummy SessionId for cases where it's not used.
+    /// Create a placeholder SessionId for cases where it's not used.
     ///
-    /// E.g. session creation.
+    /// E.g., session creation.
     pub fn null() -> Self {
         SessionId {
-            id: String::new(),
+            id: Arc::from(""),
         }
     }
 }
 
-/// Newtype for the element id.
+/// New-type for the element id.
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 #[serde(transparent)]
 pub struct ElementId {
-    id: String,
+    id: Arc<str>,
 }
 
 impl<S> From<S> for ElementId
 where
-    S: Into<String>,
+    S: IntoArcStr,
 {
     fn from(value: S) -> Self {
         ElementId {
@@ -122,15 +211,15 @@ impl fmt::Display for ElementId {
     }
 }
 
-/// Newtype for the window handle.
+/// New-type for the window handle.
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 pub struct WindowHandle {
-    handle: String,
+    handle: Arc<str>,
 }
 
 impl<S> From<S> for WindowHandle
 where
-    S: Into<String>,
+    S: IntoArcStr,
 {
     fn from(value: S) -> Self {
         WindowHandle {
@@ -193,11 +282,54 @@ impl Rect {
 }
 
 /// Generic element query function that returns some type T.
-pub type ElementQueryFn<T> =
-    Box<dyn Fn(&WebElement) -> BoxFuture<WebDriverResult<T>> + Send + Sync + 'static>;
+pub trait ElementQueryFn<T: 'static>: Send + Sync + 'static {
+    /// the future returned by ElementQueryFn::query
+    type Fut: Future<Output = WebDriverResult<T>> + Send + 'static;
 
-/// Function signature for element predicates.
-pub type ElementPredicate = ElementQueryFn<bool>;
+    /// the implementation of the query function
+    fn call(&self, arg: &WebElement) -> Self::Fut;
+}
+
+impl<T: 'static, Fut, Fun> ElementQueryFn<T> for Fun
+where
+    Fun: Fn(&WebElement) -> Fut + Send + Sync + ?Sized + 'static,
+    Fut: Future<Output = WebDriverResult<T>> + Send + 'static,
+{
+    type Fut = Fut;
+
+    fn call(&self, arg: &WebElement) -> Fut {
+        self(arg)
+    }
+}
+
+/// element predicates.
+pub trait ElementPredicate: ElementQueryFn<bool> {}
+
+impl<Fn: ElementQueryFn<bool> + ?Sized> ElementPredicate for Fn {}
+
+/// a dynamically dispatched query function
+pub type DynElementQueryFn<T> = dyn ElementQueryFn<T, Fut = BoxFuture<'static, WebDriverResult<T>>>;
+
+/// a dynamically dispatched element predicate
+pub type DynElementPredicate = DynElementQueryFn<bool>;
+
+impl<T: 'static> DynElementQueryFn<T> {
+    fn wrap<F: ElementQueryFn<T>>(
+        fun: F,
+    ) -> impl ElementQueryFn<T, Fut = BoxFuture<'static, WebDriverResult<T>>> {
+        move |arg: &WebElement| fun.call(arg).boxed()
+    }
+
+    /// erases the type of ElementQueryFn, and dynamically dispatches it using a Box smart pointer
+    pub fn boxed<F: ElementQueryFn<T>>(fun: F) -> Box<Self> {
+        Box::new(Self::wrap(fun)) as Box<Self>
+    }
+
+    /// erases the type of ElementQueryFn, and dynamically dispatches it using an Arc smart pointer
+    pub fn arc<F: ElementQueryFn<T>>(fun: F) -> Arc<Self> {
+        Arc::new(Self::wrap(fun)) as Arc<Self>
+    }
+}
 
 /// Rect struct with optional fields.
 #[derive(Debug, Default, Clone, Eq, PartialEq, Serialize)]
@@ -287,7 +419,7 @@ impl Default for TimeoutConfiguration {
         TimeoutConfiguration::new(
             Some(Duration::from_secs(60)),
             Some(Duration::from_secs(60)),
-            // NOTE: Implicit wait must default to zero in order to support ElementQuery.
+            // NOTE: Implicit wait must default to zero to support ElementQuery.
             Some(Duration::from_secs(0)),
         )
     }
