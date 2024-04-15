@@ -266,12 +266,12 @@ pub trait BrowserCapabilitiesHelper: CapabilitiesHelper {
             .and_then(|option| from_value(option.clone()).ok())
     }
 
-    /// Get the current list of command-line arguments to `geckodriver` as a vec.
+    /// Get the current list of command-line arguments as a vec.
     fn args(&self) -> Vec<String> {
         self.browser_option("args").unwrap_or_default()
     }
 
-    /// Remove the specified Chrome command-line argument if it had been added previously.
+    /// Remove the specified command-line argument if it had been added previously.
     fn remove_arg(&mut self, arg: &str) -> WebDriverResult<()> {
         let mut args = self.args();
         if args.is_empty() {

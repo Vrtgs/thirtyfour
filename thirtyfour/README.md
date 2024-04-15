@@ -92,29 +92,6 @@ async fn main() -> WebDriverResult<()> {
 }
 ```
 
-## Compared to Fantoccini
-
-The [fantoccini](https://github.com/jonhoo/fantoccini) crate offers a more lightweight 
-browser automation experience and (so far) seems to stick closer to the WebDriver specification.
-
-Thirtyfour aims to provide a more "batteries-included" automated testing experience,
-with more advanced element queries and Page Object Model support.
-
-Support for newer specs like [Selenium 4.x](https://www.selenium.dev/), 
-[Chrome DevTools Protocol (CDP)](https://chromedevtools.github.io/devtools-protocol/), 
-[WebDriver V2](https://www.w3.org/TR/webdriver2/) and 
-[WebDriver BIDI](https://w3c.github.io/webdriver-bidi/) are planned.
-
-## Compared to tools like Cypress, Playwright, etc.
-
-Most browser automation tools other than Selenium tend to be (very polished) wrappers around 
-Chrome DevTools Protocol and as such they actually only provide a subset of the 
-functionality that Selenium can provide. This is often not a significant limitation, however.
-It really depends on what you want to achieve, and which framework you prefer to work with.
-
-Thirtyfour aims to provide a Selenium-based experience on par with any other tool.
-There's still a long way to go. If you'd like to contribute, please get in touch!
-
 ## Minimum Supported Rust Version
 
 The MSRV for `thirtyfour` is currently 1.66 and will be updated as needed by dependencies.
