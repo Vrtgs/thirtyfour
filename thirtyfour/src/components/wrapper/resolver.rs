@@ -77,7 +77,9 @@ impl<T: Clone + 'static> ElementResolver<T> {
 
     /// Invalidate any cached element(s).
     pub fn invalidate(&self) {
-        self.element.store(Arc::new(OnceCell::new()));
+        if self.element.initialized() {
+            self.element.store(Arc::new(OnceCell::new()));
+        }
     }
 
     /// Run the query, ignoring any cached element(s).
