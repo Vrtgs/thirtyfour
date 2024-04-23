@@ -1,6 +1,7 @@
-use crate::{common::command::FormatRequestData, RequestData, RequestMethod};
+use crate::{common::command::FormatRequestData, RequestData};
 
 use super::NetworkConditions;
+use http::Method;
 use serde_json::{json, Value};
 
 /// Extra commands specific to Chrome.
@@ -30,44 +31,43 @@ impl FormatRequestData for ChromeCommand {
     fn format_request(&self, session_id: &crate::SessionId) -> RequestData {
         match &self {
             ChromeCommand::LaunchApp(app_id) => RequestData::new(
-                RequestMethod::Post,
+                Method::POST,
                 format!("/session/{}/chromium/launch_app", session_id),
             )
             .add_body(json!({ "id": app_id })),
             ChromeCommand::GetNetworkConditions => RequestData::new(
-                RequestMethod::Get,
+                Method::GET,
                 format!("/session/{}/chromium/network_conditions", session_id),
             ),
             ChromeCommand::SetNetworkConditions(conditions) => RequestData::new(
-                RequestMethod::Post,
+                Method::POST,
                 format!("/session/{}/chromium/network_conditions", session_id),
             )
             .add_body(json!({ "network_conditions": conditions })),
-            ChromeCommand::ExecuteCdpCommand(command, params) => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/goog/cdp/execute", session_id),
-            )
-            .add_body(json!({ "cmd": command, "params": params })),
+            ChromeCommand::ExecuteCdpCommand(command, params) => {
+                RequestData::new(Method::POST, format!("/session/{}/goog/cdp/execute", session_id))
+                    .add_body(json!({ "cmd": command, "params": params }))
+            }
             ChromeCommand::GetSinks => RequestData::new(
-                RequestMethod::Get,
+                Method::GET,
                 format!("/session/{}/goog/cast/get_sinks", session_id),
             ),
             ChromeCommand::GetIssueMessage => RequestData::new(
-                RequestMethod::Get,
+                Method::GET,
                 format!("/session/{}/goog/cast/get_issue_message", session_id),
             ),
             ChromeCommand::SetSinkToUse(sink_name) => RequestData::new(
-                RequestMethod::Post,
+                Method::POST,
                 format!("/session/{}/goog/cast/set_sink_to_use", session_id),
             )
             .add_body(json!({ "sinkName": sink_name })),
             ChromeCommand::StartTabMirroring(sink_name) => RequestData::new(
-                RequestMethod::Post,
+                Method::POST,
                 format!("/session/{}/goog/cast/start_tab_mirroring", session_id),
             )
             .add_body(json!({ "sinkName": sink_name })),
             ChromeCommand::StopCasting(sink_name) => RequestData::new(
-                RequestMethod::Post,
+                Method::POST,
                 format!("/session/{}/goog/cast/stop_casting", session_id),
             )
             .add_body(json!({ "sinkName": sink_name })),

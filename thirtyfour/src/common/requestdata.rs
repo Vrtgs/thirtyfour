@@ -2,54 +2,13 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use crate::IntoArcStr;
-use serde::{Deserialize, Serialize};
-
-/// The request method for a request.
-#[derive(Copy, Clone, Debug, strum::EnumString, strum::Display, Serialize, Deserialize)]
-#[strum(serialize_all = "UPPERCASE")]
-#[serde(rename_all = "UPPERCASE")]
-pub enum RequestMethod {
-    /// CONNECT request.
-    Connect,
-    /// GET request.
-    Get,
-    /// DELETE request.
-    Delete,
-    /// HEAD request.
-    Head,
-    /// OPTIONS request.
-    Options,
-    /// PATCH request.
-    Patch,
-    /// POST request.
-    Post,
-    /// PUT request.
-    Put,
-    /// TRACE request.
-    Trace,
-}
-
-impl From<RequestMethod> for http::Method {
-    fn from(value: RequestMethod) -> Self {
-        match value {
-            RequestMethod::Connect => http::Method::CONNECT,
-            RequestMethod::Get => http::Method::GET,
-            RequestMethod::Delete => http::Method::DELETE,
-            RequestMethod::Head => http::Method::HEAD,
-            RequestMethod::Options => http::Method::OPTIONS,
-            RequestMethod::Patch => http::Method::PATCH,
-            RequestMethod::Post => http::Method::POST,
-            RequestMethod::Put => http::Method::PUT,
-            RequestMethod::Trace => http::Method::TRACE,
-        }
-    }
-}
+use http::Method;
 
 /// RequestData is a wrapper around the data required to make an HTTP request.
 #[derive(Debug, Clone)]
 pub struct RequestData {
     /// The request method.
-    pub method: RequestMethod,
+    pub method: Method,
     /// The request URI.
     pub uri: Arc<str>,
     /// The request body.
@@ -58,7 +17,7 @@ pub struct RequestData {
 
 impl RequestData {
     /// Create a new RequestData struct.
-    pub fn new<S: IntoArcStr>(method: RequestMethod, uri: S) -> Self {
+    pub fn new<S: IntoArcStr>(method: Method, uri: S) -> Self {
         RequestData {
             method,
             uri: uri.into(),

@@ -47,7 +47,7 @@ pub trait HttpClient: Send + Sync + 'static {
 impl HttpClient for reqwest::Client {
     async fn send(&self, request: Request<Body<'_>>) -> WebDriverResult<Response<Bytes>> {
         let (parts, body) = request.into_parts();
-        
+
         let mut req = self.request(parts.method, parts.uri.to_string());
         for (key, value) in parts.headers.into_iter() {
             let key = match key {
@@ -117,7 +117,7 @@ pub(crate) async fn run_webdriver_cmd(
         .join(&request_data.uri)
         .map_err(|e| WebDriverError::ParseError(format!("invalid url: {e}")))?;
     let mut builder = http::Request::builder()
-        .method(request_data.method)
+        .method(request_data.method.clone())
         .uri(uri.as_str())
         .header(ACCEPT, HeaderValue::from_static("application/json"))
         .header(CONTENT_TYPE, HeaderValue::from_static("application/json;charset=UTF-8"))

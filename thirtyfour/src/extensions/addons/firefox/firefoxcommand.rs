@@ -1,6 +1,7 @@
+use http::Method;
 use serde_json::json;
 
-use crate::{common::command::FormatRequestData, RequestData, RequestMethod};
+use crate::{common::command::FormatRequestData, RequestData};
 
 /// Extra commands specific to Firefox.
 #[derive(Debug)]
@@ -22,16 +23,15 @@ impl FormatRequestData for FirefoxCommand {
             FirefoxCommand::InstallAddon {
                 path,
                 temporary,
-            } => RequestData::new(
-                RequestMethod::Post,
-                format!("/session/{}/moz/addon/install", session_id),
-            )
-            .add_body(json!({
-                "path": path,
-                "temporary": temporary
-            })),
+            } => {
+                RequestData::new(Method::POST, format!("/session/{}/moz/addon/install", session_id))
+                    .add_body(json!({
+                        "path": path,
+                        "temporary": temporary
+                    }))
+            }
             FirefoxCommand::FullScreenshot {} => RequestData::new(
-                RequestMethod::Get,
+                Method::GET,
                 format!("/session/{}/moz/screenshot/full", session_id),
             ),
         }
