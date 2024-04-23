@@ -6,9 +6,6 @@ Welcome to The Book for `thirtyfour`.
 It also provides some support for the `Chrome DevTools Protocol`, which is used by popular frameworks
 such as Cypress and Playwright.
 
-It aims to be a "batteries-included" framework for all things related to Web Browser Automation,
-especially for the automated testing of Web Applications.
-
 ## Why is it called "thirtyfour" ?
 
 Thirty-four (34) is the atomic number for the Selenium chemical element (Se) ⚛️.

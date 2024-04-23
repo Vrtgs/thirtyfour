@@ -27,6 +27,9 @@ categories = [
     "web-programming::http-client",
 ]
 
+[badges]
+maintenance = { status = "looking_for_maintainer" }
+
 [features]
 default = ["reqwest", "rustls-tls", "component"]
 rustls-tls = ["reqwest/rustls-tls"]

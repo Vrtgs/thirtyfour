@@ -4,6 +4,7 @@
 [![docs.rs](https://docs.rs/thirtyfour/badge.svg)](https://docs.rs/thirtyfour)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/stevepryde/thirtyfour/test.yml?branch=main)](https://github.com/stevepryde/thirtyfour/actions)
 [![codecov](https://codecov.io/gh/stevepryde/thirtyfour/branch/main/graph/badge.svg?token=OVORQE9PZK)](https://codecov.io/gh/stevepryde/thirtyfour)
+[![maintenance](https://img.shields.io/badge/looking%20for%20maintainer-8A2BE2)](https://github.com/stevepryde/thirtyfour/issues/215)
 
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 
