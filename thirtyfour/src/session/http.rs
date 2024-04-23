@@ -47,19 +47,8 @@ pub trait HttpClient: Send + Sync + 'static {
 impl HttpClient for reqwest::Client {
     async fn send(&self, request: Request<Body<'_>>) -> WebDriverResult<Response<Bytes>> {
         let (parts, body) = request.into_parts();
-        let method = match parts.method {
-            http::Method::GET => reqwest::Method::GET,
-            http::Method::POST => reqwest::Method::POST,
-            http::Method::DELETE => reqwest::Method::DELETE,
-            http::Method::PUT => reqwest::Method::PUT,
-            http::Method::PATCH => reqwest::Method::PATCH,
-            http::Method::HEAD => reqwest::Method::HEAD,
-            http::Method::OPTIONS => reqwest::Method::OPTIONS,
-            http::Method::CONNECT => reqwest::Method::CONNECT,
-            http::Method::TRACE => reqwest::Method::TRACE,
-            x => return Err(WebDriverError::HttpError(format!("Invalid HTTP method: {x}"))),
-        };
-        let mut req = self.request(method, parts.uri.to_string());
+        
+        let mut req = self.request(parts.method, parts.uri.to_string());
         for (key, value) in parts.headers.into_iter() {
             let key = match key {
                 Some(x) => x,
