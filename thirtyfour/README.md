@@ -1,22 +1,18 @@
-# thirtyfour
 
-[![Crates.io](https://img.shields.io/crates/v/thirtyfour.svg)](https://crates.io/crates/thirtyfour)
-[![docs.rs](https://docs.rs/thirtyfour/badge.svg)](https://docs.rs/thirtyfour)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/stevepryde/thirtyfour/test.yml?branch=main)](https://github.com/stevepryde/thirtyfour/actions)
-[![codecov](https://codecov.io/gh/stevepryde/thirtyfour/branch/main/graph/badge.svg?token=OVORQE9PZK)](https://codecov.io/gh/stevepryde/thirtyfour)
-[![maintenance](https://img.shields.io/badge/looking%20for%20maintainer-8A2BE2)](https://github.com/stevepryde/thirtyfour/issues/215)
+# thirtyfour
 
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 
-It supports the [W3C WebDriver v1 spec](https://www.w3.org/TR/webdriver1/). Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
+## ** Unmaintained **
 
-## Why is it called "thirtyfour" ?
+This crate is no longer maintained.
 
-Thirty-four (34) is the atomic number for the Selenium chemical element (Se) ⚛️.
+Feel free to create a fork. Otherwise, you could check out these related crates:
 
-## Getting Started
+- For Selenium/WebDriver, try [fantoccini](https://github.com/jonhoo/fantoccini)
+- For using Chrome Devtools Protocol (CDP) directly, try [chromiumoxide](https://github.com/mattsse/chromiumoxide)
 
-Check out [The Book](https://stevepryde.github.io/thirtyfour/) 📚!
+
 
 ## Features
 

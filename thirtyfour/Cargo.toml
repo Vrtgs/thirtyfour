@@ -28,7 +28,7 @@ categories = [
 ]
 
 [badges]
-maintenance = { status = "looking_for_maintainer" }
+maintenance = { status = "deprecated" }
 
 [features]
 default = ["reqwest", "rustls-tls", "component"]
