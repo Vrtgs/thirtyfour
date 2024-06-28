@@ -135,7 +135,7 @@ pub trait ChromiumLikeCapabilities: BrowserCapabilitiesHelper {
     }
 
     /// Add Chrome extension file. This will be a file with a .CRX extension.
-    fn add_extension(&mut self, crx_file: &Path) -> WebDriverResult<()> {
+    fn add_extension(&mut self, crx_file: impl AsRef<Path>) -> WebDriverResult<()> {
         let contents = std::fs::read(crx_file)?;
         let b64_contents = BASE64_STANDARD.encode(contents);
         self.add_encoded_extension(&b64_contents)
@@ -143,7 +143,7 @@ pub trait ChromiumLikeCapabilities: BrowserCapabilitiesHelper {
 
     /// Remove the specified Chrome extension file if an identical extension had been added
     /// previously.
-    fn remove_extension(&mut self, crx_file: &Path) -> WebDriverResult<()> {
+    fn remove_extension(&mut self, crx_file: impl AsRef<Path>) -> WebDriverResult<()> {
         let contents = std::fs::read(crx_file)?;
         let b64_contents = BASE64_STANDARD.encode(contents);
         self.remove_encoded_extension(&b64_contents)

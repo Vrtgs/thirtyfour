@@ -651,7 +651,7 @@ impl WebElement {
     }
 
     /// Take a screenshot of this WebElement and write it to the specified filename.
-    pub async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
+    pub async fn screenshot(&self, path: impl AsRef<Path>) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
         let mut file = File::create(path).await?;
         file.write_all(&png).await?;
