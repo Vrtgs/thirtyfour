@@ -9,8 +9,8 @@ Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI 
 
 Tested on Chrome and Firefox, but any webdriver-capable browser should work.
 """
-homepage = "https://github.com/stevepryde/thirtyfour"
-repository = "https://github.com/stevepryde/thirtyfour"
+homepage = "https://github.com/Vrtgs/thirtyfour"
+repository = "https://github.com/Vrtgs/thirtyfour"
 documentation = "https://docs.rs/thirtyfour"
 
 readme = "README.md"
@@ -44,9 +44,9 @@ http = "1"
 indexmap = "2.1"
 parking_lot = "0.12"
 paste = "1"
-serde = { version = "1.0.111", features = ["derive", "rc"] }
+serde = { version = "1.0.204", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["preserve_order"] }
-serde_repr = "0.1.18"
+serde_repr = "0.1.19"
 stringmatch = "0.4"
 strum = { version = "0.26", features = ["derive"] }
 thirtyfour-macros = { path = "../thirtyfour-macros", version = "0.1.2", optional = true }
@@ -60,9 +60,9 @@ tokio = { version = "1", features = [
     "sync",
     "time",
 ] }
-bytes = "1.6.0"
+bytes = "1.6.1"
 tracing = "0.1"
-url = "2.5"
+url = "2.5.2"
 
 # Optional HTTP client. Not needed if you supply your own.
 reqwest = { version = "0.12", default-features = false, features = [

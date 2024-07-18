@@ -3,16 +3,6 @@
 
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 
-## ** Unmaintained **
-
-This crate is no longer maintained.
-
-Feel free to create a fork. Otherwise, you could check out these related crates:
-
-- For Selenium/WebDriver, try [fantoccini](https://github.com/jonhoo/fantoccini)
-- For using Chrome Devtools Protocol (CDP) directly, try [chromiumoxide](https://github.com/mattsse/chromiumoxide)
-
-
 
 ## Features
 
