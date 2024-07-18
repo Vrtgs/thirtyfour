@@ -1,7 +1,7 @@
 [package]
 name = "thirtyfour"
 version = "0.33.0-alpha.2"
-authors = ["Steve Pryde <steve@stevepryde.com>"]
+authors = ["Steve Pryde <steve@stevepryde.com>", "Vrtgs"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = """

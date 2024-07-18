@@ -1,14 +1,14 @@
 [package]
 name = "thirtyfour-macros"
 version = "0.1.2"
-authors = ["Steve Pryde <steve@stevepryde.com>"]
+authors = ["Steve Pryde <steve@stevepryde.com>", "Vrtgs"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = """
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 """
-homepage = "https://github.com/stevepryde/thirtyfour"
-repository = "https://github.com/stevepryde/thirtyfour"
+homepage = "https://github.com/Vrtgs/thirtyfour"
+repository = "https://github.com/Vrtgs/thirtyfour"
 documentation = "https://docs.rs/thirtyfour_macros"
 
 readme = "README.md"
