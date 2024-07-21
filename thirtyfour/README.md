@@ -81,7 +81,7 @@ async fn main() -> WebDriverResult<()> {
 
 ## Minimum Supported Rust Version
 
-The MSRV for `thirtyfour` is currently 1.75 and will be updated as needed by dependencies.
+The MSRV for `thirtyfour` is currently latest, and so its guaranteed to run the latest stable release.
 
 ## LICENSE
 

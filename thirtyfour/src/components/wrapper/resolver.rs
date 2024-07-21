@@ -1,12 +1,14 @@
+use std::fmt::{Debug, Formatter};
+use std::sync::Arc;
+
+use arc_swap::ArcSwap;
+use tokio::sync::OnceCell;
+
 use crate::components::Component;
 use crate::error::WebDriverResult;
 use crate::extensions::query::ElementQueryOptions;
 use crate::prelude::ElementQueryable;
 use crate::{By, DynElementQueryFn, ElementQueryFn, WebElement};
-use arc_swap::ArcSwap;
-use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
-use tokio::sync::OnceCell;
 
 /// Type alias for `ElementResolver<WebElement>`, for convenience.
 pub type ElementResolverSingle = ElementResolver<WebElement>;
@@ -93,55 +95,39 @@ impl<T: Clone + 'static> ElementResolver<T> {
 }
 
 mod sealed {
+    use std::future::Future;
+
+    use futures::{StreamExt, TryStreamExt};
+
     use crate::components::Component;
     use crate::error::WebDriverResult;
     use crate::WebElement;
-    use futures::future::BoxFuture;
-    use futures::{FutureExt, StreamExt, TryStreamExt};
 
-    #[async_trait::async_trait]
     pub trait Resolve: Sized {
-        async fn is_present(&self) -> WebDriverResult<bool>;
+        fn is_present(&self) -> impl Future<Output = WebDriverResult<bool>> + Send;
     }
 
-    #[async_trait::async_trait]
     impl Resolve for WebElement {
         async fn is_present(&self) -> WebDriverResult<bool> {
             self.is_present().await
         }
     }
 
-    #[async_trait::async_trait]
     impl<T: Component + Sync> Resolve for T {
         async fn is_present(&self) -> WebDriverResult<bool> {
             self.base_element().is_present().await
         }
     }
 
-    // // this doesn't build for some wierd reason:
-    // #[async_trait::async_trait]
-    // impl<T: Resolve + Sync> Resolve for Vec<T> {
-    //      async fn is_present(&self) -> WebDriverResult<bool> {
-    //          futures::stream::iter(self)
-    //              .map(Resolve::is_present)
-    //              // 16 is arbitrary, just don't send too many requests at the same time
-    //              .buffer_unordered(self.len().min(16))
-    //              .try_all(std::future::ready)
-    //              .await
-    //      }
-    //  }
-
+    // this doesn't build for some wierd reason:
     impl<T: Resolve + Sync> Resolve for Vec<T> {
-        fn is_present<'a: 'b, 'b>(&'a self) -> BoxFuture<'b, WebDriverResult<bool>>
-        where
-            Self: 'b,
-        {
+        async fn is_present(&self) -> WebDriverResult<bool> {
             futures::stream::iter(self)
                 .map(Resolve::is_present)
                 // 16 is arbitrary, just don't send too many requests at the same time
                 .buffer_unordered(self.len().min(16))
                 .try_all(std::future::ready)
-                .boxed()
+                .await
         }
     }
 }
