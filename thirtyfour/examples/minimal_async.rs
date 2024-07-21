@@ -28,7 +28,7 @@ async fn main() -> WebDriverResult<()> {
     let elem_button = elem_form.find(By::Css("button[type='submit']")).await?;
     elem_button.click().await?;
 
-    // Always explicitly close the browser. There are no async destructors.
+    // Always explicitly close the browser. This prevents the executor from being blocked
     driver.quit().await?;
 
     Ok(())

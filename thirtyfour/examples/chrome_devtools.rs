@@ -33,7 +33,7 @@ async fn main() -> color_eyre::Result<()> {
     let version_info = dev_tools.execute_cdp("Browser.getVersion").await?;
     println!("Chrome Version: {:?}", version_info);
 
-    // Always explicitly close the browser. There are no async destructors.
+    // Always explicitly close the browser. This prevents the executor from being blocked
     driver.quit().await?;
 
     Ok(())

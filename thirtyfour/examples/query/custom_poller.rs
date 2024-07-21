@@ -50,7 +50,7 @@ async fn main() -> color_eyre::Result<()> {
     // the `WebDriver` instance that found them.
     elem_form.wait_until().displayed().await?;
 
-    // Always explicitly close the browser. There are no async destructors.
+    // Always explicitly close the browser. This prevents the executor from being blocked
     driver.quit().await?;
 
     Ok(())

@@ -1,12 +1,14 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+use std::thread;
 use std::time::Duration;
-
 use serde_json::Value;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use tokio::runtime::RuntimeFlavor;
+use tokio::sync::OnceCell;
 use url::Url;
 
 use super::http::{run_webdriver_cmd, CmdResponse, HttpClient};
@@ -22,6 +24,7 @@ use crate::support::base64_decode;
 use crate::{By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
 use crate::{IntoArcStr, IntoUrl};
 use crate::{TimeoutConfiguration, WindowHandle};
+use crate::web_driver::AlreadyClosed;
 
 /// The SessionHandle contains a shared reference to the HTTP client
 /// to allow sending commands to the underlying WebDriver.
@@ -34,6 +37,8 @@ pub struct SessionHandle {
     session_id: SessionId,
     /// The config used by this instance.
     config: WebDriverConfig,
+    /// quit session flag
+    quit: Arc<OnceCell<()>>
 }
 
 impl Debug for SessionHandle {
@@ -67,6 +72,7 @@ impl SessionHandle {
             server_url: Arc::new(server_url.into_url()?),
             session_id,
             config,
+            quit: Arc::new(OnceCell::new())
         })
     }
 
@@ -78,6 +84,7 @@ impl SessionHandle {
             client: self.client.clone(),
             server_url: self.server_url.clone(),
             session_id: self.session_id.clone(),
+            quit: Arc::clone(&self.quit),
             config,
         }
     }
@@ -101,7 +108,7 @@ impl SessionHandle {
     /// Send the specified command to the webdriver server.
     pub async fn cmd(&self, command: impl FormatRequestData) -> WebDriverResult<CmdResponse> {
         let request_data = command.format_request(&self.session_id);
-        run_webdriver_cmd(self.client.as_ref(), &request_data, &self.server_url, &self.config).await
+        run_webdriver_cmd(&*self.client, &request_data, &self.server_url, &self.config).await
     }
 
     /// Get the WebDriver status.
@@ -355,7 +362,7 @@ impl SessionHandle {
         self.execute(script, args).await
     }
 
-    /// Execute the specified Javascrypt asynchronously and return the result.
+    /// Execute the specified JavaScript asynchronously and return the result.
     ///
     /// # Example:
     /// ```no_run
@@ -423,7 +430,7 @@ impl SessionHandle {
         Ok(ScriptRet::new(self.clone(), r.value()?))
     }
 
-    /// Execute the specified Javascrypt asynchronously and return the result.
+    /// Execute the specified JavaScript asynchronously and return the result.
     #[deprecated(since = "0.30.0", note = "This method has been renamed to execute_async()")]
     pub async fn execute_script_async(
         self: &Arc<Self>,
@@ -774,7 +781,7 @@ impl SessionHandle {
     /// Set the implicit wait timeout.
     ///
     /// This is how long the WebDriver will wait when querying elements.
-    /// By default this is set to 0 seconds.
+    /// By default, this is set to 0 seconds.
     ///
     /// **NOTE:** Setting the implicit wait timeout to a non-zero value will interfere with the use
     /// of [`WebDriver::query`] and [`WebElement::wait_until`].
@@ -810,7 +817,7 @@ impl SessionHandle {
     /// Set the script timeout.
     ///
     /// This is how long the WebDriver will wait for a Javascript script to execute.
-    /// By default this is set to 60 seconds.
+    /// By default, this is set to 60 seconds.
     ///
     /// # Example:
     /// ```no_run
@@ -838,7 +845,7 @@ impl SessionHandle {
     /// Set the page load timeout.
     ///
     /// This is how long the WebDriver will wait for the page to finish loading.
-    /// By default this is set to 60 seconds.
+    /// By default, this is set to 60 seconds.
     ///
     /// # Example:
     /// ```no_run
@@ -1140,5 +1147,44 @@ impl SessionHandle {
         self.switch_to_window(handle).await?;
 
         result
+    }
+    
+    pub(crate) async fn quit(&self) -> WebDriverResult<()> {
+        self.quit.get_or_try_init(|| async { self.cmd(Command::DeleteSession).await.map(drop) }).await?;
+        Ok(())
+    }
+
+    pub(crate) fn leak(&self) -> Result<(), AlreadyClosed> {
+        self.quit.set(()).map_err(|_| AlreadyClosed(()))
+    }
+}
+
+
+// "SyncDrop" only runs if not manually quit
+impl Drop for SessionHandle {
+    #[track_caller]
+    fn drop(&mut self) {
+        static GLOBAL_RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
+        
+        #[cold]
+        fn init_global() -> tokio::runtime::Runtime {
+            tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap()
+        }
+        
+        if self.quit.initialized() {
+            return;
+        }
+        
+        #[cfg(feature = "debug_sync_quit")]
+        eprintln!("WebDriver didn't wasn't quit properly at\n{}", std::backtrace::Backtrace::force_capture());
+        
+        match tokio::runtime::Handle::try_current() {
+            Ok(handle) if handle.runtime_flavor() == RuntimeFlavor::MultiThread => {
+                let _ = tokio::task::block_in_place(|| handle.block_on(self.quit()));
+            }
+            _ => thread::scope(|scope| {
+                scope.spawn(|| GLOBAL_RT.get_or_init(init_global).block_on(self.quit()));
+            })
+        }
     }
 }

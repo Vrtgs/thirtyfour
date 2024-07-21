@@ -97,7 +97,7 @@ impl ElementSelector {
     }
 
     /// Add the specified filter to the list of filters for this selector.
-    pub fn add_filter(&mut self, f: impl ElementPredicate) {
+    pub fn add_filter(&mut self, f: impl ElementPredicate + 'static) {
         self.add_box_filter(DynElementPredicate::boxed(f));
     }
 

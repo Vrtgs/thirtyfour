@@ -256,7 +256,7 @@ pub trait BrowserCapabilitiesHelper: CapabilitiesHelper {
         }
     }
 
-    /// Get the custom browser-specific property, if it exists.
+    /// Get the custom browser-specific property if it exists.
     fn browser_option<T>(&self, key: &str) -> Option<T>
     where
         T: DeserializeOwned,

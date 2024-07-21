@@ -32,7 +32,7 @@ async fn main() -> color_eyre::Result<()> {
         driver.execute(r#"return navigator.userAgent;"#, Vec::new()).await?.convert()?;
     assert_eq!(&js_user_agent, user_agent);
 
-    // Always explicitly close the browser. There are no async destructors.
-    driver.close_window().await?;
+    // Always explicitly close the browser. This prevents the executor from being blocked
+    driver.quit().await?;
     Ok(())
 }
