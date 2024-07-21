@@ -1,3 +1,6 @@
+[![Crates.io](https://img.shields.io/crates/v/thirtyfour.svg)](https://crates.io/crates/thirtyfour)
+[![docs.rs](https://docs.rs/thirtyfour/badge.svg)](https://docs.rs/thirtyfour)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Vrtgs/thirtyfour/test.yml?branch=main)](https://github.com/Vrtgs/thirtyfour/actions)
 
 # thirtyfour
 
