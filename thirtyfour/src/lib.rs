@@ -74,12 +74,13 @@
 //! ### The browser will not close automatically
 //!
 //! Rust does not have [async destructors](https://boats.gitlab.io/blog/post/poll-drop/),
-//! which means there is no reliable way to execute an async HTTP request on Drop and wait for
-//! it to complete. This means you are in charge of closing the browser at the end of your code,
-//! via a call to [`WebDriver::quit`] as in the above example.
+//! and so whenever you forget to use [`WebDriver::quit`] the webdriver will have to block the executor
+//! to drop itself and will also ignore errors while dropping, so if you know when a webdriver is no longer used
+//! it is recommended to more or less "asynchronously drop" via a call to [`WebDriver::quit`] as in the above example.
+//! This also allows you to catch errors during quitting, and possibly panic or report back to the user 
 //!
-//! If you do not call [`WebDriver::quit`], then the browser will stay open until it is
-//! either explicitly closed later outside your code, or the session times out.
+//! If you do not call [`WebDriver::quit`] **your async executor will be blocked** meaning no futures can run
+//! while quiting.
 //!
 //! ### Advanced element queries and explicit waits
 //!
