@@ -37,7 +37,7 @@ debug_sync_quit = []
 [dependencies]
 async-trait = "0.1"
 base64 = "0.22"
-futures = "0.3"
+futures = "0.3.30"
 http = "1"
 indexmap = "2"
 parking_lot = "0.12"
