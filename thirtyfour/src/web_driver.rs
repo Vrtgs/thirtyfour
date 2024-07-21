@@ -44,7 +44,6 @@ pub struct WebDriver {
 #[error("Webdriver is already closed, can't leak an already closed driver")]
 pub struct AlreadyClosed(pub(crate) ());
 
-
 impl WebDriver {
     /// Create a new WebDriver as follows:
     ///

@@ -4,14 +4,13 @@ use std::path::Path;
 use std::sync::{Arc, OnceLock};
 use std::thread;
 use std::time::Duration;
+
 use serde_json::Value;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::runtime::RuntimeFlavor;
 use tokio::sync::OnceCell;
 use url::Url;
-
-use super::http::{run_webdriver_cmd, CmdResponse, HttpClient};
 
 use crate::action_chain::ActionChain;
 use crate::common::command::{Command, FormatRequestData};
@@ -21,10 +20,12 @@ use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
 use crate::session::scriptret::ScriptRet;
 use crate::support::base64_decode;
+use crate::web_driver::AlreadyClosed;
 use crate::{By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
 use crate::{IntoArcStr, IntoUrl};
 use crate::{TimeoutConfiguration, WindowHandle};
-use crate::web_driver::AlreadyClosed;
+
+use super::http::{run_webdriver_cmd, CmdResponse, HttpClient};
 
 /// The SessionHandle contains a shared reference to the HTTP client
 /// to allow sending commands to the underlying WebDriver.
@@ -38,7 +39,7 @@ pub struct SessionHandle {
     /// The config used by this instance.
     config: WebDriverConfig,
     /// quit session flag
-    quit: Arc<OnceCell<()>>
+    quit: Arc<OnceCell<()>>,
 }
 
 impl Debug for SessionHandle {
@@ -72,7 +73,7 @@ impl SessionHandle {
             server_url: Arc::new(server_url.into_url()?),
             session_id,
             config,
-            quit: Arc::new(OnceCell::new())
+            quit: Arc::new(OnceCell::new()),
         })
     }
 
@@ -1148,9 +1149,11 @@ impl SessionHandle {
 
         result
     }
-    
+
     pub(crate) async fn quit(&self) -> WebDriverResult<()> {
-        self.quit.get_or_try_init(|| async { self.cmd(Command::DeleteSession).await.map(drop) }).await?;
+        self.quit
+            .get_or_try_init(|| async { self.cmd(Command::DeleteSession).await.map(drop) })
+            .await?;
         Ok(())
     }
 
@@ -1159,32 +1162,34 @@ impl SessionHandle {
     }
 }
 
-
 // "SyncDrop" only runs if not manually quit
 impl Drop for SessionHandle {
     #[track_caller]
     fn drop(&mut self) {
         static GLOBAL_RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
-        
+
         #[cold]
         fn init_global() -> tokio::runtime::Runtime {
             tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap()
         }
-        
+
         if self.quit.initialized() {
             return;
         }
-        
+
         #[cfg(feature = "debug_sync_quit")]
-        eprintln!("WebDriver didn't wasn't quit properly at\n{}", std::backtrace::Backtrace::force_capture());
-        
+        eprintln!(
+            "WebDriver didn't wasn't quit properly at\n{}",
+            std::backtrace::Backtrace::force_capture()
+        );
+
         match tokio::runtime::Handle::try_current() {
             Ok(handle) if handle.runtime_flavor() == RuntimeFlavor::MultiThread => {
                 let _ = tokio::task::block_in_place(|| handle.block_on(self.quit()));
             }
             _ => thread::scope(|scope| {
                 scope.spawn(|| GLOBAL_RT.get_or_init(init_global).block_on(self.quit()));
-            })
+            }),
         }
     }
 }
