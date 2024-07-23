@@ -12,6 +12,8 @@ use tokio::runtime::RuntimeFlavor;
 use tokio::sync::OnceCell;
 use url::Url;
 
+use webdriver::command::PrintParameters;
+
 use crate::action_chain::ActionChain;
 use crate::common::command::{Command, FormatRequestData};
 use crate::common::config::WebDriverConfig;
@@ -1031,6 +1033,16 @@ impl SessionHandle {
     pub async fn add_cookie(&self, cookie: Cookie) -> WebDriverResult<()> {
         self.cmd(Command::AddCookie(cookie)).await?;
         Ok(())
+    }
+
+    /// Print the current window and return it as a PDF.
+    pub async fn print_page(&self, parameters: PrintParameters) -> WebDriverResult<Vec<u8>> {
+        base64_decode(&self.print_page_base64(parameters).await?)
+    }
+
+    /// Print the current window and return it as a PDF, base64 encoded.
+    pub async fn print_page_base64(&self, parameters: PrintParameters) -> WebDriverResult<String> {
+        self.cmd(Command::PrintPage(parameters)).await?.value()
     }
 
     /// Take a screenshot of the current window and return it as PNG, base64 encoded.
