@@ -1,11 +1,11 @@
 use http::Method;
 use serde_json::{json, Value};
-use webdriver::command::PrintParameters;
 
 use crate::common::{
     capabilities::desiredcapabilities::make_w3c_caps,
     cookie::Cookie,
     keys::TypingData,
+    print::PrintParameters,
     types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
 };
 use crate::IntoArcStr;

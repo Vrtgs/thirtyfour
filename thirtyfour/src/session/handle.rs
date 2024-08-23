@@ -12,12 +12,11 @@ use tokio::runtime::RuntimeFlavor;
 use tokio::sync::OnceCell;
 use url::Url;
 
-use webdriver::command::PrintParameters;
-
 use crate::action_chain::ActionChain;
 use crate::common::command::{Command, FormatRequestData};
 use crate::common::config::WebDriverConfig;
 use crate::common::cookie::Cookie;
+use crate::common::print::PrintParameters;
 use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
 use crate::session::scriptret::ScriptRet;
