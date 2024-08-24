@@ -10,7 +10,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::runtime::RuntimeFlavor;
 use tokio::sync::OnceCell;
-use url::Url;
+use url::{ParseError, Url};
 
 use crate::action_chain::ActionChain;
 use crate::common::command::{Command, FormatRequestData};
@@ -190,10 +190,17 @@ impl SessionHandle {
     /// # }
     /// ```
     pub async fn goto(&self, url: impl IntoArcStr) -> WebDriverResult<()> {
-        let mut url = url.into();
-        if !url.starts_with("http") {
-            url = format!("https://{url}").into();
-        }
+        let url = url.into();
+
+        let parse_url = |url: Arc<str>| Url::parse(&url).map(|_| url);
+        let url = parse_url(url.clone())
+            .or_else(|e| match e {
+                ParseError::RelativeUrlWithoutBase => {
+                    parse_url(("https://".to_string() + &*url).into())
+                }
+                e => Err(e),
+            })
+            .map_err(WebDriverError::InvalidUrl)?;
         self.cmd(Command::NavigateTo(url)).await?;
         Ok(())
     }
