@@ -496,8 +496,10 @@ impl FormatRequestData for Command {
                     }))
             }
             Command::PrintPage(params) => {
-                RequestData::new(Method::POST, format!("/session/{}/print", session_id))
-                    .add_body(serde_json::to_value(params).expect("Fail to parse Print Page Parameters to json"))
+                RequestData::new(Method::POST, format!("/session/{}/print", session_id)).add_body(
+                    serde_json::to_value(params)
+                        .expect("Fail to parse Print Page Parameters to json"),
+                )
             }
             Command::TakeScreenshot => {
                 RequestData::new(Method::GET, format!("/session/{}/screenshot", session_id))
