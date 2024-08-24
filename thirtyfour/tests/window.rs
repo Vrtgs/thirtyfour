@@ -1,6 +1,6 @@
 use common::*;
 use rstest::rstest;
-use thirtyfour::{prelude::*, support::block_on};
+use thirtyfour::{common::print::PrintParameters, prelude::*, support::block_on};
 
 mod common;
 
@@ -242,6 +242,19 @@ fn screenshot(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 
         let screenshot_data = c.screenshot_as_png().await?;
         assert!(!screenshot_data.is_empty(), "screenshot data is empty");
+        Ok(())
+    })
+}
+
+#[rstest]
+fn print_page(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+    let c = test_harness.driver();
+    block_on(async {
+        let url = sample_page_url();
+        c.goto(&url).await?;
+
+        let printing_data = c.print_page(PrintParameters::default()).await?;
+        assert!(!printing_data.is_empty(), "printing data is empty");
         Ok(())
     })
 }

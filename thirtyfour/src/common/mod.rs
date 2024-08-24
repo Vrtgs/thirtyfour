@@ -10,6 +10,8 @@ pub mod config;
 pub mod cookie;
 /// Types for working with keyboard input.
 pub mod keys;
+/// Types used with print commands.
+pub mod print;
 /// Type for request method and body.
 pub mod requestdata;
 /// Common types used within thirtyfour.
