@@ -5,7 +5,7 @@ use thirtyfour::{common::print::PrintParameters, prelude::*, support::block_on};
 mod common;
 
 #[rstest]
-fn iframe_switch(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn iframe_switch(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -37,7 +37,7 @@ fn iframe_switch(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn new_window(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn new_window(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         c.new_window().await?;
@@ -48,7 +48,7 @@ fn new_window(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn new_window_switch(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn new_window_switch(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let window_1 = c.window().await?;
@@ -79,7 +79,7 @@ fn new_window_switch(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn new_tab_switch(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn new_tab_switch(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let window_1 = c.window().await?;
@@ -110,7 +110,7 @@ fn new_tab_switch(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn close_window(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn close_window(test_harness: TestHarness) -> WebDriverResult<()> {
     block_on(async {
         let c = test_harness.driver();
         let window_1 = c.window().await?;
@@ -144,7 +144,7 @@ fn close_window(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn close_window_twice_errors(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn close_window_twice_errors(test_harness: TestHarness) -> WebDriverResult<()> {
     block_on(async {
         let c = test_harness.driver();
         c.close_window().await?;
@@ -155,7 +155,7 @@ fn close_window_twice_errors(test_harness: TestHarness<'_>) -> WebDriverResult<(
 }
 
 #[rstest]
-fn windwow_name(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn windwow_name(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -186,7 +186,7 @@ fn windwow_name(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn in_new_tab(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn in_new_tab(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -210,7 +210,7 @@ fn in_new_tab(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn window_rect(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn window_rect(test_harness: TestHarness) -> WebDriverResult<()> {
     block_on(async {
         let c = test_harness.driver();
         c.set_window_rect(20, 20, 1900, 1000).await?;
@@ -234,7 +234,7 @@ fn window_rect(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn screenshot(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn screenshot(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -247,7 +247,7 @@ fn screenshot(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn print_page(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn print_page(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();

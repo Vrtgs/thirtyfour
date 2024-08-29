@@ -9,7 +9,7 @@ use crate::common::*;
 mod common;
 
 #[rstest]
-fn actions_key(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn actions_key(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -30,7 +30,7 @@ fn actions_key(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn actions_mouse(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn actions_mouse(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -47,7 +47,7 @@ fn actions_mouse(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn actions_mouse_move(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn actions_mouse_move(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         // Set window size to avoid moving the cursor out-of-bounds during actions.
@@ -80,7 +80,7 @@ fn actions_mouse_move(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn actions_release(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn actions_release(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -114,7 +114,7 @@ fn actions_release(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn actions_drag_and_drop(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn actions_drag_and_drop(test_harness: TestHarness) -> WebDriverResult<()> {
     let browser = test_harness.browser().to_string();
     let c = test_harness.driver();
     block_on(async {
