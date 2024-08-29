@@ -10,7 +10,7 @@ use crate::common::*;
 mod common;
 
 #[rstest]
-fn get_active_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn get_active_element(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -24,7 +24,7 @@ fn get_active_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn find_all(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn find_all(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -36,7 +36,7 @@ fn find_all(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn query(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn query(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -50,7 +50,7 @@ fn query(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn query_all(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn query_all(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -93,7 +93,7 @@ fn query_all(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn query_any(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn query_any(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -124,7 +124,7 @@ fn query_any(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn query_exists(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn query_exists(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -173,7 +173,7 @@ fn query_exists(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn resolve(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn resolve(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -194,7 +194,7 @@ fn resolve(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn resolve_all(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn resolve_all(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -211,7 +211,7 @@ fn resolve_all(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn stale_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn stale_element(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -234,7 +234,7 @@ fn stale_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn select_by_index(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn select_by_index(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -270,7 +270,7 @@ fn select_by_index(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn select_by_label(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn select_by_label(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -299,7 +299,7 @@ fn select_by_label(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn find_element_from_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn find_element_from_element(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();

@@ -8,7 +8,7 @@ use crate::common::*;
 mod common;
 
 #[rstest]
-fn drag_to(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn drag_to(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let drag_to_url = drag_to_url();

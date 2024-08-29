@@ -51,7 +51,7 @@ mod feature_component {
     }
 
     #[rstest]
-    fn basic_component(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+    fn basic_component(test_harness: TestHarness) -> WebDriverResult<()> {
         let c = test_harness.driver();
         block_on(async {
             let url = sample_page_url();
@@ -98,7 +98,7 @@ mod feature_component {
     }
 
     #[rstest]
-    fn component_attributes(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+    fn component_attributes(test_harness: TestHarness) -> WebDriverResult<()> {
         let c = test_harness.driver();
         block_on(async {
             let url = sample_page_url();
@@ -178,7 +178,7 @@ mod feature_component {
     }
 
     #[rstest]
-    fn component_attributes_custom_fn(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+    fn component_attributes_custom_fn(test_harness: TestHarness) -> WebDriverResult<()> {
         let c = test_harness.driver();
         block_on(async {
             let url = sample_page_url();

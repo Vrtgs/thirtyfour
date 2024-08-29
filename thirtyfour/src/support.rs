@@ -1,19 +1,54 @@
 use crate::error::WebDriverResult;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use futures::Future;
+use std::io;
+use std::path::Path;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 /// Helper to run the specified future and block the current thread waiting for the result.
-///
-/// This is mostly used within tests.
-///
-/// NOTE: This cannot be used within an active tokio runtime.
-pub fn block_on<F, T>(future: F) -> WebDriverResult<T>
+pub fn block_on<F>(future: F) -> F::Output
 where
-    F: Future<Output = WebDriverResult<T>>,
+    F: Future + Send,
+    F::Output: Send,
 {
-    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
-    rt.block_on(future)
+    static GLOBAL_RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
+
+    #[cold]
+    fn init_global() -> tokio::runtime::Runtime {
+        tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap()
+    }
+
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "tokio-multi-threaded")] {
+            use tokio::runtime::RuntimeFlavor;
+
+            match tokio::runtime::Handle::try_current() {
+                Ok(handle) if handle.runtime_flavor() == RuntimeFlavor::MultiThread => {
+                    tokio::task::block_in_place(|| handle.block_on(future))
+                }
+                _ => std::thread::scope(|scope| {
+                    scope.spawn(|| GLOBAL_RT.get_or_init(init_global).block_on(future)).join().unwrap()
+                }),
+            }
+        } else {
+            std::thread::scope(|scope| {
+                scope.spawn(|| GLOBAL_RT.get_or_init(init_global).block_on(future)).join().unwrap()
+            })
+        }
+    }
+}
+
+pub(crate) async fn write_file(
+    path: impl AsRef<Path>,
+    bytes: impl Into<Vec<u8>>,
+) -> io::Result<()> {
+    async fn inner(path: &Path, bytes: Vec<u8>) -> io::Result<()> {
+        let path = path.to_owned();
+        tokio::task::spawn_blocking(move || std::fs::write(path, bytes)).await?
+    }
+
+    inner(path.as_ref(), bytes.into()).await
 }
 
 /// Helper to sleep asynchronously for the specified duration.

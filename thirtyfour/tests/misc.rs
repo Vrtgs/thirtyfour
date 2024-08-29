@@ -9,7 +9,7 @@ use crate::common::*;
 mod common;
 
 #[rstest]
-fn resolve_execute_async_value(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn resolve_execute_async_value(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -36,7 +36,7 @@ fn resolve_execute_async_value(test_harness: TestHarness<'_>) -> WebDriverResult
 }
 
 #[rstest]
-fn status(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn status(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     let browser = test_harness.browser().to_string();
     block_on(async {
@@ -55,7 +55,7 @@ fn status(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn timeouts(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn timeouts(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let new_timeouts = TimeoutConfiguration::new(
@@ -124,7 +124,7 @@ fn timeouts(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 
 // Verifies that basic cookie handling works
 #[rstest]
-fn test_cookies(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn test_cookies(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         c.goto("https://www.wikipedia.org/").await?;

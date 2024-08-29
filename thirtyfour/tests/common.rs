@@ -3,13 +3,14 @@
 use rstest::fixture;
 use std::{
     net::SocketAddr,
-    sync::{Arc, Mutex, MutexGuard, OnceLock},
+    sync::{Arc, OnceLock},
     thread::JoinHandle,
 };
 use thirtyfour::prelude::*;
+use thirtyfour::support::block_on;
+use tokio::sync::{Semaphore, SemaphorePermit};
 
 static SERVER: OnceLock<Arc<JoinHandle<()>>> = OnceLock::new();
-static LIMITER: OnceLock<Arc<Mutex<()>>> = OnceLock::new();
 static LOGINIT: OnceLock<()> = OnceLock::new();
 
 const ASSETS_DIR: &str = "tests/test_html";
@@ -77,47 +78,46 @@ pub fn init_logging() {
 }
 
 /// Get the global limiter mutex.
-pub fn get_limiter<'a>() -> &'a Arc<Mutex<()>> {
-    LIMITER.get_or_init(|| Arc::new(Mutex::new(())))
+pub fn get_limiter() -> &'static Semaphore {
+    static LIMITER: Semaphore = Semaphore::const_new(1);
+
+    &LIMITER
 }
 
 /// Locks the Firefox browser for exclusive use.
 ///
 /// This ensures there is only ever one Firefox browser running at a time.
-pub fn lock_firefox<'a>(browser: &str) -> Option<MutexGuard<'a, ()>> {
+pub async fn lock_firefox<'a>(browser: &str) -> Option<SemaphorePermit<'static>> {
     if browser == "firefox" {
-        Some(get_limiter().lock().unwrap())
+        Some(get_limiter().acquire().await.unwrap())
     } else {
         None
     }
 }
 
 /// Launch the specified browser.
-pub fn launch_browser(browser: &str) -> WebDriver {
+pub async fn launch_browser(browser: &str) -> WebDriver {
     tracing::debug!("launching browser {browser}");
     let caps = make_capabilities(browser);
     let webdriver_url = webdriver_url(browser);
-    let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-    rt.block_on(async {
-        WebDriver::new(webdriver_url, caps).await.expect("Failed to create WebDriver")
-    })
+    WebDriver::new(webdriver_url, caps).await.expect("Failed to create WebDriver")
 }
 
 /// Helper struct for running tests.
-pub struct TestHarness<'a> {
+pub struct TestHarness {
     browser: String,
     server: Arc<JoinHandle<()>>,
     driver: Option<WebDriver>,
-    guard: Option<MutexGuard<'a, ()>>,
+    guard: Option<SemaphorePermit<'static>>,
 }
 
-impl<'a> TestHarness<'a> {
+impl TestHarness {
     /// Create a new TestHarness instance.
-    pub fn new(browser: &str) -> Self {
+    pub async fn new(browser: &str) -> Self {
         init_logging();
         let server = start_server();
-        let guard = lock_firefox(browser);
-        let driver = Some(launch_browser(browser));
+        let guard = lock_firefox(browser).await;
+        let driver = Some(launch_browser(browser).await);
         Self {
             browser: browser.to_string(),
             server,
@@ -143,22 +143,11 @@ impl<'a> TestHarness<'a> {
     }
 }
 
-impl<'a> Drop for TestHarness<'a> {
-    fn drop(&mut self) {
-        if let Some(driver) = self.driver.take() {
-            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-            rt.block_on(async {
-                driver.quit().await.expect("Failed to quit");
-            });
-        }
-    }
-}
-
 /// Fixture for running tests.
 #[fixture]
-pub fn test_harness<'a>() -> TestHarness<'a> {
+pub fn test_harness() -> TestHarness {
     let browser = std::env::var("THIRTYFOUR_BROWSER").unwrap_or_else(|_| "chrome".to_string());
-    TestHarness::new(&browser)
+    block_on(TestHarness::new(&browser))
 }
 
 pub fn sample_page_url() -> String {

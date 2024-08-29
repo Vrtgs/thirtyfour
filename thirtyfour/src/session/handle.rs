@@ -1,14 +1,10 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::path::Path;
-use std::sync::{Arc, OnceLock};
-use std::thread;
+use std::sync::Arc;
 use std::time::Duration;
 
 use serde_json::Value;
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
-use tokio::runtime::RuntimeFlavor;
 use tokio::sync::OnceCell;
 use url::{ParseError, Url};
 
@@ -22,7 +18,7 @@ use crate::prelude::WebDriverError;
 use crate::session::scriptret::ScriptRet;
 use crate::support::base64_decode;
 use crate::web_driver::AlreadyClosed;
-use crate::{By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
+use crate::{support, By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
 use crate::{IntoArcStr, IntoUrl};
 use crate::{TimeoutConfiguration, WindowHandle};
 
@@ -1064,8 +1060,7 @@ impl SessionHandle {
     /// Take a screenshot of the current window and write it to the specified filename.
     pub async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
-        let mut file = File::create(path).await?;
-        file.write_all(&png).await?;
+        support::write_file(path, png).await?;
         Ok(())
     }
 
@@ -1184,13 +1179,6 @@ impl SessionHandle {
 impl Drop for SessionHandle {
     #[track_caller]
     fn drop(&mut self) {
-        static GLOBAL_RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
-
-        #[cold]
-        fn init_global() -> tokio::runtime::Runtime {
-            tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap()
-        }
-
         if self.quit.initialized() {
             return;
         }
@@ -1201,13 +1189,6 @@ impl Drop for SessionHandle {
             std::backtrace::Backtrace::force_capture()
         );
 
-        match tokio::runtime::Handle::try_current() {
-            Ok(handle) if handle.runtime_flavor() == RuntimeFlavor::MultiThread => {
-                let _ = tokio::task::block_in_place(|| handle.block_on(self.quit()));
-            }
-            _ => thread::scope(|scope| {
-                scope.spawn(|| GLOBAL_RT.get_or_init(init_global).block_on(self.quit()));
-            }),
-        }
+        let _ = support::block_on(self.quit());
     }
 }
