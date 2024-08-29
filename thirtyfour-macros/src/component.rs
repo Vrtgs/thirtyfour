@@ -3,7 +3,7 @@ extern crate proc_macro;
 use crate::bail;
 use proc_macro2::TokenStream;
 use proc_macro2::{Literal, Span};
-use quote::{quote, ToTokens, TokenStreamExt};
+use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use std::collections::HashSet;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
@@ -213,7 +213,7 @@ impl ParsedField {
 
                 // Use type or attribute to infer single/multi resolver.
                 if by_tokens.is_multi() || is_multi_resolver(&p.path) {
-                    let multi_args = MultiResolverArgs::new(ty, by_tokens);
+                    let multi_args = MultiResolverArgs::try_new(ty, by_tokens)?;
 
                     Ok(quote!(
                         #cfg_attr
@@ -222,7 +222,7 @@ impl ParsedField {
                         };
                     ))
                 } else {
-                    let single_args = SingleResolverArgs::new(ty, by_tokens);
+                    let single_args = SingleResolverArgs::try_new(ty, by_tokens)?;
 
                     Ok(quote!(
                         #cfg_attr
@@ -240,7 +240,7 @@ impl ParsedField {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct WaitOptions {
     timeout_ms: Expr,
     interval_ms: Expr,
@@ -260,7 +260,6 @@ impl ToTokens for WaitOptions {
 }
 
 /// These are all the supported tokens in a `#[by(..)]` attribute.
-#[derive(Debug)]
 enum ByToken {
     Id(Literal),
     Tag(Literal),
@@ -666,6 +665,37 @@ impl TryFrom<&syn::Attribute> for ByTokens {
     }
 }
 
+struct DebugByTokens(ByTokens);
+
+impl ToTokens for DebugByTokens {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        for by_token in &self.0.tokens {
+            match by_token {
+                // literals
+                ByToken::Id(lit)
+                | ByToken::Tag(lit)
+                | ByToken::LinkText(lit)
+                | ByToken::Css(lit)
+                | ByToken::XPath(lit)
+                | ByToken::Name(lit)
+                | ByToken::ClassName(lit)
+                | ByToken::Description(lit) => lit.to_tokens(tokens),
+                // idents
+                ByToken::Multi
+                | ByToken::NotEmpty
+                | ByToken::AllowEmpty
+                | ByToken::Single
+                | ByToken::First
+                | ByToken::IgnoreErrors
+                | ByToken::NoWait => tokens.append(format_ident!("{}", by_token.get_unique_type())),
+                // misc
+                ByToken::CustomFn(expr) => expr.to_tokens(tokens),
+                ByToken::Wait(opts) => opts.to_tokens(tokens),
+            }
+        }
+    }
+}
+
 /// Return true if the specified path matches one of the specified types.
 ///
 /// Use `|` as the path separator for elements in the `one_of` slice.
@@ -729,8 +759,9 @@ enum SingleResolverOptions {
 }
 
 /// First we convert `ByTokens` to `SingleResolverArgs`.
-impl From<ByTokens> for SingleResolverOptions {
-    fn from(mut t: ByTokens) -> Self {
+impl TryFrom<ByTokens> for SingleResolverOptions {
+    type Error = syn::Error;
+    fn try_from(mut t: ByTokens) -> Result<Self, Self::Error> {
         t.take_single(); // This is the default.
         let s = match t.take_custom() {
             Some(f) => Self::CustomFn(f),
@@ -743,9 +774,10 @@ impl From<ByTokens> for SingleResolverOptions {
                 nowait: t.take_nowait(),
             },
         };
-
-        assert!(t.tokens.is_empty(), "unexpected extra args: {:?}", t.tokens);
-        s
+        if !t.tokens.is_empty() {
+            return Err(syn::Error::new_spanned(DebugByTokens(t), "unexpected extra args"));
+        }
+        Ok(s)
     }
 }
 
@@ -755,11 +787,11 @@ struct SingleResolverArgs {
 }
 
 impl SingleResolverArgs {
-    pub fn new(ty: TokenStream, by_tokens: ByTokens) -> Self {
-        Self {
+    pub fn try_new(ty: TokenStream, by_tokens: ByTokens) -> syn::Result<Self> {
+        Ok(Self {
             ty,
-            options: by_tokens.into(),
-        }
+            options: by_tokens.try_into()?,
+        })
     }
 }
 
@@ -843,8 +875,9 @@ enum MultiResolverOptions {
 }
 
 /// First we convert `ByTokens` into `MultiResolverOptions`.
-impl From<ByTokens> for MultiResolverOptions {
-    fn from(mut t: ByTokens) -> Self {
+impl TryFrom<ByTokens> for MultiResolverOptions {
+    type Error = syn::Error;
+    fn try_from(mut t: ByTokens) -> Result<Self, Self::Error> {
         t.take_multi(); // Not used here.
         t.take_not_empty(); // This is the default.
         let s = match t.take_custom() {
@@ -858,9 +891,10 @@ impl From<ByTokens> for MultiResolverOptions {
                 nowait: t.take_nowait(),
             },
         };
-
-        assert!(t.tokens.is_empty(), "unexpected extra args: {:?}", t.tokens);
-        s
+        if !t.tokens.is_empty() {
+            return Err(syn::Error::new_spanned(DebugByTokens(t), "unexpected extra args"));
+        }
+        Ok(s)
     }
 }
 
@@ -870,11 +904,11 @@ struct MultiResolverArgs {
 }
 
 impl MultiResolverArgs {
-    fn new(ty: TokenStream, by_tokens: ByTokens) -> Self {
-        Self {
+    fn try_new(ty: TokenStream, by_tokens: ByTokens) -> syn::Result<Self> {
+        Ok(Self {
             ty,
-            options: by_tokens.into(),
-        }
+            options: by_tokens.try_into()?,
+        })
     }
 }
 
