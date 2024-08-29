@@ -118,9 +118,16 @@ mod component;
 /// [`ElementResolver`]: https://docs.rs/thirtyfour/0.31.0-alpha.1/thirtyfour/components/struct.ElementResolver.html
 /// [`ElementQueryOptions`]: https://docs.rs/thirtyfour/0.31.0-alpha.1/thirtyfour/extensions/query/struct.ElementQueryOptions.html
 /// [`ElementQueryFn<T>`]: https://docs.rs/thirtyfour/0.31.0-alpha.1/thirtyfour/common/types/type.ElementQueryFn.html
+
+macro_rules! bail {
+    ($span: expr, $($fmt:tt)*) => {
+        return Err(syn::Error::new($span, format_args!($($fmt)*)))
+    };
+}
+
+pub(crate) use bail;
 #[proc_macro_derive(Component, attributes(base, by))]
-#[proc_macro_error::proc_macro_error]
 pub fn derive_component_fn(input: TokenStream) -> TokenStream {
-    let ast: DeriveInput = parse_macro_input!(input);
-    expand_component_derive(ast).unwrap_or_else(|err| err).into()
+    let ast = parse_macro_input!(input as DeriveInput);
+    expand_component_derive(ast).into()
 }

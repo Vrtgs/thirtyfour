@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour-macros"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Steve Pryde <steve@stevepryde.com>", "Vrtgs"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -19,7 +19,6 @@ categories = ["api-bindings", "development-tools::testing", "web-programming::ht
 proc-macro = true
 
 [dependencies]
-proc-macro-error = "1.0.4"
 proc-macro2 = "1"
 quote = "1"
-syn = { version = "1.0.109", features = ["full", "parsing", "extra-traits"] }
+syn = "2"

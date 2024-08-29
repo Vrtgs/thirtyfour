@@ -56,7 +56,7 @@ pub struct PlaygroundPage {
 #[derive(Component, Clone)]
 pub struct Header {
     base: WebElement,
-    #[by(custom = "resolve_run_button")]
+    #[by(custom = resolve_run_button)]
     button_run: ElementResolver<WebElement>,
 }
 

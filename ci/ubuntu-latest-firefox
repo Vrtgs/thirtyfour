@@ -1,4 +1,4 @@
 #!/bin/bash
 sudo apt-get update
 sudo apt-get install firefox-geckodriver
-geckodriver &
+geckodriver --port=4444 &
