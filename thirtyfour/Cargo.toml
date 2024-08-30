@@ -54,7 +54,9 @@ thirtyfour-macros = { path = "../thirtyfour-macros", version = "0.1.3", optional
 thiserror = "1.0.63"
 arc-swap = "1"
 tokio = { version = "1", features = [
+    "rt",
     "macros",
+    "time",
     "io-util",
     "sync",
 ] }
