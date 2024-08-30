@@ -1,10 +1,11 @@
 use crate::error::WebDriverResult;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use futures::Future;
-use std::io;
+use std::convert::Infallible;
 use std::path::Path;
 use std::sync::OnceLock;
 use std::time::Duration;
+use std::{io, thread};
 
 /// Helper to run the specified future and block the current thread waiting for the result.
 pub fn block_on<F>(future: F) -> F::Output
@@ -12,11 +13,23 @@ where
     F: Future + Send,
     F::Output: Send,
 {
-    static GLOBAL_RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
+    static GLOBAL_RT: OnceLock<tokio::runtime::Handle> = OnceLock::new();
 
     #[cold]
-    fn init_global() -> tokio::runtime::Runtime {
-        tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap()
+    fn init_global() -> tokio::runtime::Handle {
+        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+        let handle = rt.handle().clone();
+        // drive the runtime
+        thread::spawn(move || rt.block_on(std::future::pending::<Infallible>()));
+        handle
+    }
+
+    macro_rules! block_global {
+        ($future:expr) => {
+            thread::scope(|scope| {
+                scope.spawn(|| GLOBAL_RT.get_or_init(init_global).block_on($future)).join().unwrap()
+            })
+        };
     }
 
     cfg_if::cfg_if! {
@@ -27,14 +40,10 @@ where
                 Ok(handle) if handle.runtime_flavor() == RuntimeFlavor::MultiThread => {
                     tokio::task::block_in_place(|| handle.block_on(future))
                 }
-                _ => std::thread::scope(|scope| {
-                    scope.spawn(|| GLOBAL_RT.get_or_init(init_global).block_on(future)).join().unwrap()
-                }),
+                _ => block_global!(future),
             }
         } else {
-            std::thread::scope(|scope| {
-                scope.spawn(|| GLOBAL_RT.get_or_init(init_global).block_on(future)).join().unwrap()
-            })
+            block_global!(future)
         }
     }
 }

@@ -138,7 +138,9 @@ impl TestHarness {
 
     /// Disable auto-closing the browser when the TestHarness is dropped.
     pub fn disable_auto_close(mut self) -> Self {
-        self.driver = None;
+        if let Some(driver) = self.driver.take() {
+            let _ = driver.leak();
+        }
         self
     }
 }
