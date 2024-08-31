@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.33.2"
+version = "0.34.0"
 authors = ["Steve Pryde <steve@stevepryde.com>", "Vrtgs"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -77,7 +77,7 @@ color-eyre = "0.6"
 rstest = "0.22.0"
 tower-http = { version = "0.5", features = ["fs"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tokio = { version = "1.39.3", features = ["rt-multi-thread"] }
+tokio = { version = "1", features = ["rt-multi-thread"] }
 
 
 [[example]]
