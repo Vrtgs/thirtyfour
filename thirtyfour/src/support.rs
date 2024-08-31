@@ -2,8 +2,9 @@ use crate::error::WebDriverResult;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use futures::Future;
 use std::convert::Infallible;
+use std::panic::AssertUnwindSafe;
 use std::path::Path;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 use std::time::Duration;
 use std::{io, thread};
 
@@ -13,21 +14,46 @@ where
     F: Future + Send,
     F::Output: Send,
 {
-    static GLOBAL_RT: OnceLock<tokio::runtime::Handle> = OnceLock::new();
+    fn no_unwind<T>(f: impl FnOnce() -> T) -> T {
+        let res = std::panic::catch_unwind(AssertUnwindSafe(f));
 
-    #[cold]
-    fn init_global() -> tokio::runtime::Handle {
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-        let handle = rt.handle().clone();
-        // drive the runtime
-        thread::spawn(move || rt.block_on(std::future::pending::<Infallible>()));
-        handle
+        res.unwrap_or_else(|_| {
+            struct Abort;
+            impl Drop for Abort {
+                fn drop(&mut self) {
+                    eprintln!("unrecoverable error reached aborting...");
+                    std::process::abort()
+                }
+            }
+
+            let _abort_on_unwind = Abort;
+            unreachable!("thirtyfour global runtime panicked")
+        })
     }
+
+    static GLOBAL_RT: LazyLock<tokio::runtime::Handle> = LazyLock::new(|| {
+        no_unwind(|| {
+            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+            let handle = rt.handle().clone();
+
+            // drive the runtime
+            // we do this so that all calls to GLOBAL_RT.block_on() work
+            thread::spawn(move || -> ! {
+                async fn forever() -> ! {
+                    match std::future::pending::<Infallible>().await {}
+                }
+
+                no_unwind(move || rt.block_on(forever()))
+            });
+            handle
+        })
+    });
 
     macro_rules! block_global {
         ($future:expr) => {
-            thread::scope(|scope| {
-                scope.spawn(|| GLOBAL_RT.get_or_init(init_global).block_on($future)).join().unwrap()
+            thread::scope(|scope| match scope.spawn(|| GLOBAL_RT.block_on($future)).join() {
+                Ok(res) => res,
+                Err(panic) => std::panic::resume_unwind(panic),
             })
         };
     }

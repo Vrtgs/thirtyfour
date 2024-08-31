@@ -17,7 +17,7 @@ use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
 use crate::session::scriptret::ScriptRet;
 use crate::support::base64_decode;
-use crate::web_driver::AlreadyClosed;
+use crate::web_driver::AlreadyQuit;
 use crate::{support, By, OptionRect, Rect, SessionId, SwitchTo, WebDriverStatus, WebElement};
 use crate::{IntoArcStr, IntoUrl};
 use crate::{TimeoutConfiguration, WindowHandle};
@@ -1170,8 +1170,8 @@ impl SessionHandle {
         Ok(())
     }
 
-    pub(crate) fn leak(&self) -> Result<(), AlreadyClosed> {
-        self.quit.set(()).map_err(|_| AlreadyClosed(()))
+    pub(crate) fn leak(&self) -> Result<(), AlreadyQuit> {
+        self.quit.set(()).map_err(|_| AlreadyQuit(()))
     }
 }
 

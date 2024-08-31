@@ -41,8 +41,8 @@ pub struct WebDriver {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("Webdriver is already closed, can't leak an already closed driver")]
-pub struct AlreadyClosed(pub(crate) ());
+#[error("Webdriver has already quit, can't leak an already quit driver")]
+pub struct AlreadyQuit(pub(crate) ());
 
 impl WebDriver {
     /// Create a new WebDriver as follows:
@@ -158,7 +158,7 @@ impl WebDriver {
 
     /// Leak the webdriver session and prevent it from being closed,
     /// use this if you don't want your driver to automatically close
-    pub fn leak(self) -> Result<(), AlreadyClosed> {
+    pub fn leak(self) -> Result<(), AlreadyQuit> {
         self.handle.leak()
     }
 }
