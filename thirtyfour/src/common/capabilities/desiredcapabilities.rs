@@ -334,7 +334,7 @@ pub enum Proxy {
         socks_password: Option<String>,
         /// Urls to skip the proxy.
         #[serde(skip_serializing_if = "Option::is_none")]
-        no_proxy: Option<String>,
+        no_proxy: Option<Vec<String>>,
     },
     /// Autoconfiguration url.
     #[serde(rename = "pac")]
