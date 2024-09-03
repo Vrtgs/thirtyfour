@@ -97,7 +97,7 @@ impl<T: Clone + 'static> ElementResolver<T> {
 mod sealed {
     use std::future::Future;
 
-    use futures::{StreamExt, TryStreamExt};
+    use futures_util::{StreamExt, TryStreamExt};
 
     use crate::components::Component;
     use crate::error::WebDriverResult;
@@ -121,7 +121,7 @@ mod sealed {
 
     impl<T: Resolve + Sync> Resolve for Vec<T> {
         fn is_present(&self) -> impl Future<Output = WebDriverResult<bool>> + Send {
-            futures::stream::iter(self)
+            futures_util::stream::iter(self)
                 .map(Resolve::is_present)
                 // 16 is arbitrary, just don't send too many requests at the same time
                 .buffer_unordered(self.len().min(16))

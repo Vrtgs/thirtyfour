@@ -1,5 +1,4 @@
-use futures::future::BoxFuture;
-use futures::FutureExt;
+use futures_util::future::{BoxFuture, FutureExt};
 use std::future::Future;
 use std::sync::Arc;
 use std::{fmt, time::Duration};

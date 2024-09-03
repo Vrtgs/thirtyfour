@@ -1,7 +1,7 @@
 use crate::error::WebDriverResult;
 use base64::{prelude::BASE64_STANDARD, Engine};
-use futures::Future;
 use std::convert::Infallible;
+use std::future::Future;
 use std::panic::AssertUnwindSafe;
 use std::path::Path;
 use std::sync::LazyLock;
