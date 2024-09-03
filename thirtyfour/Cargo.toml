@@ -40,7 +40,7 @@ debug_sync_quit = []
 [dependencies]
 async-trait = "0.1"
 base64 = "0.22"
-futures = "0.3.30"
+futures-util = { version = "0.3.30", default-features = false, features = ["alloc"] }
 http = "1"
 indexmap = "2"
 paste = "1"
@@ -73,7 +73,7 @@ reqwest = { version = "0.12", default-features = false, features = [
 assert_matches = "1.5"
 axum = "0.7"
 color-eyre = "0.6"
-rstest = "0.22.0"
+rstest = { version = "0.22.0", default-features = false }
 tower-http = { version = "0.5", features = ["fs"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1", features = ["rt-multi-thread"] }
