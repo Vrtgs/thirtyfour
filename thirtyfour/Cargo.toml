@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.34.0"
+version = "0.34.1"
 authors = ["Steve Pryde <steve@stevepryde.com>", "Vrtgs"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -64,6 +64,7 @@ cfg-if = "1.0.0"
 bytes = "1.7.1"
 tracing = "0.1"
 url = "2.5.2"
+const_format = "0.2.32"
 
 # Optional HTTP client. Not needed if you supply your own.
 reqwest = { version = "0.12", default-features = false, features = [

@@ -9,6 +9,7 @@ use std::time::Duration;
 use std::{io, thread};
 
 /// Helper to run the specified future and block the current thread waiting for the result.
+/// works even while in a tokio runtime
 pub fn block_on<F>(future: F) -> F::Output
 where
     F: Future + Send,
