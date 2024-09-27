@@ -107,7 +107,7 @@ pub(crate) mod null_client {
 
 #[tracing::instrument(skip_all)]
 pub(crate) async fn run_webdriver_cmd(
-    client: &(impl HttpClient + ?Sized),
+    client: &dyn HttpClient,
     request_data: &RequestData,
     server_url: &Url,
     config: &WebDriverConfig,

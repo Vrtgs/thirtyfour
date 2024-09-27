@@ -9,7 +9,7 @@ use crate::common::*;
 mod common;
 
 #[rstest]
-fn alert_accept(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn alert_accept(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -30,7 +30,7 @@ fn alert_accept(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn alert_dismiss(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn alert_dismiss(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -52,7 +52,7 @@ fn alert_dismiss(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn alert_text(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn alert_text(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();

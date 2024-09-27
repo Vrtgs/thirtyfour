@@ -7,7 +7,7 @@ use thirtyfour::{prelude::*, support::block_on};
 mod common;
 
 #[rstest]
-fn element_js(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_js(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -29,7 +29,7 @@ fn element_js(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_attr(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_attr(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -43,7 +43,7 @@ fn element_attr(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_prop(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_prop(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -57,7 +57,7 @@ fn element_prop(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_css_value(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_css_value(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -70,7 +70,7 @@ fn element_css_value(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_tag_name(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_tag_name(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -83,7 +83,7 @@ fn element_tag_name(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_class_name(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_class_name(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -96,7 +96,7 @@ fn element_class_name(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_text(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_text(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -108,7 +108,7 @@ fn element_text(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_rect(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_rect(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -131,7 +131,7 @@ fn element_rect(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_send_keys(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_send_keys(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -158,7 +158,7 @@ fn element_send_keys(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_clear(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_clear(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let sample_url = sample_page_url();
@@ -174,7 +174,7 @@ fn element_clear(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn serialize_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn serialize_element(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -204,7 +204,7 @@ fn serialize_element(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_screenshot(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_screenshot(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -220,7 +220,7 @@ fn element_screenshot(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_focus(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_focus(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -234,7 +234,7 @@ fn element_focus(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_html(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_html(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();
@@ -249,7 +249,7 @@ fn element_html(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
 }
 
 #[rstest]
-fn element_get_parent(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+fn element_get_parent(test_harness: TestHarness) -> WebDriverResult<()> {
     let c = test_harness.driver();
     block_on(async {
         let url = sample_page_url();

@@ -253,7 +253,7 @@ impl ActionSource<PointerAction> {
         });
     }
 
-    ///
+    /// Add a move action by the specified coordinates.
     pub fn move_by(&mut self, x: i64, y: i64) {
         self.add_action(PointerAction::PointerMove {
             duration: self.duration,

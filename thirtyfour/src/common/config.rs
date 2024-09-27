@@ -3,8 +3,9 @@ use crate::{
     extensions::query::{ElementPollerWithTimeout, IntoElementPoller},
     prelude::WebDriverResult,
 };
+use const_format::formatcp;
 use http::HeaderValue;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 
 /// Configuration options used by a `WebDriver` instance and the related `SessionHandle`.
 ///
@@ -32,22 +33,32 @@ impl WebDriverConfig {
         WebDriverConfigBuilder::new()
     }
 
-    /// Get the default user agent.
-    pub fn default_user_agent() -> HeaderValue {
-        static DEFAULT: OnceLock<HeaderValue> = OnceLock::new();
+    /// The default user agent.
+    pub const DEFAULT_USER_AGENT: HeaderValue = {
+        //noinspection RsReplaceMatchExpr
+        const RUST_VER: &str = match option_env!("RUSTC_VERSION") {
+            Some(ver) => ver,
+            None => "unknown",
+        };
 
-        DEFAULT
-            .get_or_init(|| {
-                format!(
-                    "thirtyfour/{} (rust/{}; {})",
-                    crate::VERSION,
-                    std::env::var("RUSTC_VERSION").as_deref().unwrap_or("unknown"),
-                    std::env::consts::OS
-                )
-                .try_into()
-                .expect("bad default user agent")
-            })
-            .clone()
+        //noinspection RsCompileErrorMacro
+        const HEADER: &str = formatcp!(
+            "thirtyfour/{} (rust/{}; {})",
+            crate::VERSION,
+            RUST_VER,
+            std::env::consts::OS
+        );
+
+        HeaderValue::from_static(HEADER)
+    };
+
+    /// Get the default user agent.
+    #[deprecated(
+        since = "0.34.1",
+        note = "This associated function is now a constant `WebDriverConfig::DEFAULT_USER_AGENT`"
+    )]
+    pub fn default_user_agent() -> HeaderValue {
+        Self::DEFAULT_USER_AGENT
     }
 }
 
@@ -102,9 +113,7 @@ impl WebDriverConfigBuilder {
         Ok(WebDriverConfig {
             keep_alive: self.keep_alive,
             poller: self.poller.unwrap_or_else(|| Arc::new(ElementPollerWithTimeout::default())),
-            user_agent: self
-                .user_agent
-                .unwrap_or_else(|| Ok(WebDriverConfig::default_user_agent()))?,
+            user_agent: self.user_agent.transpose()?.unwrap_or(WebDriverConfig::DEFAULT_USER_AGENT),
         })
     }
 }

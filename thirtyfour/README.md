@@ -1,22 +1,12 @@
-# thirtyfour
-
 [![Crates.io](https://img.shields.io/crates/v/thirtyfour.svg)](https://crates.io/crates/thirtyfour)
 [![docs.rs](https://docs.rs/thirtyfour/badge.svg)](https://docs.rs/thirtyfour)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/stevepryde/thirtyfour/test.yml?branch=main)](https://github.com/stevepryde/thirtyfour/actions)
-[![codecov](https://codecov.io/gh/stevepryde/thirtyfour/branch/main/graph/badge.svg?token=OVORQE9PZK)](https://codecov.io/gh/stevepryde/thirtyfour)
-[![maintenance](https://img.shields.io/badge/looking%20for%20maintainer-8A2BE2)](https://github.com/stevepryde/thirtyfour/issues/215)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Vrtgs/thirtyfour/test.yml?branch=main)](https://github.com/Vrtgs/thirtyfour/actions)
+[![code coverage](https://codecov.io/github/Vrtgs/thirtyfour/graph/badge.svg?token=Z3GDO1EXCX)](https://codecov.io/github/Vrtgs/thirtyfour)
+
+# thirtyfour
 
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
 
-It supports the [W3C WebDriver v1 spec](https://www.w3.org/TR/webdriver1/). Tested with Chrome and Firefox although any W3C-compatible WebDriver should work.
-
-## Why is it called "thirtyfour" ?
-
-Thirty-four (34) is the atomic number for the Selenium chemical element (Se) ⚛️.
-
-## Getting Started
-
-Check out [The Book](https://stevepryde.github.io/thirtyfour/) 📚!
 
 ## Features
 
@@ -95,7 +85,7 @@ async fn main() -> WebDriverResult<()> {
 
 ## Minimum Supported Rust Version
 
-The MSRV for `thirtyfour` is currently 1.75 and will be updated as needed by dependencies.
+The MSRV for `thirtyfour` is currently latest, and so its guaranteed to run the latest stable release.
 
 ## LICENSE
 

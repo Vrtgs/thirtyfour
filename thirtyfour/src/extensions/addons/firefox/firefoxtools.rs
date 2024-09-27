@@ -3,12 +3,11 @@ use std::sync::Arc;
 
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
 
 use super::FirefoxCommand;
 use crate::error::WebDriverResult;
 use crate::session::handle::SessionHandle;
+use crate::support;
 
 /// Provider of Firefox-specific commands.
 #[derive(Debug, Clone)]
@@ -65,8 +64,7 @@ impl FirefoxTools {
     /// Take a full-page screenshot of the current window and write it to the specified filename.
     pub async fn full_screenshot(&self, path: impl AsRef<Path>) -> WebDriverResult<()> {
         let png = self.full_screenshot_as_png().await?;
-        let mut file = File::create(path).await?;
-        file.write_all(&png).await?;
+        support::write_file(path, png).await?;
         Ok(())
     }
 }

@@ -3,16 +3,14 @@ use serde_json::Value;
 use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
 
 use crate::common::command::Command;
 use crate::error::WebDriverError;
 use crate::js::SIMULATE_DRAG_AND_DROP;
 use crate::session::handle::SessionHandle;
 use crate::support::base64_decode;
-use crate::IntoArcStr;
 use crate::{common::types::ElementRect, error::WebDriverResult, By, ElementRef};
+use crate::{support, IntoArcStr};
 use crate::{ElementId, TypingData};
 
 /// The WebElement struct encapsulates a single element on a page.
@@ -653,8 +651,7 @@ impl WebElement {
     /// Take a screenshot of this WebElement and write it to the specified filename.
     pub async fn screenshot(&self, path: impl AsRef<Path>) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
-        let mut file = File::create(path).await?;
-        file.write_all(&png).await?;
+        support::write_file(path, png).await?;
         Ok(())
     }
 

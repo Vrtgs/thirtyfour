@@ -1,7 +1,6 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use crate::common::command::Command;
 use crate::common::config::WebDriverConfig;
 use crate::error::WebDriverResult;
 use crate::prelude::WebDriverError;
@@ -40,6 +39,10 @@ pub struct WebDriver {
     /// The underlying session handle.
     pub handle: Arc<SessionHandle>,
 }
+
+#[derive(Debug, thiserror::Error)]
+#[error("Webdriver has already quit, can't leak an already quit driver")]
+pub struct AlreadyQuit(pub(crate) ());
 
 impl WebDriver {
     /// Create a new WebDriver as follows:
@@ -143,12 +146,20 @@ impl WebDriver {
 
     /// End the webdriver session and close the browser.
     ///
-    /// **NOTE:** The browser will not close automatically when `WebDriver` goes out of scope.
-    ///           Thus, if you intend for the browser to close once you are done with it, then
-    ///           you must call this method at that point, and await it.
+    /// **NOTE:** Although `WebDriver` does close when all instances go out of scope.
+    ///           When this happens it blocks the current executor,
+    ///           therefore, if you know when a webdriver is no longer used/required
+    ///           call this method and await it to more or less "asynchronously drop" it
+    ///           this also allows you to catch errors during quitting,
+    ///           and possibly panic or report back to the user
     pub async fn quit(self) -> WebDriverResult<()> {
-        self.handle.cmd(Command::DeleteSession).await?;
-        Ok(())
+        self.handle.quit().await
+    }
+
+    /// Leak the webdriver session and prevent it from being closed,
+    /// use this if you don't want your driver to automatically close
+    pub fn leak(self) -> Result<(), AlreadyQuit> {
+        self.handle.leak()
     }
 }
 

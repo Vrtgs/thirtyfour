@@ -35,7 +35,7 @@ async fn main() -> color_eyre::Result<()> {
     // Sleep so you as the user can see what it did.
     sleep(Duration::from_secs(1)).await;
 
-    // Always explicitly close the browser. There are no async destructors.
+    // Always explicitly close the browser. This prevents the executor from being blocked
     driver.quit().await?;
 
     Ok(())
@@ -56,7 +56,7 @@ pub struct PlaygroundPage {
 #[derive(Component, Clone)]
 pub struct Header {
     base: WebElement,
-    #[by(custom = "resolve_run_button")]
+    #[by(custom = resolve_run_button)]
     button_run: ElementResolver<WebElement>,
 }
 

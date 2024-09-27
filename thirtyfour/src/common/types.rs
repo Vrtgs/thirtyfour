@@ -1,5 +1,4 @@
-use futures::future::BoxFuture;
-use futures::FutureExt;
+use futures_util::future::{BoxFuture, FutureExt};
 use std::future::Future;
 use std::sync::Arc;
 use std::{fmt, time::Duration};
@@ -142,7 +141,7 @@ pub enum ElementRef {
 impl ElementRef {
     /// The element id, as returned by the webdriver.
     pub fn id(&self) -> &str {
-        match &self {
+        match self {
             ElementRef::Element {
                 id,
             } => id,
@@ -282,18 +281,18 @@ impl Rect {
 }
 
 /// Generic element query function that returns some type T.
-pub trait ElementQueryFn<T: 'static>: Send + Sync + 'static {
+pub trait ElementQueryFn<T>: Send + Sync {
     /// the future returned by ElementQueryFn::query
-    type Fut: Future<Output = WebDriverResult<T>> + Send + 'static;
+    type Fut: Future<Output = WebDriverResult<T>> + Send;
 
     /// the implementation of the query function
     fn call(&self, arg: &WebElement) -> Self::Fut;
 }
 
-impl<T: 'static, Fut, Fun> ElementQueryFn<T> for Fun
+impl<T, Fut, Fun> ElementQueryFn<T> for Fun
 where
-    Fun: Fn(&WebElement) -> Fut + Send + Sync + ?Sized + 'static,
-    Fut: Future<Output = WebDriverResult<T>> + Send + 'static,
+    Fun: Fn(&WebElement) -> Fut + Send + Sync + ?Sized,
+    Fut: Future<Output = WebDriverResult<T>> + Send,
 {
     type Fut = Fut;
 
@@ -314,19 +313,19 @@ pub type DynElementQueryFn<T> = dyn ElementQueryFn<T, Fut = BoxFuture<'static, W
 pub type DynElementPredicate = DynElementQueryFn<bool>;
 
 impl<T: 'static> DynElementQueryFn<T> {
-    fn wrap<F: ElementQueryFn<T>>(
+    fn wrap<F: ElementQueryFn<T, Fut: 'static>>(
         fun: F,
     ) -> impl ElementQueryFn<T, Fut = BoxFuture<'static, WebDriverResult<T>>> {
         move |arg: &WebElement| fun.call(arg).boxed()
     }
 
     /// erases the type of ElementQueryFn, and dynamically dispatches it using a Box smart pointer
-    pub fn boxed<F: ElementQueryFn<T>>(fun: F) -> Box<Self> {
+    pub fn boxed<F: ElementQueryFn<T, Fut: 'static> + 'static>(fun: F) -> Box<Self> {
         Box::new(Self::wrap(fun)) as Box<Self>
     }
 
     /// erases the type of ElementQueryFn, and dynamically dispatches it using an Arc smart pointer
-    pub fn arc<F: ElementQueryFn<T>>(fun: F) -> Arc<Self> {
+    pub fn arc<F: ElementQueryFn<T, Fut: 'static> + 'static>(fun: F) -> Arc<Self> {
         Arc::new(Self::wrap(fun)) as Arc<Self>
     }
 }

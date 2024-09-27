@@ -5,6 +5,7 @@ use crate::common::{
     capabilities::desiredcapabilities::make_w3c_caps,
     cookie::Cookie,
     keys::TypingData,
+    print::PrintParameters,
     types::{ElementId, OptionRect, SessionId, TimeoutConfiguration, WindowHandle},
 };
 use crate::IntoArcStr;
@@ -248,6 +249,7 @@ pub enum Command {
     AcceptAlert,
     GetAlertText,
     SendAlertText(TypingData),
+    PrintPage(PrintParameters),
     TakeScreenshot,
     TakeElementScreenshot(ElementId),
     ExtensionCommand(Box<dyn ExtensionCommand + Send + Sync>),
@@ -492,6 +494,12 @@ impl FormatRequestData for Command {
                     .add_body(json!({
                         "value": typing_data.as_vec(), "text": typing_data.to_string()
                     }))
+            }
+            Command::PrintPage(params) => {
+                RequestData::new(Method::POST, format!("/session/{}/print", session_id)).add_body(
+                    serde_json::to_value(params)
+                        .expect("Fail to parse Print Page Parameters to json"),
+                )
             }
             Command::TakeScreenshot => {
                 RequestData::new(Method::GET, format!("session/{}/screenshot", session_id))

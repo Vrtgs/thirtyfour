@@ -143,6 +143,8 @@ pub enum WebDriverError {
     InsecureCertificate(WebDriverErrorInfo),
     #[error("An argument passed to the WebDriver server was invalid: {0}")]
     InvalidArgument(WebDriverErrorInfo),
+    #[error("An argument passed to the WebDriver server was invalid: {0}")]
+    InvalidUrl(url::ParseError),
     #[error("Invalid cookie domain: {0}")]
     InvalidCookieDomain(WebDriverErrorInfo),
     #[error("The element is in an invalid state: {0}")]

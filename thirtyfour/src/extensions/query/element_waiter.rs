@@ -81,7 +81,7 @@ impl ElementWaiter {
     where
         F: Fn() -> I,
         I: IntoIterator<Item = &'a P>,
-        P: ElementPredicate + ?Sized,
+        P: ElementPredicate + ?Sized + 'a,
     {
         let mut poller = self.poller.start();
         loop {

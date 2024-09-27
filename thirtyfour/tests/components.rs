@@ -51,7 +51,7 @@ mod feature_component {
     }
 
     #[rstest]
-    fn basic_component(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+    fn basic_component(test_harness: TestHarness) -> WebDriverResult<()> {
         let c = test_harness.driver();
         block_on(async {
             let url = sample_page_url();
@@ -98,7 +98,7 @@ mod feature_component {
     }
 
     #[rstest]
-    fn component_attributes(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+    fn component_attributes(test_harness: TestHarness) -> WebDriverResult<()> {
         let c = test_harness.driver();
         block_on(async {
             let url = sample_page_url();
@@ -147,13 +147,13 @@ mod feature_component {
     #[derive(Debug, Component, Clone)]
     pub struct TestComponentCustomFn {
         base: WebElement,
-        #[by(custom = "custom_resolve_fn")]
+        #[by(custom = custom_resolve_fn)]
         elem_custom: ElementResolver<WebElement>,
-        #[by(custom = "custom_resolve_fn_multi")]
+        #[by(custom = custom_resolve_fn_multi)]
         elems_custom: ElementResolver<Vec<WebElement>>,
-        #[by(custom = "custom_resolve_fn_component")]
+        #[by(custom = custom_resolve_fn_component)]
         component_custom: ElementResolver<CheckboxComponent>,
-        #[by(custom = "custom_resolve_fn_components")]
+        #[by(custom = custom_resolve_fn_components)]
         components_custom: ElementResolver<Vec<CheckboxComponent>>,
     }
 
@@ -178,7 +178,7 @@ mod feature_component {
     }
 
     #[rstest]
-    fn component_attributes_custom_fn(test_harness: TestHarness<'_>) -> WebDriverResult<()> {
+    fn component_attributes_custom_fn(test_harness: TestHarness) -> WebDriverResult<()> {
         let c = test_harness.driver();
         block_on(async {
             let url = sample_page_url();

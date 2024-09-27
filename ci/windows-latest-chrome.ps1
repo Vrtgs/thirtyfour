@@ -1,4 +1,3 @@
 choco install googlechrome
 choco install chromedriver
-Start-Process -FilePath chromedriver
-Start-Sleep -Seconds 1
+Start-Process -FilePath chromedriver --port=9515
