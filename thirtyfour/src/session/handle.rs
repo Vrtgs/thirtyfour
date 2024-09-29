@@ -910,7 +910,11 @@ impl SessionHandle {
 
     /// Create a new action chain for this session.
     /// Set custom delays for key and pointer actions
-    pub fn action_chain_with_delay(self: &Arc<SessionHandle>, key_delay: Option<u64>, pointer_delay: Option<u64>) -> ActionChain {
+    pub fn action_chain_with_delay(
+        self: &Arc<SessionHandle>,
+        key_delay: Option<u64>,
+        pointer_delay: Option<u64>,
+    ) -> ActionChain {
         ActionChain::new_with_delay(self.clone(), key_delay, pointer_delay)
     }
 

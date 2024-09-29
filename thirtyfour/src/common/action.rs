@@ -182,7 +182,7 @@ where
 impl ActionSource<KeyAction> {
     /// Create a new Key action source.
     pub fn new(name: &str, duration: Option<u64>) -> Self {
-        let duration = duration.unwrap_or_else(|| 0);
+        let duration = duration.unwrap_or(0);
         ActionSource {
             id: name.to_owned(),
             action_type: String::from("key"),
@@ -229,7 +229,7 @@ pub enum PointerActionType {
 impl ActionSource<PointerAction> {
     /// Create a new Pointer action source.
     pub fn new(name: &str, action_type: PointerActionType, duration: Option<u64>) -> Self {
-        let duration = duration.unwrap_or_else(|| 250);
+        let duration = duration.unwrap_or(250);
         ActionSource {
             id: name.to_owned(),
             action_type: String::from("pointer"),
@@ -458,7 +458,8 @@ mod tests {
     }
 
     fn compare_pointer_action(action: PointerAction, value: serde_json::Value) {
-        let mut source = ActionSource::<PointerAction>::new("mouse", PointerActionType::Mouse, None);
+        let mut source =
+            ActionSource::<PointerAction>::new("mouse", PointerActionType::Mouse, None);
         source.add_action(action);
 
         let value_got = serde_json::to_value(source);
