@@ -37,10 +37,27 @@ impl ActionChain {
     pub fn new(handle: Arc<SessionHandle>) -> Self {
         ActionChain {
             handle,
-            key_actions: ActionSource::<KeyAction>::new("key"),
+            key_actions: ActionSource::<KeyAction>::new("key", None),
             pointer_actions: ActionSource::<PointerAction>::new(
                 "pointer",
                 PointerActionType::Mouse,
+                None,
+            ),
+        }
+    }
+
+    /// Create a new ActionChain struct with custom action delays.
+    ///
+    /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
+    /// for more details.
+    pub fn new_with_delay(handle: Arc<SessionHandle>, key_delay: Option<u64>, pointer_delay: Option<u64>) -> Self {
+        ActionChain {
+            handle,
+            key_actions: ActionSource::<KeyAction>::new("key", key_delay),
+            pointer_actions: ActionSource::<PointerAction>::new(
+                "pointer",
+                PointerActionType::Mouse,
+                pointer_delay
             ),
         }
     }
