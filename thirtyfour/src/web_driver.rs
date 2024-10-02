@@ -96,6 +96,7 @@ impl WebDriver {
         C: Into<Capabilities>,
     {
 
+        // TODO: create builder
         #[cfg(feature = "reqwest")]
         let client = create_reqwest_client(config.reqwest_timeout);
         #[cfg(not(feature = "reqwest"))]
