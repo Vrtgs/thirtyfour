@@ -181,6 +181,9 @@ where
 
 impl ActionSource<KeyAction> {
     /// Create a new Key action source.
+    ///
+    /// Duration `Option<u64>` represents the time in milliseconds before an action is executed.
+    /// Defaults to 0ms
     pub fn new(name: &str, duration: Option<u64>) -> Self {
         let duration = duration.unwrap_or(0);
         ActionSource {
@@ -228,6 +231,9 @@ pub enum PointerActionType {
 
 impl ActionSource<PointerAction> {
     /// Create a new Pointer action source.
+    ///
+    /// Duration represents the time in milliseconds before an action is executed.
+    /// Defaults to 250ms
     pub fn new(name: &str, action_type: PointerActionType, duration: Option<u64>) -> Self {
         let duration = duration.unwrap_or(250);
         ActionSource {

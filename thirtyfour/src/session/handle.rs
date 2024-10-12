@@ -910,6 +910,11 @@ impl SessionHandle {
 
     /// Create a new action chain for this session.
     /// Set custom delays for key and pointer actions
+    ///
+    /// The delay `Option<u64>` is the amount of time in milliseconds
+    /// before the action is executed in the chain.
+    ///
+    /// `key_delay` defaults to 0ms, `pointer_delay` defaults to 250ms
     pub fn action_chain_with_delay(
         self: &Arc<SessionHandle>,
         key_delay: Option<u64>,

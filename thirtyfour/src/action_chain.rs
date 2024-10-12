@@ -48,6 +48,11 @@ impl ActionChain {
 
     /// Create a new ActionChain struct with custom action delays.
     ///
+    /// The delay `Option<u64>` is the amount of time in milliseconds
+    /// before the action is executed in the chain.
+    ///
+    /// `key_delay` defaults to 0ms, `pointer_delay` defaults to 250ms
+    ///
     /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
     pub fn new_with_delay(
