@@ -71,7 +71,7 @@ pub struct WebDriverConfigBuilder {
     keep_alive: bool,
     poller: Option<Arc<dyn IntoElementPoller + Send + Sync>>,
     user_agent: Option<WebDriverResult<HeaderValue>>,
-    reqwest_timeout: Duration
+    reqwest_timeout: Duration,
 }
 
 impl Default for WebDriverConfigBuilder {
@@ -119,14 +119,13 @@ impl WebDriverConfigBuilder {
         self
     }
 
-
     /// Build `WebDriverConfig` using builder options.
     pub fn build(self) -> WebDriverResult<WebDriverConfig> {
         Ok(WebDriverConfig {
             keep_alive: self.keep_alive,
             poller: self.poller.unwrap_or_else(|| Arc::new(ElementPollerWithTimeout::default())),
             user_agent: self.user_agent.transpose()?.unwrap_or(WebDriverConfig::DEFAULT_USER_AGENT),
-            reqwest_timeout: self.reqwest_timeout
+            reqwest_timeout: self.reqwest_timeout,
         })
     }
 }
