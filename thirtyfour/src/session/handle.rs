@@ -1190,11 +1190,11 @@ impl Drop for SessionHandle {
         );
 
         let mut this = Self {
-            client: self.client.clone(),
-            server_url: self.server_url.clone(),
+            client: Arc::clone(&self.client),
+            server_url: Arc::clone(&self.server_url),
+            quit: Arc::clone(&self.quit),
             session_id: self.session_id.clone(),
             config: self.config.clone(),
-            quit: Arc::clone(&self.quit),
         };
         support::spawn_blocked_future(|spawned| async move {
             if spawned {
