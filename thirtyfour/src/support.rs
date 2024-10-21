@@ -75,6 +75,48 @@ where
     }
 }
 
+/// Helper to run the specified future and bind it to run before runtime shutdown
+/// the bool is true if it is spawned
+/// else it has been spawned in place
+pub fn spawn_blocked_future<Fn, F>(future: Fn)
+where
+    Fn: FnOnce(bool) -> F,
+    F: Future + Send + 'static,
+{
+    macro_rules! spawn_off {
+        ($future: expr) => {{
+            let future = $future;
+            let (tx, rx) = std::sync::mpsc::sync_channel(0);
+            tokio::task::spawn_blocking(move || {
+                let _ = tx.send(());
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .expect("failed to create tokio runtime")
+                    .block_on(future);
+            });
+            rx.recv().expect("could not spawn task");
+        }};
+    }
+
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "tokio-multi-threaded")] {
+            use tokio::runtime::RuntimeFlavor;
+
+            match tokio::runtime::Handle::try_current() {
+                Ok(handle) if handle.runtime_flavor() == RuntimeFlavor::MultiThread => {
+                    tokio::task::block_in_place(|| {
+                        handle.block_on(future(false))
+                    });
+                }
+                _ => spawn_off!(future(true)),
+            }
+        } else {
+            spawn_off!(future(true))
+        }
+    }
+}
+
 pub(crate) async fn write_file(
     path: impl AsRef<Path>,
     bytes: impl Into<Vec<u8>>,

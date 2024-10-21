@@ -1,10 +1,10 @@
+use reqwest::Client;
+use serde_json::Value;
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
-
-use serde_json::Value;
 use tokio::sync::OnceCell;
 use url::{ParseError, Url};
 
@@ -79,8 +79,8 @@ impl SessionHandle {
     /// See `WebDriver::clone_with_config()`.
     pub(crate) fn clone_with_config(self: &SessionHandle, config: WebDriverConfig) -> Self {
         Self {
-            client: self.client.clone(),
-            server_url: self.server_url.clone(),
+            client: Arc::clone(&self.client),
+            server_url: Arc::clone(&self.server_url),
             session_id: self.session_id.clone(),
             quit: Arc::clone(&self.quit),
             config,
@@ -1189,6 +1189,19 @@ impl Drop for SessionHandle {
             std::backtrace::Backtrace::force_capture()
         );
 
-        let _ = support::block_on(self.quit());
+        let mut this = Self {
+            client: self.client.clone(),
+            server_url: self.server_url.clone(),
+            session_id: self.session_id.clone(),
+            config: self.config.clone(),
+            quit: Arc::clone(&self.quit),
+        };
+        support::spawn_blocked_future(|spawned| async move {
+            if spawned {
+                // Old I/O drivers may be destroyed at this point
+                this.client = Arc::new(Client::new());
+            }
+            let _ = this.quit().await;
+        });
     }
 }
