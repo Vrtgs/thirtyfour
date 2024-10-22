@@ -40,6 +40,17 @@ impl<'a, T: Into<Option<&'a Value>>> From<T> for Body<'a> {
 pub trait HttpClient: Send + Sync + 'static {
     /// Send an HTTP request and return the response.
     async fn send(&self, request: Request<Body<'_>>) -> WebDriverResult<Response<Bytes>>;
+
+    /// Make a new HttpClient, that **has no connection to the previous I/O drivers of self's runtime**
+    /// this is used when dropping the webdriver but the old runtime has already shut down
+    /// or couldn't prove its availability
+    /// this isn't a simple clone,
+    /// this new client needs to be able to run in a new runtime even if the old runtime has been destroyed
+
+    // needed for object safety
+    #[allow(clippy::new_ret_no_self)]
+    #[allow(clippy::wrong_self_convention)]
+    async fn new(&self) -> Arc<dyn HttpClient>;
 }
 
 #[cfg(feature = "reqwest")]
@@ -78,6 +89,33 @@ impl HttpClient for reqwest::Client {
             .body(body)
             .map_err(|_| WebDriverError::UnknownResponse(status.as_u16(), body_str))?;
         Ok(resp)
+    }
+
+    async fn new(&self) -> Arc<dyn HttpClient> {
+        Arc::new(self.clone())
+    }
+}
+
+#[cfg(all(feature = "reqwest", test))]
+mod tests {
+    #[test]
+    fn test_reqwest_clone_ok() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let client = rt.block_on(async move {
+            let client = reqwest::Client::new();
+            let resp = client.get("https://google.com/").send().await.unwrap();
+            assert_eq!(resp.status(), 200);
+            let _ = resp.text().await.unwrap();
+            client
+        });
+
+        drop(rt);
+
+        tokio::runtime::Runtime::new().unwrap().block_on(async move {
+            let resp = client.get("https://google.com/").send().await.unwrap();
+            assert_eq!(resp.status(), 200);
+            let _ = resp.text().await.unwrap();
+        });
     }
 }
 

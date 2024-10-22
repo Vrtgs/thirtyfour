@@ -11,25 +11,8 @@ use std::{io, thread};
 // used in drop code so its really bad to have a stack overflow then
 const BOX_FUTURE_THRESHOLD: usize = 512;
 
-/// Helper to run the specified future and block the current thread waiting for the result.
-/// works even while in a tokio runtime
-pub fn block_on<F>(future: F) -> F::Output
-where
-    F: Future + Send,
-    F::Output: Send,
-{
-    if cfg!(debug_assertions) && size_of::<F>() > BOX_FUTURE_THRESHOLD {
-        block_on_inner(Box::pin(future))
-    } else {
-        block_on_inner(future)
-    }
-}
-
-fn block_on_inner<F>(future: F) -> F::Output
-where
-    F: Future + Send,
-    F::Output: Send,
-{
+// a global runtime that is being driven al the time
+static GLOBAL_RT: LazyLock<tokio::runtime::Handle> = LazyLock::new(|| {
     fn no_unwind<T>(f: impl FnOnce() -> T) -> T {
         let res = std::panic::catch_unwind(AssertUnwindSafe(f));
 
@@ -47,24 +30,44 @@ where
         })
     }
 
-    static GLOBAL_RT: LazyLock<tokio::runtime::Handle> = LazyLock::new(|| {
-        no_unwind(|| {
-            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-            let handle = rt.handle().clone();
+    no_unwind(|| {
+        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+        let handle = rt.handle().clone();
 
-            // drive the runtime
-            // we do this so that all calls to GLOBAL_RT.block_on() work
-            thread::spawn(move || -> ! {
-                async fn forever() -> ! {
-                    match std::future::pending::<Infallible>().await {}
-                }
+        // drive the runtime
+        // we do this so that all calls to GLOBAL_RT.block_on() work
+        thread::spawn(move || -> ! {
+            async fn forever() -> ! {
+                match std::future::pending::<Infallible>().await {}
+            }
 
-                no_unwind(move || rt.block_on(forever()))
-            });
-            handle
-        })
-    });
+            no_unwind(move || rt.block_on(forever()))
+        });
+        handle
+    })
+});
 
+/// Helper to run the specified future and block the current thread waiting for the result.
+/// works even while in a tokio runtime
+pub fn block_on<F>(future: F) -> F::Output
+where
+    F: Future + Send,
+    F::Output: Send,
+{
+    // https://github.com/tokio-rs/tokio/pull/6826
+    // cfg!(debug_assertions) omitted
+    if size_of::<F>() > BOX_FUTURE_THRESHOLD {
+        block_on_inner(Box::pin(future))
+    } else {
+        block_on_inner(future)
+    }
+}
+
+fn block_on_inner<F>(future: F) -> F::Output
+where
+    F: Future + Send,
+    F::Output: Send,
+{
     macro_rules! block_global {
         ($future:expr) => {
             thread::scope(|scope| match scope.spawn(|| GLOBAL_RT.block_on($future)).join() {
@@ -114,11 +117,7 @@ where
         ($future: expr) => {{
             let future = $future;
             let func = move || {
-                tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .expect("failed to create tokio runtime")
-                    .block_on(future);
+                GLOBAL_RT.block_on(future);
             };
             match tokio::runtime::Handle::try_current() {
                 Ok(handle) => {

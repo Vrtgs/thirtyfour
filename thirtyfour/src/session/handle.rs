@@ -1,4 +1,3 @@
-use reqwest::Client;
 use serde_json::Value;
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
@@ -1199,7 +1198,7 @@ impl Drop for SessionHandle {
         support::spawn_blocked_future(|spawned| async move {
             if spawned {
                 // Old I/O drivers may be destroyed at this point
-                this.client = Arc::new(Client::new());
+                this.client = this.client.new().await;
             }
             let _ = this.quit().await;
         });
