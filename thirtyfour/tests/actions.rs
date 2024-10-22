@@ -1,10 +1,10 @@
 //! Actions tests
 
+use crate::common::*;
 use assert_matches::assert_matches;
 use rstest::rstest;
+use thirtyfour::error::WebDriverErrorInner;
 use thirtyfour::{prelude::*, support::block_on};
-
-use crate::common::*;
 
 mod common;
 
@@ -64,7 +64,10 @@ fn actions_mouse_move(test_harness: TestHarness) -> WebDriverResult<()> {
         // Test mouse MoveBy.
 
         // check - ensure no alerts are displayed prior to actions.
-        assert_matches!(c.get_alert_text().await, Err(WebDriverError::NoSuchAlert(..)));
+        assert_matches!(
+            c.get_alert_text().await.map_err(WebDriverError::into_inner),
+            Err(WebDriverErrorInner::NoSuchAlert(..))
+        );
 
         c.action_chain()
             .move_to(0, elem_center_y as i64 - 100)
@@ -132,7 +135,10 @@ fn actions_drag_and_drop(test_harness: TestHarness) -> WebDriverResult<()> {
         let result = c.find(By::XPath("//div[@id='target']/img[@id='draggable']")).await;
         if browser == "firefox" {
             // Firefox does not support drag and drop.
-            assert_matches!(result, Err(WebDriverError::NoSuchElement(..)));
+            assert_matches!(
+                result.map_err(WebDriverError::into_inner),
+                Err(WebDriverErrorInner::NoSuchElement(..))
+            );
         } else {
             // Validate that the image is now inside the target div.
             result?;

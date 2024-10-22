@@ -19,7 +19,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::error::{no_such_element, WebDriverError, WebDriverResult};
+use crate::error::{no_such_element, WebDriverErrorInner, WebDriverResult};
 use crate::{By, WebElement};
 use std::fmt::{Display, Formatter};
 
@@ -63,13 +63,7 @@ pub fn escape_string(value: &str) -> String {
 
 /// Get the longest word in the specified string.
 fn get_longest_token(value: &str) -> &str {
-    let mut longest = "";
-    for item in value.split(' ') {
-        if item.len() > longest.len() {
-            longest = item;
-        }
-    }
-    longest
+    value.split(' ').max_by_key(|x| x.len()).unwrap_or("")
 }
 
 /// Convenience wrapper for `<select>` elements.
@@ -159,7 +153,7 @@ impl SelectElement {
         let mut xpath = format!(".//option[normalize-space(.) = {}]", escape_string(text));
         let options = match self.element.find_all(By::XPath(&*xpath)).await {
             Ok(elems) => elems,
-            Err(WebDriverError::NoSuchElement(_)) => Vec::new(),
+            Err(e) if matches!(*e, WebDriverErrorInner::NoSuchElement(_)) => Vec::new(),
             Err(e) => return Err(e),
         };
 

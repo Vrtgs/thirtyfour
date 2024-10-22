@@ -1,17 +1,17 @@
 use serde::Deserialize;
 use url::Url;
 
+use super::http::HttpClient;
+use crate::error::WebDriverErrorInner;
 use crate::{
     common::{
         command::{Command, FormatRequestData},
         config::WebDriverConfig,
     },
-    prelude::{WebDriverError, WebDriverResult},
+    prelude::WebDriverResult,
     session::http::run_webdriver_cmd,
     Capabilities, SessionId, TimeoutConfiguration,
 };
-
-use super::http::HttpClient;
 
 /// Start a new WebDriver session, returning the session id and the
 /// capabilities JSON that was received back from the server.
@@ -30,7 +30,7 @@ pub async fn start_session(
             // Selenium sometimes gives a bogus 500 error "Chrome failed to start".
             // Retry if we get a 500. If it happens twice in a row, then the second error
             // will be returned.
-            if let WebDriverError::UnknownError(x) = &e {
+            if let WebDriverErrorInner::UnknownError(x) = &*e {
                 if x.status == 500 {
                     run_webdriver_cmd(http_client, &request_data, server_url, config).await
                 } else {

@@ -87,7 +87,7 @@ impl ElementWaiter {
         loop {
             let mut conditions_met = true;
             for f in conditions() {
-                if !f.call(&self.element).await? {
+                if !f.call(self.element.clone()).await? {
                     conditions_met = false;
                     break;
                 }
@@ -129,9 +129,8 @@ impl ElementWaiter {
     /// Wait for the element to become stale.
     pub async fn stale(self) -> WebDriverResult<()> {
         let ignore_errors = self.ignore_errors;
-        self.condition(move |elem: &WebElement| {
-            let elem = elem.clone();
-            async move { handle_errors(elem.is_present().await.map(|x| !x), ignore_errors) }
+        self.condition(move |elem: WebElement| async move {
+            handle_errors(elem.is_present().await.map(|x| !x), ignore_errors)
         })
         .await
     }
@@ -466,10 +465,11 @@ async fn _test_is_send() -> WebDriverResult<()> {
     is_send_val(&elem.wait_until().displayed());
     is_send_val(&elem.wait_until().selected());
     is_send_val(&elem.wait_until().enabled());
-    is_send_val(&elem.wait_until().condition(move |elem: &WebElement| {
-        let elem = elem.clone();
-        async move { elem.is_enabled().await.or(Ok(false)) }
-    }));
+    is_send_val(
+        &elem.wait_until().condition(move |elem: WebElement| async move {
+            elem.is_enabled().await.or(Ok(false))
+        }),
+    );
 
     Ok(())
 }

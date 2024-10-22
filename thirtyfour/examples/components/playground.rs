@@ -64,7 +64,7 @@ pub struct Header {
 ///
 /// NOTE: This particular example could be done with a single XPath but sometimes you
 ///       may want something more complex.
-async fn resolve_run_button(elem: &WebElement) -> WebDriverResult<WebElement> {
+async fn resolve_run_button(elem: WebElement) -> WebDriverResult<WebElement> {
     elem.query(By::Tag("button")).with_text("Run".match_partial().case_insensitive()).first().await
 }
 

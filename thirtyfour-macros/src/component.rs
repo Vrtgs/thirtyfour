@@ -802,10 +802,7 @@ impl ToTokens for SingleResolverArgs {
         match &self.options {
             SingleResolverOptions::CustomFn(f) => {
                 tokens.append_all(quote!(
-                    #ty::new_custom(base.clone(), move |elem: &WebElement| {
-                        let elem = ::std::clone::Clone::clone(elem);
-                        async move { (#f)(&elem).await }
-                    })
+                    #ty::new_custom(base.clone(), #f)
                 ));
             }
             SingleResolverOptions::Opts {
@@ -919,10 +916,7 @@ impl ToTokens for MultiResolverArgs {
         match &self.options {
             MultiResolverOptions::CustomFn(f) => {
                 tokens.append_all(quote!(
-                    #ty::new_custom(base.clone(), move |elem: &WebElement| {
-                        let elem = ::std::clone::Clone::clone(elem);
-                        async move { (#f)(&elem).await }
-                    })
+                    #ty::new_custom(base.clone(), #f)
                 ));
             }
             MultiResolverOptions::Opts {

@@ -2,15 +2,15 @@ mod common;
 
 #[cfg(feature = "component")]
 mod feature_component {
+    use super::common::*;
     use assert_matches::assert_matches;
     use rstest::rstest;
     use std::time::Instant;
     use thirtyfour::components::{Component, ElementResolver};
+    use thirtyfour::error::WebDriverErrorInner;
     use thirtyfour::extensions::query::ElementQueryOptions;
     use thirtyfour::support::block_on;
     use thirtyfour::{prelude::*, resolve, resolve_present};
-
-    use super::common::*;
 
     /// This component shows how to nest components inside others.
     #[derive(Debug, Clone, Component)]
@@ -110,35 +110,53 @@ mod feature_component {
             let tc = TestComponent::new(elem);
 
             let result = tc.elem_single.resolve().await;
-            assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
+            assert_matches!(
+                result.map_err(WebDriverError::into_inner),
+                Err(WebDriverErrorInner::NoSuchElement(_))
+            );
 
             let result = tc.elem_single_explicit.resolve().await;
-            assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
+            assert_matches!(
+                result.map_err(WebDriverError::into_inner),
+                Err(WebDriverErrorInner::NoSuchElement(_))
+            );
 
             let elem = tc.elem_first.resolve().await?;
             assert_eq!(elem.tag_name().await?, "label");
 
             let result = tc.elem_desc.resolve().await;
-            assert_matches!(result, Err(WebDriverError::NoSuchElement(x)) if x.error.contains("my_test_description"));
+            assert_matches!(result.map_err(WebDriverError::into_inner), Err(WebDriverErrorInner::NoSuchElement(x)) if x.error.contains("my_test_description"));
 
             let start = Instant::now();
             let result = tc.elem_ignore.resolve().await;
-            assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
+            assert_matches!(
+                result.map_err(WebDriverError::into_inner),
+                Err(WebDriverErrorInner::NoSuchElement(_))
+            );
             assert!(start.elapsed().as_secs() > 0);
 
             let start = Instant::now();
             let result = tc.elem_nowait.resolve().await;
-            assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
+            assert_matches!(
+                result.map_err(WebDriverError::into_inner),
+                Err(WebDriverErrorInner::NoSuchElement(_))
+            );
             assert!(start.elapsed().as_secs() < 10);
 
             let elems = tc.elems_allow_empty.resolve().await?;
             assert!(elems.is_empty());
 
             let result = tc.elems_not_empty.resolve().await;
-            assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
+            assert_matches!(
+                result.map_err(WebDriverError::into_inner),
+                Err(WebDriverErrorInner::NoSuchElement(_))
+            );
 
             let result = tc.elems_not_empty_explicit.resolve().await;
-            assert_matches!(result, Err(WebDriverError::NoSuchElement(_)));
+            assert_matches!(
+                result.map_err(WebDriverError::into_inner),
+                Err(WebDriverErrorInner::NoSuchElement(_))
+            );
 
             Ok(())
         })
@@ -157,21 +175,21 @@ mod feature_component {
         components_custom: ElementResolver<Vec<CheckboxComponent>>,
     }
 
-    async fn custom_resolve_fn(elem: &WebElement) -> WebDriverResult<WebElement> {
+    async fn custom_resolve_fn(elem: WebElement) -> WebDriverResult<WebElement> {
         elem.query(By::Tag("label")).first().await
     }
 
-    async fn custom_resolve_fn_multi(elem: &WebElement) -> WebDriverResult<Vec<WebElement>> {
+    async fn custom_resolve_fn_multi(elem: WebElement) -> WebDriverResult<Vec<WebElement>> {
         elem.query(By::Tag("label")).all_from_selector().await
     }
 
-    async fn custom_resolve_fn_component(elem: &WebElement) -> WebDriverResult<CheckboxComponent> {
+    async fn custom_resolve_fn_component(elem: WebElement) -> WebDriverResult<CheckboxComponent> {
         let cb = elem.query(By::Tag("label")).first().await?;
         Ok(CheckboxComponent::new(cb))
     }
 
     async fn custom_resolve_fn_components(
-        elem: &WebElement,
+        elem: WebElement,
     ) -> WebDriverResult<Vec<CheckboxComponent>> {
         let cbs = elem.query(By::Tag("label")).all_from_selector().await?;
         Ok(cbs.into_iter().map(CheckboxComponent::new).collect())
@@ -189,10 +207,10 @@ mod feature_component {
             let elem = c.query(By::Id("checkbox-section")).single().await?;
             let tc = TestComponentCustomFn::new(elem);
 
-            tc.elem_custom.resolve().await.unwrap();
-            tc.elems_custom.resolve().await.unwrap();
-            tc.component_custom.resolve().await.unwrap();
-            tc.components_custom.resolve().await.unwrap();
+            tc.elem_custom.resolve().await?;
+            tc.elems_custom.resolve().await?;
+            tc.component_custom.resolve().await?;
+            tc.components_custom.resolve().await?;
 
             Ok(())
         })

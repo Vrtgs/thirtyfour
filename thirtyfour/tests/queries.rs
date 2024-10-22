@@ -1,11 +1,11 @@
+use crate::common::*;
 use assert_matches::assert_matches;
 use rstest::rstest;
 use std::time::Duration;
 use thirtyfour::components::{ElementResolverMulti, ElementResolverSingle};
+use thirtyfour::error::WebDriverErrorInner;
 use thirtyfour::support::block_on;
 use thirtyfour::{components::SelectElement, prelude::*};
-
-use crate::common::*;
 
 mod common;
 
@@ -44,7 +44,10 @@ fn query(test_harness: TestHarness) -> WebDriverResult<()> {
         let elem = c.query(By::Css("nav a")).first().await?;
         assert_eq!(elem.id().await?.unwrap(), "other_page_id");
         let elem_result = c.query(By::Css("nav a")).single().await;
-        assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
+        assert_matches!(
+            elem_result.map_err(WebDriverError::into_inner),
+            Err(WebDriverErrorInner::NoSuchElement(_))
+        );
         Ok(())
     })
 }
@@ -87,7 +90,10 @@ fn query_all(test_harness: TestHarness) -> WebDriverResult<()> {
         // Match none, but at least 1 was required.
         let elem_result =
             c.query(By::Id("doesnotexist")).nowait().all_from_selector_required().await;
-        assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
+        assert_matches!(
+            elem_result.map_err(WebDriverError::into_inner),
+            Err(WebDriverErrorInner::NoSuchElement(_))
+        );
         Ok(())
     })
 }
@@ -118,7 +124,10 @@ fn query_any(test_harness: TestHarness) -> WebDriverResult<()> {
         // Match none, but at least 1 was required.
         let elem_result =
             c.query(By::Id("doesnotexist")).or(By::Id("invalid")).nowait().any_required().await;
-        assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
+        assert_matches!(
+            elem_result.map_err(WebDriverError::into_inner),
+            Err(WebDriverErrorInner::NoSuchElement(_))
+        );
         Ok(())
     })
 }
@@ -187,7 +196,10 @@ fn resolve(test_harness: TestHarness) -> WebDriverResult<()> {
         assert_eq!(elem, elem2);
         let resolver = ElementResolverSingle::new_single(base_element, By::Css("nav a"));
         let elem_result = resolver.resolve().await;
-        assert_matches!(elem_result, Err(WebDriverError::NoSuchElement(_)));
+        assert_matches!(
+            elem_result.map_err(WebDriverError::into_inner),
+            Err(WebDriverErrorInner::NoSuchElement(_))
+        );
 
         Ok(())
     })
@@ -226,8 +238,8 @@ fn stale_element(test_harness: TestHarness) -> WebDriverResult<()> {
         )
         .await?;
 
-        match elem.click().await {
-            Err(WebDriverError::StaleElementReference(_)) => Ok(()),
+        match elem.click().await.map_err(WebDriverError::into_inner) {
+            Err(WebDriverErrorInner::StaleElementReference(_)) => Ok(()),
             _ => panic!("Expected a stale element reference error"),
         }
     })

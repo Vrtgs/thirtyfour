@@ -21,66 +21,42 @@ pub(crate) fn negate(result: WebDriverResult<bool>, ignore_errors: bool) -> WebD
 
 /// Predicate that returns true for elements that are enabled.
 pub fn element_is_enabled(ignore_errors: bool) -> impl ElementPredicate {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
-        async move { handle_errors(elem.is_enabled().await, ignore_errors) }
-    }
+    move |elem: WebElement| async move { handle_errors(elem.is_enabled().await, ignore_errors) }
 }
 
 /// Predicate that returns true for elements that are not enabled.
 pub fn element_is_not_enabled(ignore_errors: bool) -> impl ElementPredicate {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
-        async move { negate(elem.is_enabled().await, ignore_errors) }
-    }
+    move |elem: WebElement| async move { negate(elem.is_enabled().await, ignore_errors) }
 }
 
 /// Predicate that returns true for elements that are selected.
 pub fn element_is_selected(ignore_errors: bool) -> impl ElementPredicate {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
-        async move { handle_errors(elem.is_selected().await, ignore_errors) }
-    }
+    move |elem: WebElement| async move { handle_errors(elem.is_selected().await, ignore_errors) }
 }
 
 /// Predicate that returns true for elements that are not selected.
 pub fn element_is_not_selected(ignore_errors: bool) -> impl ElementPredicate {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
-        async move { negate(elem.is_selected().await, ignore_errors) }
-    }
+    move |elem: WebElement| async move { negate(elem.is_selected().await, ignore_errors) }
 }
 
 /// Predicate that returns true for elements that are displayed.
 pub fn element_is_displayed(ignore_errors: bool) -> impl ElementPredicate {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
-        async move { handle_errors(elem.is_displayed().await, ignore_errors) }
-    }
+    move |elem: WebElement| async move { handle_errors(elem.is_displayed().await, ignore_errors) }
 }
 
 /// Predicate that returns true for elements that are not displayed.
 pub fn element_is_not_displayed(ignore_errors: bool) -> impl ElementPredicate {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
-        async move { negate(elem.is_displayed().await, ignore_errors) }
-    }
+    move |elem: WebElement| async move { negate(elem.is_displayed().await, ignore_errors) }
 }
 
 /// Predicate that returns true for elements that are clickable.
 pub fn element_is_clickable(ignore_errors: bool) -> impl ElementPredicate {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
-        async move { handle_errors(elem.is_clickable().await, ignore_errors) }
-    }
+    move |elem: WebElement| async move { handle_errors(elem.is_clickable().await, ignore_errors) }
 }
 
 /// Predicate that returns true for elements that are not clickable.
 pub fn element_is_not_clickable(ignore_errors: bool) -> impl ElementPredicate {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
-        async move { negate(elem.is_clickable().await, ignore_errors) }
-    }
+    move |elem: WebElement| async move { negate(elem.is_clickable().await, ignore_errors) }
 }
 
 /// Predicate that returns true for elements that have the specified class name.
@@ -90,8 +66,7 @@ pub fn element_has_class<N>(class_name: N, ignore_errors: bool) -> impl ElementP
 where
     N: Needle + Clone + Send + Sync + 'static,
 {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
+    move |elem: WebElement| {
         let class_name = class_name.clone();
         async move {
             match elem.class_name().await {
@@ -110,8 +85,7 @@ pub fn element_lacks_class<N>(class_name: N, ignore_errors: bool) -> impl Elemen
 where
     N: Needle + Clone + Send + Sync + 'static,
 {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
+    move |elem: WebElement| {
         let class_name = class_name.clone();
         async move {
             match elem.class_name().await {
@@ -129,8 +103,7 @@ pub fn element_has_text<N>(text: N, ignore_errors: bool) -> impl ElementPredicat
 where
     N: Needle + Clone + Send + Sync + 'static,
 {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
+    move |elem: WebElement| {
         let text = text.clone();
         async move { handle_errors(elem.text().await.map(|x| text.is_match(&x)), ignore_errors) }
     }
@@ -142,9 +115,8 @@ pub fn element_lacks_text<N>(text: N, ignore_errors: bool) -> impl ElementPredic
 where
     N: Needle + Clone + Send + Sync + 'static,
 {
-    move |elem: &WebElement| {
+    move |elem: WebElement| {
         let text = text.clone();
-        let elem = elem.clone();
         async move { handle_errors(elem.text().await.map(|x| !text.is_match(&x)), ignore_errors) }
     }
 }
@@ -155,9 +127,8 @@ pub fn element_has_value<N>(value: N, ignore_errors: bool) -> impl ElementPredic
 where
     N: Needle + Clone + Send + Sync + 'static,
 {
-    move |elem: &WebElement| {
+    move |elem: WebElement| {
         let value = value.clone();
-        let elem = elem.clone();
         async move {
             match elem.value().await {
                 Ok(Some(x)) => Ok(value.is_match(&x)),
@@ -174,8 +145,7 @@ pub fn element_lacks_value<N>(value: N, ignore_errors: bool) -> impl ElementPred
 where
     N: Needle + Clone + Send + Sync + 'static,
 {
-    move |elem: &WebElement| {
-        let elem = elem.clone();
+    move |elem: WebElement| {
         let value = value.clone();
         async move {
             match elem.value().await {
@@ -252,8 +222,7 @@ macro_rules! elem_matches {
             where
                 N: Needle + Send + Sync + 'static,
             {
-                move |elem: &WebElement| {
-                    let elem = elem.clone();
+                move |elem: WebElement| {
                     let desired = [<desired_ $plural>].clone();
                     elem_matches!(@[<inner_many_ $name>] elem, desired, ignore_errors, $field, |val, x| !val.is_match(&x))
                 }
@@ -268,8 +237,7 @@ macro_rules! elem_matches {
             where
                 N: Needle + Send + Sync + 'static,
             {
-                move |elem: &WebElement| {
-                    let elem = elem.clone();
+                move |elem: WebElement| {
                     let desired = [<desired_ $plural>].clone();
                     elem_matches!(@[<inner_many_ $name>] elem, desired, ignore_errors, $field, |value, x| value.is_match(&x))
                 }
@@ -288,8 +256,7 @@ macro_rules! elem_matches {
             where
                 N: Needle + Clone + Send + Sync + 'static,
             {
-                move |elem: &WebElement| {
-                    let elem = elem.clone();
+                move |elem: WebElement| {
                     let name = [<$single _name>].clone();
                     let value = value.clone();
                     elem_matches!(@[<inner_single_ $name>] elem, name, ignore_errors, $field, |x| value.is_match(&x))
@@ -306,8 +273,7 @@ macro_rules! elem_matches {
             where
                 N: Needle + Clone + Send + Sync + 'static,
             {
-                move |elem: &WebElement| {
-                    let elem = elem.clone();
+                move |elem: WebElement| {
                     let name = [<$single _name>].clone();
                     let value = value.clone();
                     elem_matches!(@[<inner_single_ $name>] elem, name, ignore_errors, $field, |x| !value.is_match(&x))

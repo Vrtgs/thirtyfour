@@ -1,6 +1,7 @@
 use base64::DecodeError;
 use serde::Deserialize;
 use std::fmt::{Display, Formatter, Write};
+use std::ops::{Deref, DerefMut};
 
 /// Type def for Result<T, WebDriverError>.
 pub type WebDriverResult<T> = Result<T, WebDriverError>;
@@ -111,92 +112,180 @@ impl Display for WebDriverErrorInfo {
 }
 
 /// WebDriverError is the main error type for thirtyfour
-#[allow(missing_docs)]
-#[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
-pub enum WebDriverError {
-    #[error("The WebDriver server returned an unrecognised response: {0} :: {1}")]
-    UnknownResponse(u16, String),
-    #[error("Failed to send request to webdriver: {0}")]
-    RequestFailed(String),
-    #[error("The requested item '{0}' was not found: {1}")]
-    NotFound(String, String),
-    #[error("parse error: {0}")]
-    ParseError(String),
-    #[error("operation timed out: {0}")]
-    Timeout(String),
-    #[error("Unable to parse JSON: {0}")]
-    Json(String),
-    #[error("Unable to decode base64: {0}")]
-    DecodeError(#[from] DecodeError),
-    #[error("IO Error: {0}")]
-    IoError(#[from] std::io::Error),
-    #[error("The WebDriver request returned an error: {0}")]
-    HttpError(String),
-    #[error("The WebDriver response does not conform to the W3C WebDriver spec: {0}")]
-    NotInSpec(WebDriverErrorInfo),
-    #[error("The click event was intercepted by another element: {0}")]
-    ElementClickIntercepted(WebDriverErrorInfo),
-    #[error("The element is not interactable: {0}")]
-    ElementNotInteractable(WebDriverErrorInfo),
-    #[error("The certificate is insecure: {0}")]
-    InsecureCertificate(WebDriverErrorInfo),
-    #[error("An argument passed to the WebDriver server was invalid: {0}")]
-    InvalidArgument(WebDriverErrorInfo),
-    #[error("An argument passed to the WebDriver server was invalid: {0}")]
-    InvalidUrl(url::ParseError),
-    #[error("Invalid cookie domain: {0}")]
-    InvalidCookieDomain(WebDriverErrorInfo),
-    #[error("The element is in an invalid state: {0}")]
-    InvalidElementState(WebDriverErrorInfo),
-    #[error("The specified element selector is invalid: {0}")]
-    InvalidSelector(WebDriverErrorInfo),
-    #[error("The WebDriver session id is invalid: {0}")]
-    InvalidSessionId(WebDriverErrorInfo),
-    #[error("The Javascript code returned an error: {0}")]
-    JavascriptError(WebDriverErrorInfo),
-    #[error("Unable to scroll the element into the viewport: {0}")]
-    MoveTargetOutOfBounds(WebDriverErrorInfo),
-    #[error("Alert not found: {0}")]
-    NoSuchAlert(WebDriverErrorInfo),
-    #[error("Cookie not found: {0}")]
-    NoSuchCookie(WebDriverErrorInfo),
-    #[error("Element not found: {0}")]
-    NoSuchElement(WebDriverErrorInfo),
-    #[error("Frame not found: {0}")]
-    NoSuchFrame(WebDriverErrorInfo),
-    #[error("Window not found: {0}")]
-    NoSuchWindow(WebDriverErrorInfo),
-    #[error("The Javascript code did not complete within the script timeout (see WebDriver::set_script_timeout()): {0}")]
-    ScriptTimeout(WebDriverErrorInfo),
-    #[error("Unable to create WebDriver session: {0}")]
-    SessionNotCreated(WebDriverErrorInfo),
-    #[error("Element is stale: {0}")]
-    StaleElementReference(WebDriverErrorInfo),
-    #[error("Operation timed out: {0}")]
-    WebDriverTimeout(WebDriverErrorInfo),
-    #[error("Unable to set cookie: {0}")]
-    UnableToSetCookie(WebDriverErrorInfo),
-    #[error("Unable to capture screenshot: {0}")]
-    UnableToCaptureScreen(WebDriverErrorInfo),
-    #[error("An unexpected alert is currently open: {0}")]
-    UnexpectedAlertOpen(WebDriverErrorInfo),
-    #[error("Unknown command: {0}")]
-    UnknownCommand(WebDriverErrorInfo),
-    #[error("Unknown error: {0}")]
-    UnknownError(WebDriverErrorInfo),
-    #[error("Unknown method: {0}")]
-    UnknownMethod(WebDriverErrorInfo),
-    #[error("Unsupport operation: {0}")]
-    UnsupportedOperation(WebDriverErrorInfo),
-    #[error("Something caused the session to terminate.")]
-    FatalError(String),
-    #[error("Failed to receive command: {0}")]
-    CommandRecvError(String),
-    #[error("The command could not be sent to the session: {0}")]
-    CommandSendError(String),
-    #[error("Could not create session: {0}")]
-    SessionCreateError(String),
+#[error(transparent)]
+pub struct WebDriverError(Box<WebDriverErrorInner>);
+
+macro_rules! make_enum_variant_func {
+    ($enum_name: ident $variant_name: ident()) => {
+        #[allow(non_snake_case)]
+        #[allow(missing_docs)]
+        pub fn $variant_name() -> Self {
+            Self::from_inner($enum_name::$variant_name())
+        }
+    };
+    ($enum_name: ident $variant_name: ident($_1: ty)) => {
+        #[allow(non_snake_case)]
+        #[allow(missing_docs)]
+        pub fn $variant_name(a: $_1) -> Self {
+            Self::from_inner($enum_name::$variant_name(a))
+        }
+    };
+    ($enum_name: ident $variant_name: ident($_1: ty, $_2: ty)) => {
+        #[allow(non_snake_case)]
+        #[allow(missing_docs)]
+        pub fn $variant_name(a: $_1, b: $_2) -> Self {
+            Self::from_inner($enum_name::$variant_name(a, b))
+        }
+    };
+
+    ($($other:tt)*) => {
+        compile_error!(concat!("Unknown variant: ", (stringify!($($other)*))))
+    };
+}
+
+macro_rules! impl_from_for_variant {
+    (#[from] $ty:ty) => {
+        impl From<$ty> for WebDriverError {
+            fn from(val: $ty) -> Self {
+                Self::from_inner((val).into())
+            }
+        }
+    };
+
+    ($($ty:ty),+) => {
+
+    };
+
+    ($($other:tt)*) => {
+        compile_error!(concat!("Unknown variant: ", stringify!($($other)*)));
+    };
+}
+
+macro_rules! webdriver_err {
+    (
+        $(#[$($outer_attr:tt)*])*
+        pub enum $enum_name: ident {
+            $(
+                $(#[$($variant_attr:tt)*])*
+                $variant_name: ident($($(#[$($ty_attr:tt)*])* $variant_tys:ty),*)
+            ),+
+            $(,)?
+        }
+    ) => {
+        $(#[$($outer_attr)*])*
+        pub enum $enum_name {
+            $(
+                $(#[$($variant_attr)*])*
+                $variant_name($($(#[$($ty_attr)*])* $variant_tys),*)
+            ),+
+        }
+
+        impl WebDriverError {
+            $(
+            make_enum_variant_func! {
+                $enum_name $variant_name($($variant_tys),*)
+            }
+            )+
+        }
+
+        $(
+            impl_from_for_variant! {
+                $($(#[$($ty_attr)*])* $variant_tys),*
+            }
+        )+
+    };
+}
+
+webdriver_err! {
+    /// Represents all errors Given out by thirtyfour
+    #[allow(missing_docs)]
+    #[non_exhaustive]
+    #[derive(Debug, thiserror::Error)]
+    pub enum WebDriverErrorInner {
+        #[error("The WebDriver server returned an unrecognised response: {0} :: {1}")]
+        UnknownResponse(u16, String),
+        #[error("Failed to send request to webdriver: {0}")]
+        RequestFailed(String),
+        #[error("The requested item '{0}' was not found: {1}")]
+        NotFound(String, String),
+        #[error("parse error: {0}")]
+        ParseError(String),
+        #[error("operation timed out: {0}")]
+        Timeout(String),
+        #[error("Unable to parse JSON: {0}")]
+        Json(String),
+        #[error("Unable to decode base64: {0}")]
+        DecodeError(#[from] DecodeError),
+        #[error("IO Error: {0}")]
+        IoError(#[from] std::io::Error),
+        #[error("The WebDriver request returned an error: {0}")]
+        HttpError(String),
+        #[error("The WebDriver response does not conform to the W3C WebDriver spec: {0}")]
+        NotInSpec(WebDriverErrorInfo),
+        #[error("The click event was intercepted by another element: {0}")]
+        ElementClickIntercepted(WebDriverErrorInfo),
+        #[error("The element is not interactable: {0}")]
+        ElementNotInteractable(WebDriverErrorInfo),
+        #[error("The certificate is insecure: {0}")]
+        InsecureCertificate(WebDriverErrorInfo),
+        #[error("An argument passed to the WebDriver server was invalid: {0}")]
+        InvalidArgument(WebDriverErrorInfo),
+        #[error("An argument passed to the WebDriver server was invalid: {0}")]
+        InvalidUrl(url::ParseError),
+        #[error("Invalid cookie domain: {0}")]
+        InvalidCookieDomain(WebDriverErrorInfo),
+        #[error("The element is in an invalid state: {0}")]
+        InvalidElementState(WebDriverErrorInfo),
+        #[error("The specified element selector is invalid: {0}")]
+        InvalidSelector(WebDriverErrorInfo),
+        #[error("The WebDriver session id is invalid: {0}")]
+        InvalidSessionId(WebDriverErrorInfo),
+        #[error("The Javascript code returned an error: {0}")]
+        JavascriptError(WebDriverErrorInfo),
+        #[error("Unable to scroll the element into the viewport: {0}")]
+        MoveTargetOutOfBounds(WebDriverErrorInfo),
+        #[error("Alert not found: {0}")]
+        NoSuchAlert(WebDriverErrorInfo),
+        #[error("Cookie not found: {0}")]
+        NoSuchCookie(WebDriverErrorInfo),
+        #[error("Element not found: {0}")]
+        NoSuchElement(WebDriverErrorInfo),
+        #[error("Frame not found: {0}")]
+        NoSuchFrame(WebDriverErrorInfo),
+        #[error("Window not found: {0}")]
+        NoSuchWindow(WebDriverErrorInfo),
+        #[error("The Javascript code did not complete within the script timeout (see WebDriver::set_script_timeout()): {0}")]
+        ScriptTimeout(WebDriverErrorInfo),
+        #[error("Unable to create WebDriver session: {0}")]
+        SessionNotCreated(WebDriverErrorInfo),
+        #[error("Element is stale: {0}")]
+        StaleElementReference(WebDriverErrorInfo),
+        #[error("Operation timed out: {0}")]
+        WebDriverTimeout(WebDriverErrorInfo),
+        #[error("Unable to set cookie: {0}")]
+        UnableToSetCookie(WebDriverErrorInfo),
+        #[error("Unable to capture screenshot: {0}")]
+        UnableToCaptureScreen(WebDriverErrorInfo),
+        #[error("An unexpected alert is currently open: {0}")]
+        UnexpectedAlertOpen(WebDriverErrorInfo),
+        #[error("Unknown command: {0}")]
+        UnknownCommand(WebDriverErrorInfo),
+        #[error("Unknown error: {0}")]
+        UnknownError(WebDriverErrorInfo),
+        #[error("Unknown method: {0}")]
+        UnknownMethod(WebDriverErrorInfo),
+        #[error("Unsupport operation: {0}")]
+        UnsupportedOperation(WebDriverErrorInfo),
+        #[error("Something caused the session to terminate.")]
+        FatalError(String),
+        #[error("Failed to receive command: {0}")]
+        CommandRecvError(String),
+        #[error("The command could not be sent to the session: {0}")]
+        CommandSendError(String),
+        #[error("Could not create session: {0}")]
+        SessionCreateError(String),
+    }
 }
 
 impl WebDriverError {
@@ -205,13 +294,13 @@ impl WebDriverError {
         let body_json = match serde_json::from_str(&body) {
             Ok(x) => x,
             Err(_) => {
-                return WebDriverError::UnknownResponse(status, body);
+                return Self::from_inner(WebDriverErrorInner::UnknownResponse(status, body));
             }
         };
 
         let mut payload: WebDriverErrorInfo = match serde_json::from_value(body_json) {
             Ok(x) => x,
-            Err(_) => return WebDriverError::UnknownResponse(status, body),
+            Err(_) => return Self::from_inner(WebDriverErrorInner::UnknownResponse(status, body)),
         };
 
         payload.status = status;
@@ -219,45 +308,86 @@ impl WebDriverError {
         if error.is_empty() {
             error = payload.value.error.clone().unwrap_or_default();
             if error.is_empty() {
-                return WebDriverError::NotInSpec(payload);
+                return Self::from_inner(WebDriverErrorInner::NotInSpec(payload));
             }
         }
 
-        match error.as_str() {
-            "element click intercepted" => WebDriverError::ElementClickIntercepted(payload),
-            "element not interactable" => WebDriverError::ElementNotInteractable(payload),
-            "insecure certificate" => WebDriverError::InsecureCertificate(payload),
-            "invalid argument" => WebDriverError::InvalidArgument(payload),
-            "invalid cookie domain" => WebDriverError::InvalidCookieDomain(payload),
-            "invalid element state" => WebDriverError::InvalidElementState(payload),
-            "invalid selector" => WebDriverError::InvalidSelector(payload),
-            "invalid session id" => WebDriverError::InvalidSessionId(payload),
-            "javascript error" => WebDriverError::JavascriptError(payload),
-            "move target out of bounds" => WebDriverError::MoveTargetOutOfBounds(payload),
-            "no such alert" => WebDriverError::NoSuchAlert(payload),
-            "no such cookie" => WebDriverError::NoSuchCookie(payload),
-            "no such element" => WebDriverError::NoSuchElement(payload),
-            "no such frame" => WebDriverError::NoSuchFrame(payload),
-            "no such window" => WebDriverError::NoSuchWindow(payload),
-            "script timeout" => WebDriverError::ScriptTimeout(payload),
-            "session not created" => WebDriverError::SessionNotCreated(payload),
-            "stale element reference" => WebDriverError::StaleElementReference(payload),
-            "timeout" => WebDriverError::WebDriverTimeout(payload),
-            "unable to set cookie" => WebDriverError::UnableToSetCookie(payload),
-            "unable to capture screen" => WebDriverError::UnableToCaptureScreen(payload),
-            "unexpected alert open" => WebDriverError::UnexpectedAlertOpen(payload),
-            "unknown command" => WebDriverError::UnknownCommand(payload),
-            "unknown error" => WebDriverError::UnknownError(payload),
-            "unknown method" => WebDriverError::UnknownMethod(payload),
-            "unsupported operation" => WebDriverError::UnsupportedOperation(payload),
-            _ => WebDriverError::NotInSpec(payload),
-        }
+        Self::from_inner(match error.as_str() {
+            "element click intercepted" => WebDriverErrorInner::ElementClickIntercepted(payload),
+            "element not interactable" => WebDriverErrorInner::ElementNotInteractable(payload),
+            "insecure certificate" => WebDriverErrorInner::InsecureCertificate(payload),
+            "invalid argument" => WebDriverErrorInner::InvalidArgument(payload),
+            "invalid cookie domain" => WebDriverErrorInner::InvalidCookieDomain(payload),
+            "invalid element state" => WebDriverErrorInner::InvalidElementState(payload),
+            "invalid selector" => WebDriverErrorInner::InvalidSelector(payload),
+            "invalid session id" => WebDriverErrorInner::InvalidSessionId(payload),
+            "javascript error" => WebDriverErrorInner::JavascriptError(payload),
+            "move target out of bounds" => WebDriverErrorInner::MoveTargetOutOfBounds(payload),
+            "no such alert" => WebDriverErrorInner::NoSuchAlert(payload),
+            "no such cookie" => WebDriverErrorInner::NoSuchCookie(payload),
+            "no such element" => WebDriverErrorInner::NoSuchElement(payload),
+            "no such frame" => WebDriverErrorInner::NoSuchFrame(payload),
+            "no such window" => WebDriverErrorInner::NoSuchWindow(payload),
+            "script timeout" => WebDriverErrorInner::ScriptTimeout(payload),
+            "session not created" => WebDriverErrorInner::SessionNotCreated(payload),
+            "stale element reference" => WebDriverErrorInner::StaleElementReference(payload),
+            "timeout" => WebDriverErrorInner::WebDriverTimeout(payload),
+            "unable to set cookie" => WebDriverErrorInner::UnableToSetCookie(payload),
+            "unable to capture screen" => WebDriverErrorInner::UnableToCaptureScreen(payload),
+            "unexpected alert open" => WebDriverErrorInner::UnexpectedAlertOpen(payload),
+            "unknown command" => WebDriverErrorInner::UnknownCommand(payload),
+            "unknown error" => WebDriverErrorInner::UnknownError(payload),
+            "unknown method" => WebDriverErrorInner::UnknownMethod(payload),
+            "unsupported operation" => WebDriverErrorInner::UnsupportedOperation(payload),
+            _ => WebDriverErrorInner::NotInSpec(payload),
+        })
+    }
+
+    /// gets a reference to the underlying enum representation of this error
+    pub fn as_inner(&self) -> &WebDriverErrorInner {
+        self
+    }
+
+    /// converts the underlying representation to the main representation
+    pub fn from_inner(err: WebDriverErrorInner) -> Self {
+        Self(Box::new(err))
+    }
+
+    /// converts this error to its underlying representation
+    pub fn into_inner(self) -> WebDriverErrorInner {
+        *self.0
+    }
+}
+
+impl From<WebDriverErrorInner> for WebDriverError {
+    fn from(value: WebDriverErrorInner) -> Self {
+        Self::from_inner(value)
+    }
+}
+
+impl From<WebDriverError> for WebDriverErrorInner {
+    fn from(value: WebDriverError) -> Self {
+        value.into_inner()
+    }
+}
+
+impl Deref for WebDriverError {
+    type Target = WebDriverErrorInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for WebDriverError {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 /// Convenience function to construct a simulated NoSuchElement error.
 pub fn no_such_element(message: String) -> WebDriverError {
-    WebDriverError::NoSuchElement(WebDriverErrorInfo {
+    WebDriverError::from_inner(WebDriverErrorInner::NoSuchElement(WebDriverErrorInfo {
         status: 400,
         error: message.clone(),
         value: WebDriverErrorValue {
@@ -266,7 +396,7 @@ pub fn no_such_element(message: String) -> WebDriverError {
             stacktrace: None,
             data: None,
         },
-    })
+    }))
 }
 
 #[cfg(feature = "reqwest")]

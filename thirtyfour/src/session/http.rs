@@ -136,6 +136,10 @@ pub(crate) mod null_client {
         async fn send(&self, _: Request<Body<'_>>) -> WebDriverResult<Response<Bytes>> {
             panic!("Either enable the `reqwest` feature or implement your own `HttpClient`")
         }
+
+        async fn new(&self) -> Arc<dyn HttpClient> {
+            Arc::new(NullHttpClient)
+        }
     }
 
     pub(crate) fn create_null_client() -> NullHttpClient {

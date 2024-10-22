@@ -1,6 +1,6 @@
 use super::conditions::{collect_arg_slice, handle_errors, negate};
 use super::{conditions, ElementPollerNoWait, ElementPollerWithTimeout, IntoElementPoller};
-use crate::error::WebDriverError;
+use crate::error::{WebDriverError, WebDriverErrorInner};
 use crate::prelude::WebDriverResult;
 use crate::session::handle::SessionHandle;
 use crate::IntoArcStr;
@@ -58,7 +58,7 @@ where
     for func in filters {
         let tmp_elements = std::mem::take(&mut elements);
         for element in tmp_elements {
-            if func.as_ref().call(&element).await? {
+            if func.as_ref().call(element.clone()).await? {
                 elements.push(element);
             }
         }
@@ -473,7 +473,7 @@ impl ElementQuery {
                 let mut new_elements =
                     match self.fetch_elements_from_source(selector.by.clone()).await {
                         Ok(x) => x,
-                        Err(WebDriverError::NoSuchElement(_)) => Vec::new(),
+                        Err(e) if matches!(*e, WebDriverErrorInner::NoSuchElement(_)) => Vec::new(),
                         Err(e) => return Err(e),
                     };
 
@@ -607,9 +607,8 @@ impl ElementQuery {
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(move |elem: &WebElement| {
+        self.with_filter(move |elem: WebElement| {
             let id = id.clone();
-            let elem = elem.clone();
             async move {
                 match elem.id().await {
                     Ok(Some(x)) => Ok(id.is_match(&x)),
@@ -627,8 +626,7 @@ impl ElementQuery {
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(move |elem: &WebElement| {
-            let elem = elem.clone();
+        self.with_filter(move |elem: WebElement| {
             let id = id.clone();
             async move {
                 match elem.id().await {
@@ -667,8 +665,7 @@ impl ElementQuery {
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(move |elem: &WebElement| {
-            let elem = elem.clone();
+        self.with_filter(move |elem: WebElement| {
             let tag_name = tag_name.clone();
             async move {
                 handle_errors(elem.tag_name().await.map(|x| tag_name.is_match(&x)), ignore_errors)
@@ -683,8 +680,7 @@ impl ElementQuery {
         N: Needle + Clone + Send + Sync + 'static,
     {
         let ignore_errors = self.options.ignore_errors.unwrap_or_default();
-        self.with_filter(move |elem: &WebElement| {
-            let elem = elem.clone();
+        self.with_filter(move |elem: WebElement| {
             let tag_name = tag_name.clone();
             async move {
                 negate(elem.tag_name().await.map(|x| tag_name.is_match(&x)), ignore_errors)

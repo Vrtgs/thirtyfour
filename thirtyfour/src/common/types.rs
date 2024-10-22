@@ -286,17 +286,17 @@ pub trait ElementQueryFn<T>: Send + Sync {
     type Fut: Future<Output = WebDriverResult<T>> + Send;
 
     /// the implementation of the query function
-    fn call(&self, arg: &WebElement) -> Self::Fut;
+    fn call(&self, arg: WebElement) -> Self::Fut;
 }
 
 impl<T, Fut, Fun> ElementQueryFn<T> for Fun
 where
-    Fun: Fn(&WebElement) -> Fut + Send + Sync + ?Sized,
+    Fun: Fn(WebElement) -> Fut + Send + Sync + ?Sized,
     Fut: Future<Output = WebDriverResult<T>> + Send,
 {
     type Fut = Fut;
 
-    fn call(&self, arg: &WebElement) -> Fut {
+    fn call(&self, arg: WebElement) -> Fut {
         self(arg)
     }
 }
@@ -316,7 +316,7 @@ impl<T: 'static> DynElementQueryFn<T> {
     fn wrap<F: ElementQueryFn<T, Fut: 'static>>(
         fun: F,
     ) -> impl ElementQueryFn<T, Fut = BoxFuture<'static, WebDriverResult<T>>> {
-        move |arg: &WebElement| fun.call(arg).boxed()
+        move |arg: WebElement| fun.call(arg).boxed()
     }
 
     /// erases the type of ElementQueryFn, and dynamically dispatches it using a Box smart pointer

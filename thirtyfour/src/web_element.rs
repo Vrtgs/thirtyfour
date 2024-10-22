@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::common::command::Command;
-use crate::error::WebDriverError;
+use crate::error::{WebDriverError, WebDriverErrorInner};
 use crate::js::SIMULATE_DRAG_AND_DROP;
 use crate::session::handle::SessionHandle;
 use crate::support::base64_decode;
@@ -513,7 +513,7 @@ impl WebElement {
     pub async fn is_present(&self) -> WebDriverResult<bool> {
         let present = match self.tag_name().await {
             Ok(..) => true,
-            Err(WebDriverError::StaleElementReference(..)) => false,
+            Err(e) if matches!(*e, WebDriverErrorInner::StaleElementReference(..)) => false,
             Err(e) => return Err(e),
         };
         Ok(present)

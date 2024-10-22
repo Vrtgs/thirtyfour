@@ -72,7 +72,7 @@ impl<T: Clone + 'static> ElementResolver<T> {
     pub async fn resolve(&self) -> WebDriverResult<T> {
         self.element
             .load()
-            .get_or_try_init(|| self.query_fn.call(&self.base_element))
+            .get_or_try_init(|| self.query_fn.call(self.base_element.clone()))
             .await
             .cloned()
     }
@@ -158,8 +158,7 @@ impl<T: Resolve + Clone + 'static> ElementResolver<T> {
 impl ElementResolver<WebElement> {
     /// Create a new element resolver that must return a single element.
     pub fn new_single(base_element: WebElement, by: By) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             async move { elem.query(by).single().await }
         };
@@ -168,8 +167,7 @@ impl ElementResolver<WebElement> {
 
     /// Create a new element resolver that must return a single element, with extra options.
     pub fn new_single_opts(base_element: WebElement, by: By, options: ElementQueryOptions) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             let options = options.clone();
             async move { elem.query(by).options(options).single().await }
@@ -179,8 +177,7 @@ impl ElementResolver<WebElement> {
 
     /// Create a new element resolver that returns the first element.
     pub fn new_first(base_element: WebElement, by: By) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             async move { elem.query(by).first().await }
         };
@@ -189,8 +186,7 @@ impl ElementResolver<WebElement> {
 
     /// Create a new element resolver that returns the first element, with extra options.
     pub fn new_first_opts(base_element: WebElement, by: By, options: ElementQueryOptions) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             let options = options.clone();
             async move { elem.query(by).options(options).first().await }
@@ -204,8 +200,7 @@ impl ElementResolver<Vec<WebElement>> {
     ///
     /// If no elements were found, this will resolve to an empty Vec.
     pub fn new_allow_empty(base_element: WebElement, by: By) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             async move { elem.query(by).all_from_selector().await }
         };
@@ -218,8 +213,7 @@ impl ElementResolver<Vec<WebElement>> {
         by: By,
         options: ElementQueryOptions,
     ) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             let options = options.clone();
             async move { elem.query(by).options(options).all_from_selector().await }
@@ -232,8 +226,7 @@ impl ElementResolver<Vec<WebElement>> {
     /// If no elements were found, a NoSuchElement error will be returned by the resolver's
     /// `resolve()` method.
     pub fn new_not_empty(base_element: WebElement, by: By) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             async move { elem.query(by).all_from_selector_required().await }
         };
@@ -249,8 +242,7 @@ impl ElementResolver<Vec<WebElement>> {
         by: By,
         options: ElementQueryOptions,
     ) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             let options = options.clone();
             async move { elem.query(by).options(options).all_from_selector_required().await }
@@ -262,8 +254,7 @@ impl ElementResolver<Vec<WebElement>> {
 impl<T: Component + Clone + 'static> ElementResolver<T> {
     /// Create a new element resolver that must return a single component.
     pub fn new_single(base_element: WebElement, by: By) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             async move {
                 let elem = elem.query(by).single().await?;
@@ -275,8 +266,7 @@ impl<T: Component + Clone + 'static> ElementResolver<T> {
 
     /// Create a new element resolver that must return a single component, with extra options.
     pub fn new_single_opts(base_element: WebElement, by: By, options: ElementQueryOptions) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             let options = options.clone();
             async move {
@@ -289,8 +279,7 @@ impl<T: Component + Clone + 'static> ElementResolver<T> {
 
     /// Create a new element resolver that returns the first component.
     pub fn new_first(base_element: WebElement, by: By) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             async move {
                 let elem = elem.query(by).first().await?;
@@ -302,8 +291,7 @@ impl<T: Component + Clone + 'static> ElementResolver<T> {
 
     /// Create a new element resolver that returns the first component, with extra options.
     pub fn new_first_opts(base_element: WebElement, by: By, options: ElementQueryOptions) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             let options = options.clone();
             async move {
@@ -320,10 +308,8 @@ impl<T: Component + Clone + 'static> ElementResolver<Vec<T>> {
     ///
     /// If no components were found, this will resolve to an empty Vec.
     pub fn new_allow_empty(base_element: WebElement, by: By) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
-            let elem = elem.clone();
             async move {
                 let elems = elem.query(by).all_from_selector().await?;
                 Ok(elems.into_iter().map(T::from).collect())
@@ -338,9 +324,8 @@ impl<T: Component + Clone + 'static> ElementResolver<Vec<T>> {
         by: By,
         options: ElementQueryOptions,
     ) -> Self {
-        let resolver = move |elem: &WebElement| {
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
-            let elem = elem.clone();
             let options = options.clone();
             async move {
                 let elems = elem.query(by).options(options).all_from_selector().await?;
@@ -355,8 +340,7 @@ impl<T: Component + Clone + 'static> ElementResolver<Vec<T>> {
     /// If no components were found, a NoSuchElement error will be returned by the resolver's
     /// `resolve()` method.
     pub fn new_not_empty(base_element: WebElement, by: By) -> Self {
-        let resolver = move |elem: &WebElement| {
-            let elem = elem.clone();
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             async move {
                 let elems = elem.query(by).all_from_selector_required().await?;
@@ -375,10 +359,9 @@ impl<T: Component + Clone + 'static> ElementResolver<Vec<T>> {
         by: By,
         options: ElementQueryOptions,
     ) -> Self {
-        let resolver = move |elem: &WebElement| {
+        let resolver = move |elem: WebElement| {
             let by = by.clone();
             let options = options.clone();
-            let elem = elem.clone();
             async move {
                 let elems = elem.query(by).options(options).all_from_selector_required().await?;
                 Ok(elems.into_iter().map(T::from).collect())
