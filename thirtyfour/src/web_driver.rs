@@ -95,9 +95,9 @@ impl WebDriver {
         S: Into<String>,
         C: Into<Capabilities>,
     {
-        // TODO: create builder and make timeout configurable.
+        // TODO: create builder
         #[cfg(feature = "reqwest")]
-        let client = create_reqwest_client(std::time::Duration::from_secs(120));
+        let client = create_reqwest_client(config.reqwest_timeout);
         #[cfg(not(feature = "reqwest"))]
         let client = crate::session::http::null_client::create_null_client();
         Self::new_with_config_and_client(server_url, capabilities, config, client).await
