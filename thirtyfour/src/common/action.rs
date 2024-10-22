@@ -1,5 +1,6 @@
 use serde::Serialize;
 use serde_repr::Serialize_repr;
+use std::time::Duration;
 
 use crate::common::{keys::TypingData, types::ElementId};
 
@@ -182,10 +183,20 @@ where
 impl ActionSource<KeyAction> {
     /// Create a new Key action source.
     ///
-    /// Duration `Option<u64>` represents the time in milliseconds before an action is executed.
+    /// Duration represents the time before an action is executed.
     /// Defaults to 0ms
-    pub fn new(name: &str, duration: Option<u64>) -> Self {
-        let duration = duration.unwrap_or(0);
+    ///
+    /// **NOTE**: Using a duration that would exceed [`u64::MAX`] will result
+    /// in the default being used
+    pub fn new(name: &str, duration: Option<Duration>) -> Self {
+        let duration = match duration {
+            Some(duration) => {
+                let millis = duration.as_millis();
+                u64::try_from(millis).ok().unwrap_or(0)
+            }
+            None => 0,
+        };
+
         ActionSource {
             id: name.to_owned(),
             action_type: String::from("key"),
@@ -232,10 +243,20 @@ pub enum PointerActionType {
 impl ActionSource<PointerAction> {
     /// Create a new Pointer action source.
     ///
-    /// Duration represents the time in milliseconds before an action is executed.
+    /// Duration represents the time before an action is executed.
     /// Defaults to 250ms
-    pub fn new(name: &str, action_type: PointerActionType, duration: Option<u64>) -> Self {
-        let duration = duration.unwrap_or(250);
+    ///
+    /// **NOTE**: Using a duration that would exceed [`u64::MAX`] will result
+    /// in the default being used
+    pub fn new(name: &str, action_type: PointerActionType, duration: Option<Duration>) -> Self {
+        let duration = match duration {
+            Some(duration) => {
+                let millis = duration.as_millis();
+                u64::try_from(millis).ok().unwrap_or(250)
+            }
+            None => 250,
+        };
+
         ActionSource {
             id: name.to_owned(),
             action_type: String::from("pointer"),
