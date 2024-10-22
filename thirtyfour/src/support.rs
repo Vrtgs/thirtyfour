@@ -8,9 +8,24 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use std::{io, thread};
 
+// used in drop code so its really bad to have a stack overflow then
+const BOX_FUTURE_THRESHOLD: usize = 512;
+
 /// Helper to run the specified future and block the current thread waiting for the result.
 /// works even while in a tokio runtime
 pub fn block_on<F>(future: F) -> F::Output
+where
+    F: Future + Send,
+    F::Output: Send,
+{
+    if cfg!(debug_assertions) && size_of::<F>() > BOX_FUTURE_THRESHOLD {
+        block_on_inner(Box::pin(future))
+    } else {
+        block_on_inner(future)
+    }
+}
+
+fn block_on_inner<F>(future: F) -> F::Output
 where
     F: Future + Send,
     F::Output: Send,
@@ -76,9 +91,21 @@ where
 }
 
 /// Helper to run the specified future and bind it to run before runtime shutdown
-/// the bool is true if it is spawned
-/// else it has been spawned in place
+/// this is not guaranteed to not block on the future, just that it wont block on a
+/// current threaded runtime true is passed in if it is placed in a newly created runtime
 pub fn spawn_blocked_future<Fn, F>(future: Fn)
+where
+    Fn: FnOnce(bool) -> F,
+    F: Future + Send + 'static,
+{
+    if cfg!(debug_assertions) && size_of::<F>() > BOX_FUTURE_THRESHOLD {
+        spawn_blocked_future_inner(Box::new(future))
+    } else {
+        spawn_blocked_future_inner(future)
+    }
+}
+
+fn spawn_blocked_future_inner<Fn, F>(future: Fn)
 where
     Fn: FnOnce(bool) -> F,
     F: Future + Send + 'static,
@@ -86,16 +113,25 @@ where
     macro_rules! spawn_off {
         ($future: expr) => {{
             let future = $future;
-            let (tx, rx) = std::sync::mpsc::sync_channel(0);
-            tokio::task::spawn_blocking(move || {
-                let _ = tx.send(());
+            let func = move || {
                 tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                     .expect("failed to create tokio runtime")
                     .block_on(future);
-            });
-            rx.recv().expect("could not spawn task");
+            };
+            match tokio::runtime::Handle::try_current() {
+                Ok(handle) => {
+                    let (tx, rx) = std::sync::mpsc::sync_channel(0);
+                    handle.spawn_blocking(move || {
+                        if tx.send(()).is_ok() {
+                            func();
+                        }
+                    });
+                    rx.recv().expect("could not spawn task");
+                }
+                Err(_) => func(),
+            }
         }};
     }
 
