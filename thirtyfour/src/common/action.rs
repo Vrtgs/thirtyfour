@@ -1,5 +1,6 @@
 use serde::Serialize;
 use serde_repr::Serialize_repr;
+use std::time::Duration;
 
 use crate::common::{keys::TypingData, types::ElementId};
 
@@ -181,13 +182,24 @@ where
 
 impl ActionSource<KeyAction> {
     /// Create a new Key action source.
-    pub fn new(name: &str) -> Self {
+    ///
+    /// Duration represents the time before an action is executed.
+    /// Defaults to 0ms
+    pub fn new(name: &str, duration: Option<Duration>) -> Self {
+        let duration = match duration {
+            Some(duration) => {
+                let millis = duration.as_millis();
+                u64::try_from(millis).ok().unwrap_or(u64::MAX)
+            }
+            None => 0,
+        };
+
         ActionSource {
             id: name.to_owned(),
             action_type: String::from("key"),
             parameters: None,
             actions: Vec::new(),
-            duration: 0,
+            duration,
         }
     }
 
@@ -227,7 +239,18 @@ pub enum PointerActionType {
 
 impl ActionSource<PointerAction> {
     /// Create a new Pointer action source.
-    pub fn new(name: &str, action_type: PointerActionType) -> Self {
+    ///
+    /// Duration represents the time before an action is executed.
+    /// Defaults to 250ms
+    pub fn new(name: &str, action_type: PointerActionType, duration: Option<Duration>) -> Self {
+        let duration = match duration {
+            Some(duration) => {
+                let millis = duration.as_millis();
+                u64::try_from(millis).ok().unwrap_or(u64::MAX)
+            }
+            None => 250,
+        };
+
         ActionSource {
             id: name.to_owned(),
             action_type: String::from("pointer"),
@@ -239,7 +262,7 @@ impl ActionSource<PointerAction> {
                 }),
             }),
             actions: Vec::new(),
-            duration: 250,
+            duration,
         }
     }
 
@@ -388,7 +411,7 @@ mod tests {
     }
 
     fn compare_key_action(action: KeyAction, value: serde_json::Value) {
-        let mut source = ActionSource::<KeyAction>::new("key");
+        let mut source = ActionSource::<KeyAction>::new("key", None);
         source.add_action(action);
 
         let value_got = serde_json::to_value(source);
@@ -456,7 +479,8 @@ mod tests {
     }
 
     fn compare_pointer_action(action: PointerAction, value: serde_json::Value) {
-        let mut source = ActionSource::<PointerAction>::new("mouse", PointerActionType::Mouse);
+        let mut source =
+            ActionSource::<PointerAction>::new("mouse", PointerActionType::Mouse, None);
         source.add_action(action);
 
         let value_got = serde_json::to_value(source);

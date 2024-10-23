@@ -907,6 +907,20 @@ impl SessionHandle {
         ActionChain::new(self.clone())
     }
 
+    /// Create a new action chain for this session.
+    /// Set custom delays for key and pointer actions
+    ///
+    /// The [`Duration`] is the time before an action is executed in the chain.
+    ///
+    /// `key_delay` defaults to 0ms, `pointer_delay` defaults to 250ms
+    pub fn action_chain_with_delay(
+        self: &Arc<SessionHandle>,
+        key_delay: Option<Duration>,
+        pointer_delay: Option<Duration>,
+    ) -> ActionChain {
+        ActionChain::new_with_delay(self.clone(), key_delay, pointer_delay)
+    }
+
     /// Get all cookies.
     ///
     /// # Example:

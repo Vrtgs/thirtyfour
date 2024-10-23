@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::session::handle::SessionHandle;
 use crate::{
     common::{
@@ -10,6 +8,8 @@ use crate::{
     error::WebDriverResult,
     WebElement,
 };
+use std::sync::Arc;
+use std::time::Duration;
 
 /// The ActionChain struct allows you to perform multiple input actions in
 /// a sequence, including drag-and-drop, send keystrokes to an element, and
@@ -37,10 +37,35 @@ impl ActionChain {
     pub fn new(handle: Arc<SessionHandle>) -> Self {
         ActionChain {
             handle,
-            key_actions: ActionSource::<KeyAction>::new("key"),
+            key_actions: ActionSource::<KeyAction>::new("key", None),
             pointer_actions: ActionSource::<PointerAction>::new(
                 "pointer",
                 PointerActionType::Mouse,
+                None,
+            ),
+        }
+    }
+
+    /// Create a new ActionChain struct with custom action delays.
+    ///
+    /// The [`Duration`] is the time before an action is executed in the chain.
+    ///
+    /// `key_delay` defaults to 0ms, `pointer_delay` defaults to 250ms
+    ///
+    /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
+    /// for more details.
+    pub fn new_with_delay(
+        handle: Arc<SessionHandle>,
+        key_delay: Option<Duration>,
+        pointer_delay: Option<Duration>,
+    ) -> Self {
+        ActionChain {
+            handle,
+            key_actions: ActionSource::<KeyAction>::new("key", key_delay),
+            pointer_actions: ActionSource::<PointerAction>::new(
+                "pointer",
+                PointerActionType::Mouse,
+                pointer_delay,
             ),
         }
     }
