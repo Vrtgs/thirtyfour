@@ -40,8 +40,8 @@ pub fn make_capabilities(s: &str) -> Capabilities {
 /// Get the WebDriver URL for the specified browser.
 pub fn webdriver_url(s: &str) -> String {
     match s {
-        "firefox" => "http://localhost:4444/wd/hub".to_string(),
-        "chrome" => "http://localhost:9515/wd/hub".to_string(),
+        "firefox" => "http://localhost:4444".to_string(),
+        "chrome" => "http://localhost:9515".to_string(),
         browser => unimplemented!("unsupported browser backend {}", browser),
     }
 }
