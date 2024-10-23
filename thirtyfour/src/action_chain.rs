@@ -52,9 +52,6 @@ impl ActionChain {
     ///
     /// `key_delay` defaults to 0ms, `pointer_delay` defaults to 250ms
     ///
-    /// **NOTE**: Using a duration that would exceed [`u64::MAX`] will result
-    /// in the default being used
-    ///
     /// See [WebDriver::action_chain()](../struct.WebDriver.html#method.action_chain)
     /// for more details.
     pub fn new_with_delay(

@@ -185,14 +185,11 @@ impl ActionSource<KeyAction> {
     ///
     /// Duration represents the time before an action is executed.
     /// Defaults to 0ms
-    ///
-    /// **NOTE**: Using a duration that would exceed [`u64::MAX`] will result
-    /// in the default being used
     pub fn new(name: &str, duration: Option<Duration>) -> Self {
         let duration = match duration {
             Some(duration) => {
                 let millis = duration.as_millis();
-                u64::try_from(millis).ok().unwrap_or(0)
+                u64::try_from(millis).ok().unwrap_or(u64::MAX)
             }
             None => 0,
         };
@@ -245,14 +242,11 @@ impl ActionSource<PointerAction> {
     ///
     /// Duration represents the time before an action is executed.
     /// Defaults to 250ms
-    ///
-    /// **NOTE**: Using a duration that would exceed [`u64::MAX`] will result
-    /// in the default being used
     pub fn new(name: &str, action_type: PointerActionType, duration: Option<Duration>) -> Self {
         let duration = match duration {
             Some(duration) => {
                 let millis = duration.as_millis();
-                u64::try_from(millis).ok().unwrap_or(250)
+                u64::try_from(millis).ok().unwrap_or(u64::MAX)
             }
             None => 250,
         };

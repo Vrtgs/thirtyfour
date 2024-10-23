@@ -914,9 +914,6 @@ impl SessionHandle {
     /// The [`Duration`] is the time before an action is executed in the chain.
     ///
     /// `key_delay` defaults to 0ms, `pointer_delay` defaults to 250ms
-    ///
-    /// **NOTE**: Using a duration that would exceed [`u64::MAX`] will result
-    /// in the default being used
     pub fn action_chain_with_delay(
         self: &Arc<SessionHandle>,
         key_delay: Option<Duration>,
