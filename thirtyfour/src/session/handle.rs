@@ -635,14 +635,14 @@ impl SessionHandle {
     /// ```
     pub async fn set_window_rect(
         &self,
-        x: u32,
-        y: u32,
+        x: i64,
+        y: i64,
         width: u32,
         height: u32,
     ) -> WebDriverResult<()> {
         let rect = OptionRect {
-            x: Some(x as i64),
-            y: Some(y as i64),
+            x: Some(x),
+            y: Some(y),
             width: Some(width as i64),
             height: Some(height as i64),
         };
