@@ -62,7 +62,7 @@ impl FirefoxTools {
     }
 
     /// Take a full-page screenshot of the current window and write it to the specified filename.
-    pub async fn full_screenshot(&self, path: impl AsRef<Path>) -> WebDriverResult<()> {
+    pub async fn full_screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.full_screenshot_as_png().await?;
         support::write_file(path, png).await?;
         Ok(())

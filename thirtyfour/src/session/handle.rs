@@ -1058,7 +1058,7 @@ impl SessionHandle {
     }
 
     /// Take a screenshot of the current window and write it to the specified filename.
-    pub async fn screenshot(&self, path: impl AsRef<Path>) -> WebDriverResult<()> {
+    pub async fn screenshot(&self, path: &Path) -> WebDriverResult<()> {
         let png = self.screenshot_as_png().await?;
         support::write_file(path, png).await?;
         Ok(())
