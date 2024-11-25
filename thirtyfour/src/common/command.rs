@@ -289,10 +289,8 @@ impl FormatRequestData for Command {
             Command::GetCurrentUrl => {
                 RequestData::new(Method::GET, format!("session/{}/url", session_id))
             }
-            Command::Back => {
-                RequestData::new(Method::POST, format!("session/{}/back", session_id))
-                    .add_body(json!({}))
-            }
+            Command::Back => RequestData::new(Method::POST, format!("session/{}/back", session_id))
+                .add_body(json!({})),
             Command::Forward => {
                 RequestData::new(Method::POST, format!("session/{}/forward", session_id))
                     .add_body(json!({}))
@@ -402,10 +400,7 @@ impl FormatRequestData for Command {
             ),
             Command::GetElementProperty(element_id, property_name) => RequestData::new(
                 Method::GET,
-                format!(
-                    "session/{}/element/{}/property/{}",
-                    session_id, element_id, property_name
-                ),
+                format!("session/{}/element/{}/property/{}", session_id, element_id, property_name),
             ),
             Command::GetElementCssValue(element_id, property_name) => RequestData::new(
                 Method::GET,
