@@ -4,3 +4,4 @@ Cargo.lock
 .idea/
 thirtyfour.iml
 /ci/geckodriver.exe
+**/*.DS_Store
