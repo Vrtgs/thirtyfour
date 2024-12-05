@@ -268,6 +268,7 @@ enum ByToken {
     XPath(Literal),
     Name(Literal),
     ClassName(Literal),
+    Testid(Literal),
     Multi,
     /// NotEmpty is the default but can be specified to be explicit.
     NotEmpty,
@@ -294,7 +295,8 @@ impl ByToken {
             | ByToken::Css(_)
             | ByToken::XPath(_)
             | ByToken::Name(_)
-            | ByToken::ClassName(_) => "selector",
+            | ByToken::ClassName(_)
+            | ByToken::Testid(_) => "selector",
             ByToken::Multi => "multi",
             ByToken::NotEmpty => "not_empty",
             ByToken::AllowEmpty => "allow_empty",
@@ -464,6 +466,13 @@ impl TryFrom<Meta> for ByToken {
                         lit: Lit::Str(v),
                         ..
                     }),
+                ) if k.is_ident("testid") => Ok(ByToken::Testid(v.token())),
+                (
+                    k,
+                    Expr::Lit(ExprLit {
+                        lit: Lit::Str(v),
+                        ..
+                    }),
                 ) if k.is_ident("description") => Ok(ByToken::Description(v.token())),
                 (k, expr) if k.is_ident("custom") => Ok(ByToken::CustomFn(expr)),
                 (k, ..) => Err(syn::Error::new(
@@ -525,6 +534,7 @@ impl ByTokens {
                 ByToken::XPath(xpath) => ret.push(quote! { By::XPath(#xpath) }),
                 ByToken::Name(name) => ret.push(quote! { By::Name(#name) }),
                 ByToken::ClassName(class_name) => ret.push(quote! { By::ClassName(#class_name) }),
+                ByToken::Testid(id) => ret.push(quote! { By::Testid(#id) }),
                 t => self.tokens.push(t),
             }
         }
@@ -679,6 +689,7 @@ impl ToTokens for DebugByTokens {
                 | ByToken::XPath(lit)
                 | ByToken::Name(lit)
                 | ByToken::ClassName(lit)
+                | ByToken::Testid(lit)
                 | ByToken::Description(lit) => lit.to_tokens(tokens),
                 // idents
                 ByToken::Multi
