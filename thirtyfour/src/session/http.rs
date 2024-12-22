@@ -24,6 +24,7 @@ pub enum Body<'a> {
     Empty,
     /// JSON body.
     Json(&'a Value),
+    Form(Vec<(&'a str, &'a str)>),
 }
 
 impl<'a, T: Into<Option<&'a Value>>> From<T> for Body<'a> {
@@ -71,6 +72,9 @@ impl HttpClient for reqwest::Client {
             Body::Empty => req = req.body(reqwest::Body::default()),
             Body::Json(json) => {
                 req = req.json(json);
+            }
+            Body::Form(form) => {
+                req = req.form(&form);
             }
         }
 
