@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     // Look for header to implicitly wait for the page to load.
     driver.query(By::ClassName("firstHeading")).first().await?;
-    assert_eq!(driver.title().await?, "Selenium - Wikipedia");
+    assert_eq!(driver.title().await?, "Selenium – Wikipedia");
 
     // Always explicitly close the browser.
     driver.quit().await?;
