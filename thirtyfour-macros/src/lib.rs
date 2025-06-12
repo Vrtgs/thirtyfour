@@ -10,6 +10,16 @@ use syn::{parse_macro_input, DeriveInput};
 
 mod component;
 
+
+macro_rules! bail {
+    ($span: expr, $($fmt:tt)*) => {
+        return Err(syn::Error::new($span, format_args!($($fmt)*)))
+    };
+}
+
+pub(crate) use bail;
+
+
 /// Derive macro for a wrapped `Component`.
 ///
 /// A `Component` contains a base [`WebElement`] from which all element queries will be performed.
@@ -118,14 +128,6 @@ mod component;
 /// [`ElementResolver`]: https://docs.rs/thirtyfour/0.31.0-alpha.1/thirtyfour/components/struct.ElementResolver.html
 /// [`ElementQueryOptions`]: https://docs.rs/thirtyfour/0.31.0-alpha.1/thirtyfour/extensions/query/struct.ElementQueryOptions.html
 /// [`ElementQueryFn<T>`]: https://docs.rs/thirtyfour/0.31.0-alpha.1/thirtyfour/common/types/type.ElementQueryFn.html
-
-macro_rules! bail {
-    ($span: expr, $($fmt:tt)*) => {
-        return Err(syn::Error::new($span, format_args!($($fmt)*)))
-    };
-}
-
-pub(crate) use bail;
 #[proc_macro_derive(Component, attributes(base, by))]
 pub fn derive_component_fn(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
