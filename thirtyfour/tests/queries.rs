@@ -48,6 +48,9 @@ fn query(test_harness: TestHarness) -> WebDriverResult<()> {
             elem_result.map_err(WebDriverError::into_inner),
             Err(WebDriverErrorInner::NoSuchElement(_))
         );
+        // There should only be one element with the class 'vertical'.
+        let elem_result = c.query(By::ClassName("vertical")).single().await;
+        assert!(elem_result.unwrap().class_name().await?.unwrap().contains("vertical"));
         Ok(())
     })
 }
