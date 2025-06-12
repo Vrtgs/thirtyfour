@@ -65,6 +65,8 @@ pub enum BySelector {
     ClassName(Arc<str>),
     /// Select an element by CSS.
     Css(Arc<str>),
+    /// Select an element by data-testid.
+    Testid(Arc<str>),
 }
 
 /// Element Selector struct providing a convenient way to specify selectors.
@@ -130,6 +132,13 @@ impl By {
             selector: BySelector::Css(format!(".{}", name.into()).into()),
         }
     }
+
+    /// Select element by testid.
+    pub fn Testid(id: impl IntoArcStr) -> Self {
+        Self {
+            selector: BySelector::Css(format!("[data-testid=\"{}\"]", id.into()).into()),
+        }
+    }
 }
 
 impl fmt::Display for BySelector {
@@ -143,6 +152,7 @@ impl fmt::Display for BySelector {
             BySelector::Tag(tag) => write!(f, "Tag({})", tag),
             BySelector::ClassName(cname) => write!(f, "Class({})", cname),
             BySelector::Css(css) => write!(f, "CSS({})", css),
+            BySelector::Testid(id) => write!(f, "Testid({})", id),
         }
     }
 }
@@ -164,6 +174,7 @@ impl From<BySelector> for Selector {
             BySelector::Tag(x) => Selector::new("css selector", x),
             BySelector::ClassName(x) => Selector::new("css selector", format!(".{}", x)),
             BySelector::Css(x) => Selector::new("css selector", x),
+            BySelector::Testid(x) => Selector::new("testid selector", format!("[data-testid=\"{}\"]", x)),
         }
     }
 }
