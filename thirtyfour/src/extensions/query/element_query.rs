@@ -32,28 +32,27 @@ fn get_selector_summary(selectors: &[ElementSelector]) -> String {
 }
 
 fn get_elements_description(len: Option<usize>, description: &str) -> Cow<str> {
-    let suffix = match len { 
+    let suffix = match len {
         Some(1) => "element",
         Some(_) => "elements",
-        None => "element(s)"
+        None => "element(s)",
     };
-    
-   match description.trim() { 
-       ""  => Cow::Borrowed(suffix),
-       _ => Cow::Owned(format!("'{}' {suffix}", description.escape_default()))
-   }
+
+    match description.trim() {
+        "" => Cow::Borrowed(suffix),
+        _ => Cow::Owned(format!("'{}' {suffix}", description.escape_default())),
+    }
 }
 
 /// Helper function to return the NoSuchElement error struct.
 fn no_such_element(selectors: &[ElementSelector], description: &str) -> WebDriverError {
     let element_description = get_elements_description(None, description);
-    
+
     crate::error::no_such_element(format!(
         "no such element: {element_description} not found using selectors: {}",
         get_selector_summary(selectors)
     ))
 }
-
 
 /// Filter the specified elements using the specified filters.
 pub async fn filter_elements<'a, I, P, Ref>(
@@ -390,9 +389,9 @@ impl ElementQuery {
         } else if !elements.is_empty() {
             let element_description = get_elements_description(
                 Some(elements.len()),
-                self.options.description.as_deref().unwrap_or("")
+                self.options.description.as_deref().unwrap_or(""),
             );
-            
+
             Err(crate::error::no_such_element(format!(
                 "too many elements received; found {count} {element_description} using selectors: {selectors}",
                 count = elements.len(),

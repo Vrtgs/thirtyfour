@@ -70,7 +70,7 @@ impl ElementPoller for ElementPollerWithTimeout {
             // So we need to wait this much longer.
             sleep(minimum_elapsed - actual_elapsed).await;
         }
-        
+
         true
     }
 }

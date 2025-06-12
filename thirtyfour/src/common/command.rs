@@ -174,7 +174,9 @@ impl From<BySelector> for Selector {
             BySelector::Tag(x) => Selector::new("css selector", x),
             BySelector::ClassName(x) => Selector::new("css selector", format!(".{}", x)),
             BySelector::Css(x) => Selector::new("css selector", x),
-            BySelector::Testid(x) => Selector::new("testid selector", format!("[data-testid=\"{}\"]", x)),
+            BySelector::Testid(x) => {
+                Selector::new("testid selector", format!("[data-testid=\"{}\"]", x))
+            }
         }
     }
 }

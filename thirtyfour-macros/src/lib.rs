@@ -10,7 +10,6 @@ use syn::{parse_macro_input, DeriveInput};
 
 mod component;
 
-
 macro_rules! bail {
     ($span: expr, $($fmt:tt)*) => {
         return Err(syn::Error::new($span, format_args!($($fmt)*)))
@@ -18,7 +17,6 @@ macro_rules! bail {
 }
 
 pub(crate) use bail;
-
 
 /// Derive macro for a wrapped `Component`.
 ///
