@@ -353,15 +353,11 @@ impl ElementQuery {
     ///
     /// Returns Err(WebDriverError::NoSuchElement) if no elements match.
     pub async fn first(&self) -> WebDriverResult<WebElement> {
-        let mut elements = self.run_poller(true, false).await?;
-
-        if elements.is_empty() {
+        self.first_opt().await?.ok_or_else(|| {
             let desc: &str = self.options.description.as_deref().unwrap_or("");
             let err = no_such_element(&self.selectors, desc);
-            Err(err)
-        } else {
-            Ok(elements.remove(0))
-        }
+            err
+        })
     }
 
     /// Return only a single WebElement that matches any selector (including filters).
