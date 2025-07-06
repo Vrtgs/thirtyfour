@@ -1,8 +1,9 @@
 use serde_json::Value;
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
+use std::ops::{Deref, DerefMut};
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use tokio::sync::OnceCell;
 use url::{ParseError, Url};
@@ -1199,16 +1200,43 @@ impl Drop for SessionHandle {
         #[cfg(feature = "debug_sync_quit")]
         eprintln!(
             "WebDriver didn't wasn't quit properly at\n{}",
-            std::backtrace::Backtrace::force_capture()
+            std::backtrace::Backtrace::capture()
         );
 
-        let mut this = Self {
+        struct SessionDropGuard(SessionHandle);
+
+        impl Deref for SessionDropGuard {
+            type Target = SessionHandle;
+
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        impl DerefMut for SessionDropGuard {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.0
+            }
+        }
+
+        impl Drop for SessionDropGuard {
+            fn drop(&mut self) {
+                if !self.0.quit.initialized() {
+                    static ALWAYS_INIT: LazyLock<Arc<OnceCell<()>>> = LazyLock::new(|| Arc::new(OnceCell::new_with(Some(()))));
+                    self.0.quit = Arc::clone(&ALWAYS_INIT);
+                    debug_assert!(self.0.quit.initialized())
+                }
+            }
+        }
+
+        let mut this = SessionDropGuard(Self {
             client: Arc::clone(&self.client),
             server_url: Arc::clone(&self.server_url),
             quit: Arc::clone(&self.quit),
             session_id: self.session_id.clone(),
             config: self.config.clone(),
-        };
+        });
+
         support::spawn_blocked_future(|spawned| async move {
             if spawned {
                 // Old I/O drivers may be destroyed at this point
