@@ -328,6 +328,7 @@ impl WebElement {
         match resp.value()? {
             Value::String(v) => Ok(Some(v)),
             Value::Bool(b) => Ok(Some(b.to_string())),
+            Value::Number(number) => Ok(Some(number.to_string())),
             Value::Null => Ok(None),
             v => Err(WebDriverError::Json(format!("Unexpected value for property: {:?}", v))),
         }
