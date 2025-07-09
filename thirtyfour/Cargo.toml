@@ -59,7 +59,6 @@ tokio = { version = "1", features = [
     "sync",
 ] }
 cfg-if = "1.0.0"
-bytes = "1.7.2"
 tracing = "0.1"
 url = "2.5.2"
 const_format = "0.2.33"

@@ -1222,7 +1222,8 @@ impl Drop for SessionHandle {
         impl Drop for SessionDropGuard {
             fn drop(&mut self) {
                 if !self.0.quit.initialized() {
-                    static ALWAYS_INIT: LazyLock<Arc<OnceCell<()>>> = LazyLock::new(|| Arc::new(OnceCell::new_with(Some(()))));
+                    static ALWAYS_INIT: LazyLock<Arc<OnceCell<()>>> =
+                        LazyLock::new(|| Arc::new(OnceCell::new_with(Some(()))));
                     self.0.quit = Arc::clone(&ALWAYS_INIT);
                     debug_assert!(self.0.quit.initialized())
                 }
