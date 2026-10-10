@@ -350,6 +350,10 @@ impl WebDriverManagerBuilder {
     }
 
     /// Refuse to download anything; require the driver to already be in cache.
+    ///
+    /// Versions are resolved from the cache too, without upstream metadata:
+    /// a version not cached exactly gets the newest cached driver of its
+    /// major, and [`DriverVersion::Latest`] the newest cached driver.
     pub fn offline(self) -> Self {
         self.offline_mode(true)
     }
