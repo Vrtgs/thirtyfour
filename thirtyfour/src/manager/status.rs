@@ -86,6 +86,10 @@ pub enum Status {
         binary: PathBuf,
     },
     /// Starting upstream version resolution.
+    ///
+    /// A manager resolves each version once; later launches needing the same
+    /// version reuse the result and emit neither this nor
+    /// [`Status::DriverVersionResolved`].
     DriverVersionResolving {
         /// Browser whose driver is being resolved.
         browser: BrowserKind,
