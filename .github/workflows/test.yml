@@ -35,4 +35,4 @@ jobs:
           THIRTYFOUR_BROWSER: ${{ matrix.browser }}
         with:
           command: test
-          args: ${{ runner.os == 'macOS' && '-- --test-threads=2' || '' }}
+          args: ${{ runner.os == 'macOS' && '-- --test-threads=1' || '' }}
