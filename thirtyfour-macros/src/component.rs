@@ -1000,7 +1000,7 @@ impl ToTokens for MultiResolverArgs {
 ///
 /// Non-generic types will be returned as is.
 fn fix_type(mut ty: syn::Path) -> TokenStream {
-    let last = ty.segments.pop();
+    let last = ty.segments.pop_pair();
     match last {
         Some(pair) => {
             let (p, _) = pair.into_tuple();
