@@ -92,6 +92,8 @@ spawns one driver subprocess per `(browser, version, host)` combination
 as needed, and reuses an existing subprocess when a later `.launch()`
 call matches one that's still alive. It also resolves each driver
 version only once, so later launches skip the upstream metadata lookup.
+The exception is `.latest()`, which checks upstream on every launch so
+that it always picks the current release.
 
 ## Configuration
 

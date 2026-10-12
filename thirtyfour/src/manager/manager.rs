@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex as StdMutex, MutexGuard as StdMutexGuard, Weak};
 use std::time::Duration;
 
 use serde_json::Value;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, OnceCell};
 use url::Url;
 
 use crate::Capabilities;
@@ -70,8 +70,9 @@ pub struct WebDriverManager {
     /// Cache for upstream version resolution, keyed by
     /// `(browser, local_version, caps_version)` — the inputs that can vary
     /// between launches (the requested [`DriverVersion`] is fixed per
-    /// manager).
-    resolved_versions: Mutex<HashMap<ResolvedVersionKey, String>>,
+    /// manager). One cell per key, so a slow resolution only holds up
+    /// launches waiting on the same key. Unused for [`DriverVersion::Latest`].
+    resolved_versions: Mutex<HashMap<ResolvedVersionKey, Arc<OnceCell<String>>>>,
     /// Status-event emitter (also forwards to `tracing`).
     pub(crate) emitter: Emitter,
     /// Manager-wide driver-log subscribers — propagated into every spawned
@@ -301,7 +302,8 @@ impl WebDriverManagerBuilder {
         self
     }
 
-    /// Use the latest stable driver from upstream metadata.
+    /// Use the latest stable driver from upstream metadata, checked on every
+    /// launch.
     pub fn latest(self) -> Self {
         self.version(DriverVersion::Latest)
     }
@@ -706,32 +708,38 @@ impl WebDriverManager {
     /// Resolve the driver version for a launch. Done once per
     /// `(browser, local_version, caps_version)`; later launches reuse the
     /// result without emitting the resolution [`Status`] events again.
+    /// [`DriverVersion::Latest`] is resolved on every launch.
     pub(crate) async fn resolve_version_cached(
         &self,
         browser: BrowserKind,
         local: Option<&str>,
         caps_version: Option<&str>,
     ) -> Result<String, ManagerError> {
-        let key = (browser, local.map(str::to_owned), caps_version.map(str::to_owned));
-        // Held across the resolution, so concurrent launches wait for the first
-        // one instead of each fetching the same metadata. A failed resolution
-        // isn't cached; the next launch tries again.
-        let mut cache = self.resolved_versions.lock().await;
-        if let Some(version) = cache.get(&key) {
-            return Ok(version.clone());
+        let resolve = || {
+            let cfg = self.download_config();
+            async move {
+                resolve_version(
+                    &self.download_client,
+                    &cfg,
+                    browser,
+                    &self.cfg.version,
+                    local,
+                    caps_version,
+                    &self.emitter,
+                )
+                .await
+            }
+        };
+        if self.cfg.version == DriverVersion::Latest {
+            return resolve().await;
         }
-        let version = resolve_version(
-            &self.download_client,
-            &self.download_config(),
-            browser,
-            &self.cfg.version,
-            local,
-            caps_version,
-            &self.emitter,
-        )
-        .await?;
-        cache.insert(key, version.clone());
-        Ok(version)
+
+        let key = (browser, local.map(str::to_owned), caps_version.map(str::to_owned));
+        let cell = self.resolved_versions.lock().await.entry(key).or_default().clone();
+        // Concurrent launches for the same key wait for the first one instead
+        // of each fetching the same metadata. A failed resolution leaves the
+        // cell empty; the next launch tries again.
+        cell.get_or_try_init(resolve).await.cloned()
     }
 
     fn download_config(&self) -> DownloadConfig {

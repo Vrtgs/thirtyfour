@@ -356,6 +356,77 @@ async fn manager_does_not_cache_failed_resolution() {
 }
 
 #[tokio::test]
+async fn manager_resolution_does_not_block_other_keys() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path(CHROME_INDEX))
+        .respond_with(chrome_index().set_delay(Duration::from_millis(500)))
+        .mount(&server)
+        .await;
+    for (major, version) in [("126", "126.0.2592.56"), ("127", "127.0.2651.74")] {
+        Mock::given(method("GET"))
+            .and(path(format!("/LATEST_RELEASE_{major}")))
+            .respond_with(ResponseTemplate::new(200).set_body_string(version))
+            .mount(&server)
+            .await;
+    }
+    let base: url::Url = format!("{}/", server.uri()).parse().unwrap();
+    let manager = WebDriverManager::builder()
+        .chrome_metadata_mirror(base.clone())
+        .edge_downloads_mirror(base)
+        .build();
+    manager.resolve_version_cached(BrowserKind::Edge, Some("126"), None).await.unwrap();
+
+    let chrome = tokio::spawn({
+        let manager = manager.clone();
+        async move { manager.resolve_version_cached(BrowserKind::Chrome, Some("126"), None).await }
+    });
+    while !server.received_requests().await.unwrap().iter().any(|r| r.url.path() == CHROME_INDEX) {
+        tokio::task::yield_now().await;
+    }
+
+    // Both a cache hit and a cache miss for Edge go through while Chrome waits.
+    for (local, expected) in [("126", "126.0.2592.56"), ("127", "127.0.2651.74")] {
+        let v = tokio::time::timeout(
+            Duration::from_millis(100),
+            manager.resolve_version_cached(BrowserKind::Edge, Some(local), None),
+        )
+        .await
+        .expect("Edge resolution blocked by Chrome")
+        .unwrap();
+        assert_eq!(v, expected);
+    }
+    assert!(!chrome.is_finished());
+    assert_eq!(chrome.await.unwrap().unwrap(), "126.0.6478.126");
+}
+
+#[tokio::test]
+async fn manager_resolves_latest_on_every_launch() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/chrome-for-testing/LATEST_RELEASE_STABLE"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("126.0.6478.126"))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/chrome-for-testing/LATEST_RELEASE_STABLE"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("127.0.6533.50"))
+        .mount(&server)
+        .await;
+    let manager = WebDriverManager::builder()
+        .latest()
+        .chrome_metadata_mirror(format!("{}/", server.uri()).parse().unwrap())
+        .build();
+
+    for expected in ["126.0.6478.126", "127.0.6533.50"] {
+        let v = manager.resolve_version_cached(BrowserKind::Chrome, None, None).await.unwrap();
+        assert_eq!(v, expected);
+    }
+    assert_eq!(request_count(&server).await, 2);
+}
+
+#[tokio::test]
 async fn from_capabilities_errors_when_caps_missing_version() {
     let cfg = DownloadConfig {
         cache_dir: std::env::temp_dir(),
