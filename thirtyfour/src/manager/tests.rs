@@ -225,6 +225,61 @@ async fn resolve_version_latest_chrome() {
     assert_eq!(v, "126.0.6478.126");
 }
 
+/// Resolve `Latest` for Firefox against a geckodriver metadata mirror on `server`.
+async fn resolve_firefox_latest(server: &MockServer) -> Result<String, super::ManagerError> {
+    let cfg = DownloadConfig {
+        cache_dir: std::env::temp_dir(),
+        mirror: Mirror {
+            geckodriver_metadata: format!("{}/releases/", server.uri()).parse().unwrap(),
+            ..Mirror::default()
+        },
+        download_timeout: Duration::from_secs(5),
+        offline: false,
+    };
+    let client = reqwest::Client::new();
+    resolve_version(
+        &client,
+        &cfg,
+        BrowserKind::Firefox,
+        &DriverVersion::Latest,
+        None,
+        None,
+        &Emitter::new(),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn resolve_version_latest_firefox() {
+    let server = MockServer::start().await;
+    Mock::given(method("HEAD"))
+        .and(path("/releases/latest"))
+        .respond_with(ResponseTemplate::new(302).insert_header("Location", "/releases/tag/v0.37.1"))
+        .mount(&server)
+        .await;
+    Mock::given(method("HEAD"))
+        .and(path("/releases/tag/v0.37.1"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&server)
+        .await;
+
+    assert_eq!(resolve_firefox_latest(&server).await.unwrap(), "0.37.1");
+}
+
+#[tokio::test]
+async fn resolve_version_latest_firefox_rejects_unexpected_url() {
+    let server = MockServer::start().await;
+    // No redirect to a release tag.
+    Mock::given(method("HEAD"))
+        .and(path("/releases/latest"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&server)
+        .await;
+
+    let err = resolve_firefox_latest(&server).await.unwrap_err();
+    assert!(matches!(err, super::ManagerError::Parse(_)), "{err:?}");
+}
+
 #[tokio::test]
 async fn resolve_version_exact_chrome_major_picks_latest_in_index() {
     let server = MockServer::start().await;

@@ -156,6 +156,45 @@ async fn managed_firefox_smoke() -> WebDriverResult<()> {
     .await
 }
 
+/// `.latest()` online resolves the newest geckodriver release on GitHub and
+/// downloads it; offline, against the same cache, it picks that same driver.
+#[tokio::test(flavor = "multi_thread")]
+async fn managed_firefox_latest_online_then_offline() -> WebDriverResult<()> {
+    use std::sync::{Arc, Mutex};
+    use thirtyfour::manager::Status;
+
+    with_timeout(async {
+        let cache = tempfile::tempdir()?;
+        let mut resolved = Vec::new();
+        for offline in [false, true] {
+            let version = Arc::new(Mutex::new(None));
+            let manager = WebDriverManager::builder()
+                .latest()
+                .offline_mode(offline)
+                .cache_dir(cache.path().to_path_buf())
+                .on_status({
+                    let version = Arc::clone(&version);
+                    move |status| {
+                        if let Status::DriverVersionResolved {
+                            version: v,
+                            ..
+                        } = status
+                        {
+                            *version.lock().unwrap() = Some(v.clone());
+                        }
+                    }
+                })
+                .build();
+            let driver = manager.launch(firefox_caps()).await?;
+            driver.quit().await?;
+            resolved.push(version.lock().unwrap().take().expect("no DriverVersionResolved"));
+        }
+        assert_eq!(resolved[0], resolved[1]);
+        Ok(())
+    })
+    .await
+}
+
 /// Edge headless on Ubuntu has a known issue where the renderer times out
 /// even on `about:blank`. That's a quirk of Edge-for-Linux's headless mode,
 /// not the manager — by the time we reach `goto` the manager has already done

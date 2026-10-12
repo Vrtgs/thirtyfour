@@ -7,10 +7,9 @@
 /// numbers are not in 1:1 correspondence — geckodriver is on `0.36.0` while
 /// Firefox is on `150.x`. The manager picks a compatible geckodriver from an
 /// embedded table modelled after [SeleniumHQ's `geckodriver-support.json`].
-/// `DriverVersion::Latest` for Firefox returns the highest entry in that
-/// embedded table — *not* a live lookup against the geckodriver release feed
-/// — to keep version resolution fully offline. For
-/// [`DriverVersion::Exact`], pass a literal geckodriver tag like `"0.36.0"`.
+/// `DriverVersion::Latest` for Firefox is instead the newest geckodriver
+/// release on GitHub. For [`DriverVersion::Exact`], pass a literal
+/// geckodriver tag like `"0.36.0"`.
 ///
 /// [SeleniumHQ's `geckodriver-support.json`]: https://github.com/SeleniumHQ/selenium/blob/trunk/common/geckodriver/geckodriver-support.json
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -36,6 +35,13 @@ pub enum DriverVersion {
     /// Checked on every launch, so a long-lived manager picks up new
     /// releases. A running driver or cached binary for the resolved version
     /// is still reused.
+    ///
+    /// <div class="warning">
+    ///
+    /// **Warning:** In offline mode, `.latest()` selects the newest cached
+    /// driver, which may be older than the latest upstream release.
+    ///
+    /// </div>
     Latest,
 
     /// An exact version string.

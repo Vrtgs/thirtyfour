@@ -65,8 +65,9 @@ let driver = WebDriver::managed(caps)
 > **Note on Firefox:** Firefox releases and `geckodriver` releases don't
 > share version numbers (Firefox is on `150.x` while `geckodriver` is on
 > `0.36.0`). The manager picks a compatible `geckodriver` from an embedded
-> compatibility table. For `.exact(...)` on Firefox, pass a `geckodriver`
-> tag like `"0.36.0"` — not a Firefox version.
+> compatibility table; `.latest()` takes the newest `geckodriver` release
+> instead. For `.exact(...)` on Firefox, pass a `geckodriver` tag like
+> `"0.36.0"` — not a Firefox version.
 
 ## Sharing One Manager Across Sessions
 
@@ -94,7 +95,8 @@ as needed, and reuses an existing subprocess when a later `.launch()`
 call matches one that's still alive. It also resolves each driver
 version only once, so later launches skip the upstream metadata lookup.
 The exception is `.latest()`, which checks upstream on every launch so
-that it always picks the current release.
+that it always picks the current release; in offline mode it rescans the
+cache instead.
 
 ## Configuration
 
@@ -194,6 +196,9 @@ resolves versions from the cache:
 
 When nothing in the cache fits, the launch returns an error rather than
 reaching out to the network.
+
+> **Warning:** In offline mode, `.latest()` selects the newest cached
+> driver, which may be older than the latest upstream release.
 
 ## Observing What The Manager Is Doing
 
