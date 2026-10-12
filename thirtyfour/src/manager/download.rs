@@ -901,6 +901,10 @@ mod tests {
     const DRIVER_SCRIPT: &[u8] = b"#!/bin/sh\nprintf 'driver ready\\n'\n";
     const ORIGINAL_SCRIPT: &[u8] = b"#!/bin/sh\nprintf 'original driver\\n'\n";
 
+    // On Linux, subprocess creation can inherit another test's staging writer
+    // until exec, causing ETXTBSY even after the parent closes its handle. Keep
+    // tests that write and execute fixture drivers in the same serial group.
+
     fn assert_driver(path: &Path, content: &[u8], expected_stdout: &[u8]) {
         assert_eq!(std::fs::read(path).unwrap(), content);
         #[cfg(unix)]
@@ -944,6 +948,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial(driver_publication)]
     fn publish_driver_hides_partial_writes_and_preserves_existing_binary() {
         for existing in [false, true] {
             let dir = tempfile::tempdir().unwrap();
@@ -1007,6 +1012,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial(driver_publication)]
     fn publish_driver_read_failure_removes_staging_and_preserves_cache() {
         for existing in [false, true] {
             let dir = tempfile::tempdir().unwrap();
@@ -1051,6 +1057,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial(driver_publication)]
     fn extract_zip_publishes_complete_executable_for_each_browser() {
         for (browser, prefix) in [
             (BrowserKind::Chrome, "chromedriver-linux64/"),
@@ -1067,6 +1074,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial(driver_publication)]
     fn extract_tar_gz_publishes_complete_executable() {
         let dir = tempfile::tempdir().unwrap();
         extract_geckodriver_tar_gz(&gzip(&tar_fixture()), dir.path()).unwrap();
