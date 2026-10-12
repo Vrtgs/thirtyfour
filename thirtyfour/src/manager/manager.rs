@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex as StdMutex, MutexGuard as StdMutexGuard, Weak};
 use std::time::Duration;
 
 use serde_json::Value;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, OnceCell};
 use url::Url;
 
 use crate::Capabilities;
@@ -42,6 +42,9 @@ fn default_cache_dir() -> PathBuf {
     dirs::cache_dir().unwrap_or_else(std::env::temp_dir).join("thirtyfour").join("drivers")
 }
 
+/// `(browser, local_version, caps_version)` — see `WebDriverManager::resolved_versions`.
+type ResolvedVersionKey = (BrowserKind, Option<String>, Option<String>);
+
 /// Auto-download and lifetime-managed local WebDriver process manager.
 ///
 /// See the [module documentation](super) for the high-level usage. The two
@@ -64,6 +67,12 @@ pub struct WebDriverManager {
     /// Skips repeated subprocess spawns and avoids transient
     /// `Command::output` failures on busy CI runners.
     local_versions: Mutex<HashMap<(BrowserKind, Option<String>), String>>,
+    /// Cache for upstream version resolution, keyed by
+    /// `(browser, local_version, caps_version)` — the inputs that can vary
+    /// between launches (the requested [`DriverVersion`] is fixed per
+    /// manager). One cell per key, so a slow resolution only holds up
+    /// launches waiting on the same key. Unused for [`DriverVersion::Latest`].
+    resolved_versions: Mutex<HashMap<ResolvedVersionKey, Arc<OnceCell<String>>>>,
     /// Status-event emitter (also forwards to `tracing`).
     pub(crate) emitter: Emitter,
     /// Manager-wide driver-log subscribers — propagated into every spawned
@@ -293,7 +302,8 @@ impl WebDriverManagerBuilder {
         self
     }
 
-    /// Use the latest stable driver from upstream metadata.
+    /// Use the latest stable driver from upstream metadata, checked on every
+    /// launch.
     pub fn latest(self) -> Self {
         self.version(DriverVersion::Latest)
     }
@@ -516,6 +526,7 @@ impl WebDriverManagerBuilder {
             cfg,
             drivers: Mutex::new(HashMap::new()),
             local_versions: Mutex::new(HashMap::new()),
+            resolved_versions: Mutex::new(HashMap::new()),
             emitter,
             log_subscribers,
             next_driver_id: Arc::new(AtomicU64::new(0)),
@@ -663,22 +674,7 @@ impl WebDriverManager {
         };
         let caps_version = caps.get("browserVersion").and_then(Value::as_str);
 
-        let download_cfg = DownloadConfig {
-            cache_dir: self.cfg.cache_dir.clone(),
-            mirror: self.cfg.mirror.clone(),
-            download_timeout: self.cfg.download_timeout,
-            offline: self.cfg.offline,
-        };
-        let resolved = resolve_version(
-            &self.download_client,
-            &download_cfg,
-            browser,
-            &self.cfg.version,
-            local.as_deref(),
-            caps_version,
-            &self.emitter,
-        )
-        .await?;
+        let resolved = self.resolve_version_cached(browser, local.as_deref(), caps_version).await?;
 
         // Fast path: live driver matching `(browser, resolved, host)` already exists.
         {
@@ -698,10 +694,61 @@ impl WebDriverManager {
             }
         }
 
-        let driver_path =
-            ensure_driver(&self.download_client, &download_cfg, browser, &resolved, &self.emitter)
-                .await?;
+        let driver_path = ensure_driver(
+            &self.download_client,
+            &self.download_config(),
+            browser,
+            &resolved,
+            &self.emitter,
+        )
+        .await?;
         self.spawn_or_reuse(browser, resolved, &driver_path.binary).await
+    }
+
+    /// Resolve the driver version for a launch. Done once per
+    /// `(browser, local_version, caps_version)`; later launches reuse the
+    /// result without emitting the resolution [`Status`] events again.
+    /// [`DriverVersion::Latest`] is resolved on every launch.
+    pub(crate) async fn resolve_version_cached(
+        &self,
+        browser: BrowserKind,
+        local: Option<&str>,
+        caps_version: Option<&str>,
+    ) -> Result<String, ManagerError> {
+        let resolve = || {
+            let cfg = self.download_config();
+            async move {
+                resolve_version(
+                    &self.download_client,
+                    &cfg,
+                    browser,
+                    &self.cfg.version,
+                    local,
+                    caps_version,
+                    &self.emitter,
+                )
+                .await
+            }
+        };
+        if self.cfg.version == DriverVersion::Latest {
+            return resolve().await;
+        }
+
+        let key = (browser, local.map(str::to_owned), caps_version.map(str::to_owned));
+        let cell = self.resolved_versions.lock().await.entry(key).or_default().clone();
+        // Concurrent launches for the same key wait for the first one instead
+        // of each fetching the same metadata. A failed resolution leaves the
+        // cell empty; the next launch tries again.
+        cell.get_or_try_init(resolve).await.cloned()
+    }
+
+    fn download_config(&self) -> DownloadConfig {
+        DownloadConfig {
+            cache_dir: self.cfg.cache_dir.clone(),
+            mirror: self.cfg.mirror.clone(),
+            download_timeout: self.cfg.download_timeout,
+            offline: self.cfg.offline,
+        }
     }
 
     /// Cache-check, spawn, and register a managed driver process for

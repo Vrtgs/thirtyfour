@@ -32,6 +32,10 @@ pub enum DriverVersion {
     FromCapabilities,
 
     /// Latest stable available from the upstream metadata source.
+    ///
+    /// Checked on every launch, so a long-lived manager picks up new
+    /// releases. A running driver or cached binary for the resolved version
+    /// is still reused.
     Latest,
 
     /// An exact version string.
