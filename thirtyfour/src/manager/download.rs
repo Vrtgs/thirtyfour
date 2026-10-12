@@ -15,14 +15,17 @@ use super::version::DriverVersion;
 ///
 /// The chromedriver download URL comes fully-qualified from the
 /// Chrome-for-Testing JSON index, so there's no separate base-URL field for
-/// it. Geckodriver version resolution is fully offline (driven by the
-/// embedded compatibility table) so no metadata mirror is needed for it
-/// — only the binary download base.
+/// it. Geckodriver metadata is only needed for [`DriverVersion::Latest`];
+/// other geckodriver versions come from the embedded compatibility table.
 #[derive(Debug, Clone)]
 pub(crate) struct Mirror {
     /// Base URL for the Chrome-for-Testing JSON metadata. Defaults to the
     /// public CfT endpoint.
     pub chrome_metadata: Url,
+    /// Base URL for geckodriver release pages: `<base>latest` must redirect
+    /// to `<base>tag/v<version>`. Defaults to
+    /// `github.com/mozilla/geckodriver/releases/`.
+    pub geckodriver_metadata: Url,
     /// Base URL for geckodriver binary downloads. Defaults to the public
     /// `github.com/mozilla/geckodriver/releases/download/` host.
     pub geckodriver_downloads: Url,
@@ -34,6 +37,8 @@ impl Default for Mirror {
     fn default() -> Self {
         Self {
             chrome_metadata: Url::parse("https://googlechromelabs.github.io/").unwrap(),
+            geckodriver_metadata: Url::parse("https://github.com/mozilla/geckodriver/releases/")
+                .unwrap(),
             geckodriver_downloads: Url::parse(
                 "https://github.com/mozilla/geckodriver/releases/download/",
             )
@@ -96,8 +101,12 @@ pub(crate) async fn resolve_version(
             BrowserKind::Safari => unreachable!("safari short-circuited above"),
         },
         DriverVersion::Latest => match browser {
+            // Offline, the newest driver in the cache stands in for the latest.
+            BrowserKind::Chrome | BrowserKind::Edge | BrowserKind::Firefox if cfg.offline => {
+                newest_cached(cfg, browser, None)?
+            }
             BrowserKind::Chrome => fetch_chrome_latest(client, cfg).await?,
-            BrowserKind::Firefox => firefox_latest_from_table().to_owned(),
+            BrowserKind::Firefox => fetch_firefox_latest(client, cfg).await?,
             BrowserKind::Edge => fetch_edge_latest(client, cfg).await?,
             BrowserKind::Safari => unreachable!("safari short-circuited above"),
         },
@@ -264,6 +273,15 @@ async fn resolve_chrome_exact(
     cfg: &DownloadConfig,
     version: &str,
 ) -> Result<String, ManagerError> {
+    // A full version already in the cache was downloaded from the index, so
+    // fetching the index again would only confirm it.
+    if version.contains('.') && cached_driver_path(cfg, BrowserKind::Chrome, version).exists() {
+        return Ok(version.to_string());
+    }
+    // Without the index, the closest is the newest cached driver of the major.
+    if cfg.offline {
+        return newest_cached(cfg, BrowserKind::Chrome, Some(major(version)));
+    }
     let index = fetch_chrome_index(client, cfg).await?;
     if version.contains('.') {
         // Try exact match; fall back to latest matching the same major if the
@@ -288,14 +306,31 @@ fn sort_semver(a: &str, b: &str) -> std::cmp::Ordering {
     parse(a).cmp(&parse(b))
 }
 
-/// `DriverVersion::Latest` for Firefox — returns the highest geckodriver tag
-/// in the embedded compatibility table. Note that this is "latest known to
-/// this thirtyfour release" rather than "literally the latest from upstream"
-/// — geckodriver releases roughly twice a year, and we do not make a network
-/// call to discover newer versions. Users who need a specific newer release
-/// should use [`DriverVersion::Exact`].
-fn firefox_latest_from_table() -> &'static str {
-    GECKODRIVER_RELEASES.first().expect("GECKODRIVER_RELEASES must not be empty").version
+/// `DriverVersion::Latest` for Firefox: the newest geckodriver release.
+///
+/// Read from where `releases/latest` redirects (`releases/tag/v0.36.0`)
+/// rather than the GitHub REST API, which allows only 60 unauthenticated
+/// requests an hour, and `latest()` resolves on every launch.
+async fn fetch_firefox_latest(
+    client: &reqwest::Client,
+    cfg: &DownloadConfig,
+) -> Result<String, ManagerError> {
+    let url = cfg
+        .mirror
+        .geckodriver_metadata
+        .join("latest")
+        .map_err(|e| ManagerError::Parse(e.to_string()))?;
+    let resp = client.head(url).timeout(cfg.download_timeout).send().await?.error_for_status()?;
+    let release = resp.url();
+    release
+        .path_segments()
+        .and_then(|mut segments| segments.next_back())
+        .and_then(|tag| tag.strip_prefix('v'))
+        .filter(|v| v.split('.').all(|p| p.parse::<u32>().is_ok()))
+        .map(str::to_owned)
+        .ok_or_else(|| {
+            ManagerError::Parse(format!("unexpected geckodriver latest-release URL: {release}"))
+        })
 }
 
 async fn fetch_edge_latest(
@@ -325,6 +360,9 @@ async fn resolve_edge_exact(
 ) -> Result<String, ManagerError> {
     if version.contains('.') {
         return Ok(version.to_string());
+    }
+    if cfg.offline {
+        return newest_cached(cfg, BrowserKind::Edge, Some(major(version)));
     }
     // Major-only request: msedgedriver doesn't expose an index; fetch
     // `LATEST_RELEASE_<major>` from the same host.
@@ -389,14 +427,8 @@ pub(crate) async fn ensure_driver(
         return safari_driver_path();
     }
 
-    let platform = match browser {
-        BrowserKind::Chrome | BrowserKind::Firefox => chrome_platform(),
-        BrowserKind::Edge => edge_platform(),
-        BrowserKind::Safari => unreachable!("safari short-circuited above"),
-    };
-    let dir = cfg.cache_dir.join(browser.cache_dir_name()).join(version).join(platform);
-    let bin_name = exe_name(browser);
-    let bin_path = dir.join(&bin_name);
+    let dir = cached_driver_dir(cfg, browser, version);
+    let bin_path = dir.join(exe_name(browser));
 
     if bin_path.exists() {
         emitter.emit(Status::DriverCacheHit {
@@ -453,6 +485,40 @@ pub(crate) async fn ensure_driver(
     Ok(DriverPath {
         binary: bin_path,
     })
+}
+
+/// Cache directory of the driver for `(browser, version)` on this platform.
+fn cached_driver_dir(cfg: &DownloadConfig, browser: BrowserKind, version: &str) -> PathBuf {
+    let platform = match browser {
+        BrowserKind::Chrome | BrowserKind::Firefox => chrome_platform(),
+        BrowserKind::Edge => edge_platform(),
+        BrowserKind::Safari => unreachable!("safari uses the system driver, never cached"),
+    };
+    cfg.cache_dir.join(browser.cache_dir_name()).join(version).join(platform)
+}
+
+/// Where the driver binary for `(browser, version)` is, once downloaded.
+fn cached_driver_path(cfg: &DownloadConfig, browser: BrowserKind, version: &str) -> PathBuf {
+    cached_driver_dir(cfg, browser, version).join(exe_name(browser))
+}
+
+/// The newest driver version with its binary in the cache, of `major_version`
+/// if given. Resolves versions in offline mode, without upstream metadata.
+fn newest_cached(
+    cfg: &DownloadConfig,
+    browser: BrowserKind,
+    major_version: Option<&str>,
+) -> Result<String, ManagerError> {
+    let Ok(entries) = std::fs::read_dir(cfg.cache_dir.join(browser.cache_dir_name())) else {
+        return Err(ManagerError::Offline);
+    };
+    entries
+        .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
+        .filter(|version| major_version.is_none_or(|m| major(version) == m))
+        // A directory without the binary is an interrupted download.
+        .filter(|version| cached_driver_path(cfg, browser, version).exists())
+        .max_by(|a, b| sort_semver(a, b))
+        .ok_or(ManagerError::Offline)
 }
 
 /// Locate the system-installed `safaridriver`. Currently only macOS ships one.
@@ -1134,13 +1200,6 @@ mod tests {
     }
 
     #[test]
-    fn firefox_latest_is_table_head() {
-        // Sanity: `Latest` for Firefox returns the highest entry, which is the
-        // first element of the table.
-        assert_eq!(firefox_latest_from_table(), "0.36.0");
-    }
-
-    #[test]
     fn transient_error_classification() {
         // 5xx → retry.
         assert!(is_transient(&ManagerError::Http("HTTP 502 Bad Gateway for ...".into())));
@@ -1168,5 +1227,111 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let err = extract_zip(&buf, dir.path(), BrowserKind::Chrome).unwrap_err();
         assert!(matches!(err, ManagerError::Extract(_)));
+    }
+
+    /// A cache holding drivers of `versions`, with mirrors nothing listens on,
+    /// so any metadata fetch fails.
+    fn cache_with(
+        browser: BrowserKind,
+        versions: &[&str],
+        offline: bool,
+    ) -> (tempfile::TempDir, DownloadConfig) {
+        let dir = tempfile::tempdir().unwrap();
+        let nowhere = Url::parse("http://127.0.0.1:1/").unwrap();
+        let cfg = DownloadConfig {
+            cache_dir: dir.path().to_path_buf(),
+            mirror: Mirror {
+                chrome_metadata: nowhere.clone(),
+                geckodriver_metadata: nowhere.clone(),
+                geckodriver_downloads: nowhere.clone(),
+                edge_downloads: nowhere,
+            },
+            download_timeout: Duration::from_secs(5),
+            offline,
+        };
+        for version in versions {
+            let binary = cached_driver_path(&cfg, browser, version);
+            std::fs::create_dir_all(binary.parent().unwrap()).unwrap();
+            std::fs::write(binary, b"").unwrap();
+        }
+        (dir, cfg)
+    }
+
+    async fn resolve(
+        cfg: &DownloadConfig,
+        browser: BrowserKind,
+        spec: DriverVersion,
+        local: Option<&str>,
+    ) -> Result<String, ManagerError> {
+        resolve_version(&reqwest::Client::new(), cfg, browser, &spec, local, None, &Emitter::new())
+            .await
+    }
+
+    #[tokio::test]
+    async fn cached_chrome_version_resolves_without_index() {
+        let (_dir, cfg) = cache_with(BrowserKind::Chrome, &["126.0.6478.126"], false);
+        let local = |v: &'static str| {
+            resolve(&cfg, BrowserKind::Chrome, DriverVersion::MatchLocalBrowser, Some(v))
+        };
+
+        assert_eq!(local("126.0.6478.126").await.unwrap(), "126.0.6478.126");
+        // Not in the cache: online, that still takes the index.
+        assert!(matches!(local("126.0.6478.10").await, Err(ManagerError::Http(_))));
+    }
+
+    #[tokio::test]
+    async fn offline_resolves_chrome_from_cache() {
+        let (_dir, cfg) = cache_with(
+            BrowserKind::Chrome,
+            &["126.0.6478.10", "126.0.6478.126", "127.0.6533.50"],
+            true,
+        );
+        // A directory without the binary, as an interrupted download leaves it.
+        std::fs::create_dir_all(cached_driver_dir(&cfg, BrowserKind::Chrome, "128.0.6613.0"))
+            .unwrap();
+        let local = |v: &'static str| {
+            resolve(&cfg, BrowserKind::Chrome, DriverVersion::MatchLocalBrowser, Some(v))
+        };
+
+        assert_eq!(local("126.0.6478.10").await.unwrap(), "126.0.6478.10");
+        // Not cached exactly: the newest driver of the major.
+        assert_eq!(local("126.0.6478.99").await.unwrap(), "126.0.6478.126");
+        assert!(matches!(local("128.0.6613.0").await, Err(ManagerError::Offline)));
+
+        let exact = resolve(&cfg, BrowserKind::Chrome, DriverVersion::Exact("126".into()), None);
+        assert_eq!(exact.await.unwrap(), "126.0.6478.126");
+        let latest = resolve(&cfg, BrowserKind::Chrome, DriverVersion::Latest, None);
+        assert_eq!(latest.await.unwrap(), "127.0.6533.50");
+    }
+
+    #[tokio::test]
+    async fn offline_resolves_edge_from_cache() {
+        let (_dir, cfg) = cache_with(BrowserKind::Edge, &["126.0.2592.56", "126.0.2592.102"], true);
+
+        let major = resolve(&cfg, BrowserKind::Edge, DriverVersion::Exact("126".into()), None);
+        assert_eq!(major.await.unwrap(), "126.0.2592.102");
+        let latest = resolve(&cfg, BrowserKind::Edge, DriverVersion::Latest, None);
+        assert_eq!(latest.await.unwrap(), "126.0.2592.102");
+        let missing = resolve(&cfg, BrowserKind::Edge, DriverVersion::Exact("127".into()), None);
+        assert!(matches!(missing.await, Err(ManagerError::Offline)));
+        // No chromedriver in the cache at all.
+        let chrome = resolve(&cfg, BrowserKind::Chrome, DriverVersion::Latest, None);
+        assert!(matches!(chrome.await, Err(ManagerError::Offline)));
+    }
+
+    #[tokio::test]
+    async fn offline_resolves_firefox_latest_from_cache() {
+        let latest = |cfg| resolve(cfg, BrowserKind::Firefox, DriverVersion::Latest, None);
+
+        // Older than the newest geckodriver in the compatibility table.
+        let (_dir, cfg) = cache_with(BrowserKind::Firefox, &["0.35.0"], true);
+        assert_eq!(latest(&cfg).await.unwrap(), "0.35.0");
+
+        let (_dir, cfg) = cache_with(BrowserKind::Firefox, &["0.34.0", "0.35.0"], true);
+        std::fs::create_dir_all(cached_driver_dir(&cfg, BrowserKind::Firefox, "0.36.0")).unwrap();
+        assert_eq!(latest(&cfg).await.unwrap(), "0.35.0");
+
+        let (_dir, cfg) = cache_with(BrowserKind::Firefox, &[], true);
+        assert!(matches!(latest(&cfg).await, Err(ManagerError::Offline)));
     }
 }

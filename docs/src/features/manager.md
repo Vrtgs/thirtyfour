@@ -18,7 +18,8 @@ async fn main() -> WebDriverResult<()> {
 ```
 
 The first run downloads a matching driver into your system cache
-directory; subsequent runs reuse the cached binary. The driver
+directory; subsequent runs reuse the cached binary, without looking up
+upstream metadata when it's the exact version they need. The driver
 subprocess starts when you create the session and is torn down when
 your last `WebDriver` handle drops.
 
@@ -64,8 +65,9 @@ let driver = WebDriver::managed(caps)
 > **Note on Firefox:** Firefox releases and `geckodriver` releases don't
 > share version numbers (Firefox is on `150.x` while `geckodriver` is on
 > `0.36.0`). The manager picks a compatible `geckodriver` from an embedded
-> compatibility table. For `.exact(...)` on Firefox, pass a `geckodriver`
-> tag like `"0.36.0"` — not a Firefox version.
+> compatibility table; `.latest()` takes the newest `geckodriver` release
+> instead. For `.exact(...)` on Firefox, pass a `geckodriver` tag like
+> `"0.36.0"` — not a Firefox version.
 
 ## Sharing One Manager Across Sessions
 
@@ -93,7 +95,8 @@ as needed, and reuses an existing subprocess when a later `.launch()`
 call matches one that's still alive. It also resolves each driver
 version only once, so later launches skip the upstream metadata lookup.
 The exception is `.latest()`, which checks upstream on every launch so
-that it always picks the current release.
+that it always picks the current release; in offline mode it rescans the
+cache instead.
 
 ## Configuration
 
@@ -182,8 +185,20 @@ let driver = manager.launch(DesiredCapabilities::chrome()).await?;
 # Ok(()) }
 ```
 
-In offline mode, a cache miss returns an error rather than reaching out
-to the network.
+In offline mode the manager doesn't fetch upstream metadata either, so it
+resolves versions from the cache:
+
+- A version in the cache (detected from the local browser, pinned with
+  `.exact(...)` or read from the capabilities) is used as is.
+- A major-only version, or a Chrome version not cached exactly, gets the
+  newest cached driver of that major.
+- `.latest()` gets the newest cached driver.
+
+When nothing in the cache fits, the launch returns an error rather than
+reaching out to the network.
+
+> **Warning:** In offline mode, `.latest()` selects the newest cached
+> driver, which may be older than the latest upstream release.
 
 ## Observing What The Manager Is Doing
 

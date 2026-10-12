@@ -304,6 +304,13 @@ impl WebDriverManagerBuilder {
 
     /// Use the latest stable driver from upstream metadata, checked on every
     /// launch.
+    ///
+    /// <div class="warning">
+    ///
+    /// **Warning:** In offline mode, `.latest()` selects the newest cached
+    /// driver, which may be older than the latest upstream release.
+    ///
+    /// </div>
     pub fn latest(self) -> Self {
         self.version(DriverVersion::Latest)
     }
@@ -350,6 +357,17 @@ impl WebDriverManagerBuilder {
     }
 
     /// Refuse to download anything; require the driver to already be in cache.
+    ///
+    /// Versions are resolved from the cache too, without upstream metadata:
+    /// a version not cached exactly gets the newest cached driver of its
+    /// major, and [`DriverVersion::Latest`] the newest cached driver.
+    ///
+    /// <div class="warning">
+    ///
+    /// **Warning:** In offline mode, `.latest()` selects the newest cached
+    /// driver, which may be older than the latest upstream release.
+    ///
+    /// </div>
     pub fn offline(self) -> Self {
         self.offline_mode(true)
     }
@@ -369,6 +387,16 @@ impl WebDriverManagerBuilder {
     pub fn chrome_metadata_mirror(mut self, base: Url) -> Self {
         let m = self.mirror.get_or_insert_with(Mirror::default);
         m.chrome_metadata = base;
+        self
+    }
+
+    /// Override the geckodriver release metadata base URL, used to look up
+    /// the latest release: `<base>latest` must redirect to
+    /// `<base>tag/v<version>`. Default:
+    /// `https://github.com/mozilla/geckodriver/releases/`.
+    pub fn geckodriver_metadata_mirror(mut self, base: Url) -> Self {
+        let m = self.mirror.get_or_insert_with(Mirror::default);
+        m.geckodriver_metadata = base;
         self
     }
 
