@@ -94,7 +94,7 @@ tokio-tungstenite = { version = "0.30", default-features = false, features = [
 ], optional = true }
 
 # Optional dependencies pulled in by the `manager` feature.
-dirs = { version = "6", optional = true }
+dirs = { version = "7", optional = true }
 fs4 = { version = "1.1", default-features = false, features = [
     "tokio",
 ], optional = true }
@@ -109,7 +109,7 @@ tokio-stream = { version = "0.1.18", features = ["sync"], default-features = fal
 anyhow = "1"
 assert_matches = "1.5"
 axum = "0.8"
-rstest = { version = "0.26", default-features = false }
+rstest = { version = "0.27", default-features = false }
 serial_test = "3.2.0"
 tokio = { version = "1", features = ["rt-multi-thread"] }
 tower-http = { version = "0.7", features = ["fs"] }

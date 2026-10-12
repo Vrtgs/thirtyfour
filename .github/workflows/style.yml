@@ -6,7 +6,7 @@ name: lint
 jobs:
   style:
     runs-on: ubuntu-latest
-    name: ${{ matrix.toolchain }}
+    name: ${{ matrix.toolchain == 'stable' && 'clippy' || matrix.toolchain }}
     strategy:
       fail-fast: false
       matrix:
@@ -30,7 +30,5 @@ jobs:
           command: doc
           args: --no-deps --all-features
       - name: cargo clippy
-        uses: actions-rs/clippy-check@v1
         if: always()
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo +${{ matrix.toolchain }} clippy --all-features --all-targets
