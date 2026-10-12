@@ -358,9 +358,13 @@ impl WebDriverManagerBuilder {
 
     /// Refuse to download anything; require the driver to already be in cache.
     ///
-    /// Versions are resolved from the cache too, without upstream metadata:
-    /// a version not cached exactly gets the newest cached driver of its
-    /// major, and [`DriverVersion::Latest`] the newest cached driver.
+    /// No upstream metadata is fetched. Chrome uses the exact cached version
+    /// if present, otherwise the newest cached driver of the same major.
+    /// Edge major-only versions select the newest cached driver of that major;
+    /// full versions must be cached exactly. Firefox requires the literal
+    /// geckodriver tag for [`DriverVersion::Exact`], or the version selected by
+    /// the embedded compatibility table for browser-matching modes, to be
+    /// cached. [`DriverVersion::Latest`] selects the newest cached driver.
     ///
     /// <div class="warning">
     ///

@@ -335,10 +335,13 @@ fn chrome_index() -> ResponseTemplate {
     }))
 }
 
-fn manager_with_chrome_mirror(server: &MockServer) -> Arc<WebDriverManager> {
-    WebDriverManager::builder()
+fn manager_with_chrome_mirror(server: &MockServer) -> (tempfile::TempDir, Arc<WebDriverManager>) {
+    let cache = tempfile::tempdir().unwrap();
+    let manager = WebDriverManager::builder()
+        .cache_dir(cache.path().to_path_buf())
         .chrome_metadata_mirror(format!("{}/", server.uri()).parse().unwrap())
-        .build()
+        .build();
+    (cache, manager)
 }
 
 async fn request_count(server: &MockServer) -> usize {
@@ -353,7 +356,7 @@ async fn manager_resolves_each_version_once() {
         .respond_with(chrome_index())
         .mount(&server)
         .await;
-    let manager = manager_with_chrome_mirror(&server);
+    let (_cache, manager) = manager_with_chrome_mirror(&server);
 
     for _ in 0..3 {
         let v = manager
@@ -378,7 +381,7 @@ async fn manager_resolves_concurrent_launches_once() {
         .respond_with(chrome_index().set_delay(Duration::from_millis(100)))
         .mount(&server)
         .await;
-    let manager = manager_with_chrome_mirror(&server);
+    let (_cache, manager) = manager_with_chrome_mirror(&server);
 
     let resolve = || manager.resolve_version_cached(BrowserKind::Chrome, Some("126"), None);
     let (a, b, c) = tokio::join!(resolve(), resolve(), resolve());
@@ -402,7 +405,7 @@ async fn manager_does_not_cache_failed_resolution() {
         .respond_with(chrome_index())
         .mount(&server)
         .await;
-    let manager = manager_with_chrome_mirror(&server);
+    let (_cache, manager) = manager_with_chrome_mirror(&server);
 
     assert!(manager.resolve_version_cached(BrowserKind::Chrome, Some("126"), None).await.is_err());
     let v = manager.resolve_version_cached(BrowserKind::Chrome, Some("126"), None).await.unwrap();

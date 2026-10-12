@@ -185,13 +185,15 @@ let driver = manager.launch(DesiredCapabilities::chrome()).await?;
 # Ok(()) }
 ```
 
-In offline mode the manager doesn't fetch upstream metadata either, so it
-resolves versions from the cache:
+In offline mode the manager doesn't fetch upstream metadata:
 
-- A version in the cache (detected from the local browser, pinned with
-  `.exact(...)` or read from the capabilities) is used as is.
-- A major-only version, or a Chrome version not cached exactly, gets the
-  newest cached driver of that major.
+- Chrome uses the exact cached version if present, otherwise the newest
+  cached driver of the same major.
+- Edge major-only versions select the newest cached driver of that major;
+  full versions must be cached exactly.
+- Firefox requires the literal geckodriver tag from `.exact(...)`, or the
+  version selected by the embedded compatibility table for browser-matching
+  modes, to be cached.
 - `.latest()` gets the newest cached driver.
 
 When nothing in the cache fits, the launch returns an error rather than

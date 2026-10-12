@@ -29,9 +29,10 @@ jobs:
       # No driver install step: tests use `WebDriver::managed`, which downloads
       # and lifetime-manages chromedriver / geckodriver itself. The browsers
       # themselves are pre-installed on GitHub-hosted runners.
-      - name: cargo test -- --test-threads=1
+      - name: cargo test
         uses: actions-rs/cargo@v1
         env:
           THIRTYFOUR_BROWSER: ${{ matrix.browser }}
         with:
           command: test
+          args: ${{ runner.os == 'macOS' && '-- --test-threads=2' || '' }}
