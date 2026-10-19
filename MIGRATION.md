@@ -1,5 +1,23 @@
 # Migration guide
 
+## 0.37 → 0.38
+
+### `CdpError::data` is now boxed
+
+`CdpError::data` changed from `Option<serde_json::Value>` to
+`Option<Box<serde_json::Value>>`. Code that reads the field through a
+reference (`err.data.as_ref()`, `if let Some(data) = &err.data`) mostly
+keeps working via auto-deref; code that moves the value out needs to
+unbox it:
+
+```rust
+// Before:
+let data: Option<Value> = err.data;
+
+// After:
+let data: Option<Value> = err.data.map(|d| *d);
+```
+
 ## 0.36 → 0.37
 
 - [`WebDriver` construction: builder API](#webdriver-construction-builder-api)
