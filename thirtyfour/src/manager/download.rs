@@ -386,7 +386,7 @@ async fn resolve_edge_exact(
 fn decode_edge_text(bytes: &[u8]) -> String {
     if bytes.len() >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE {
         let utf16: Vec<u16> =
-            bytes[2..].chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+            bytes[2..].as_chunks::<2>().0.iter().map(|c| u16::from_le_bytes(*c)).collect();
         String::from_utf16_lossy(&utf16)
     } else {
         String::from_utf8_lossy(bytes).into_owned()
