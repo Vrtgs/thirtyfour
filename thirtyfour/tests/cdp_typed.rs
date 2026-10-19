@@ -486,7 +486,7 @@ async fn dom_describe_node_via_backend_node_id() -> WebDriverResult<()> {
             .await?;
         assert_eq!(described.node.node_name, "BUTTON");
         let attrs = described.node.attributes.unwrap_or_default();
-        let pairs: Vec<_> = attrs.chunks_exact(2).collect();
+        let pairs: Vec<_> = attrs.as_chunks::<2>().0.iter().collect();
         assert!(pairs.iter().any(|p| p[0] == "id" && p[1] == "b"), "attrs: {attrs:?}");
         driver.quit().await
     })

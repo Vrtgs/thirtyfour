@@ -27,7 +27,11 @@ pub struct CdpError {
     /// Human-readable error message from the browser.
     pub message: String,
     /// Optional structured error data.
-    pub data: Option<Value>,
+    ///
+    /// Boxed to keep `CdpError` small: with serde_json's `preserve_order`
+    /// feature, an inline `Value` pushes it past clippy's `result_large_err`
+    /// threshold.
+    pub data: Option<Box<Value>>,
 }
 
 impl CdpError {
@@ -80,7 +84,7 @@ impl CdpErrorEnvelope {
             command: command.into(),
             code: self.code,
             message: self.message,
-            data: self.data,
+            data: self.data.map(Box::new),
         }
     }
 }
