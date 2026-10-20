@@ -29,11 +29,11 @@ cdp = []
 # WebSocket-based CDP session with event subscription. Adds
 # `Cdp::connect()` and `CdpSession`. Off by default; pulls in
 # `tokio-tungstenite`.
-cdp-events = ["cdp", "dep:tokio-tungstenite", "dep:webpki-roots", "tokio/macros", "tokio/rt"]
+cdp-events = ["cdp", "dep:tokio-tungstenite", "dep:rustls", "dep:webpki-roots", "tokio/macros", "tokio/rt"]
 # WebDriver BiDi (W3C) — typed commands and event subscription over a
 # WebSocket negotiated via the `webSocketUrl: true` capability. Off by
 # default. Pulls in `tokio-tungstenite`. See `WebDriver::bidi`.
-bidi = ["dep:tokio-tungstenite", "dep:webpki-roots", "tokio/macros", "tokio/rt"]
+bidi = ["dep:tokio-tungstenite", "dep:rustls", "dep:webpki-roots", "tokio/macros", "tokio/rt"]
 # Auto-download and lifetime-manage local chromedriver / geckodriver processes.
 # Pulls in archive-extraction and cache-dir deps. See `thirtyfour::manager`.
 manager = [
@@ -90,10 +90,14 @@ reqwest = { version = "0.13", default-features = false, features = [
 # Optional WebSocket client for the `cdp-events` and `bidi` features.
 tokio-tungstenite = { version = "0.30", default-features = false, features = [
     "connect",
-    "rustls-tls-webpki-roots",
+    "__rustls-tls",
 ], optional = true }
-# Not used directly: raises the floor of tokio-tungstenite's transitive
-# webpki-roots to 1.0.10, which drops the distrusted emSign ECC Root CA - G3.
+# Root store for the WebSocket rustls connector. Supplied directly rather than
+# via tokio-tungstenite's `rustls-tls-webpki-roots`, which pulls in the
+# webpki-roots 0.26 shim. 1.0.10 drops the distrusted emSign ECC Root CA - G3.
+rustls = { version = "0.23", default-features = false, features = [
+    "std",
+], optional = true }
 webpki-roots = { version = "1.0.10", optional = true }
 
 # Optional dependencies pulled in by the `manager` feature.

@@ -48,7 +48,7 @@ struct Inner {
 impl BidiTransport {
     /// Connect to the BiDi WebSocket URL.
     pub(crate) async fn connect(url: &str) -> WebDriverResult<Self> {
-        let (ws, _resp) = tokio_tungstenite::connect_async(url)
+        let ws = crate::common::ws::connect(url)
             .await
             .map_err(|e| WebDriverError::HttpError(format!("BiDi WebSocket connect: {e}")))?;
 
