@@ -1,6 +1,6 @@
 [package]
 name = "thirtyfour"
-version = "0.37.9"
+version = "0.37.10"
 edition = "2024"
 description = """
 Thirtyfour is a Selenium / WebDriver library for Rust, for automated website UI testing.
@@ -29,11 +29,11 @@ cdp = []
 # WebSocket-based CDP session with event subscription. Adds
 # `Cdp::connect()` and `CdpSession`. Off by default; pulls in
 # `tokio-tungstenite`.
-cdp-events = ["cdp", "dep:tokio-tungstenite", "tokio/macros", "tokio/rt"]
+cdp-events = ["cdp", "dep:tokio-tungstenite", "dep:webpki-roots", "tokio/macros", "tokio/rt"]
 # WebDriver BiDi (W3C) — typed commands and event subscription over a
 # WebSocket negotiated via the `webSocketUrl: true` capability. Off by
 # default. Pulls in `tokio-tungstenite`. See `WebDriver::bidi`.
-bidi = ["dep:tokio-tungstenite", "tokio/macros", "tokio/rt"]
+bidi = ["dep:tokio-tungstenite", "dep:webpki-roots", "tokio/macros", "tokio/rt"]
 # Auto-download and lifetime-manage local chromedriver / geckodriver processes.
 # Pulls in archive-extraction and cache-dir deps. See `thirtyfour::manager`.
 manager = [
@@ -92,6 +92,9 @@ tokio-tungstenite = { version = "0.30", default-features = false, features = [
     "connect",
     "rustls-tls-webpki-roots",
 ], optional = true }
+# Not used directly: raises the floor of tokio-tungstenite's transitive
+# webpki-roots to 1.0.10, which drops the distrusted emSign ECC Root CA - G3.
+webpki-roots = { version = "1.0.10", optional = true }
 
 # Optional dependencies pulled in by the `manager` feature.
 dirs = { version = "7", optional = true }
