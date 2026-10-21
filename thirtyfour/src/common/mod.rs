@@ -20,3 +20,5 @@ pub(crate) mod protocol;
 pub mod requestdata;
 /// Common types used within thirtyfour.
 pub mod types;
+#[cfg(any(feature = "cdp-events", feature = "bidi"))]
+pub(crate) mod ws;
